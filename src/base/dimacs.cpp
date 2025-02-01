@@ -129,7 +129,11 @@ bool Dimacs::parseSpecsLine(std::istringstream& ss, std::string& line) {
 			errorFlag = true;
 			return false;
 		}
-		edges.push_back(std::make_pair(v1, v2));
+		//edges.push_back(std::make_pair(v1, v2));
+
+        //adjacency list implementation
+        edges[v1].push_back(v1);
+        edges[v2].push_back(v2);
 		degrees[v1]++;
 		degrees[v2]++;
 	} 
