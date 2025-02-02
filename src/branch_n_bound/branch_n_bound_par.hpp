@@ -7,6 +7,9 @@
 #include <iostream>
 #include <vector>
 
+#include "common.hpp"
+#include "graph.hpp"
+
 class BranchNBoundPar {
        private:
 	BranchingStrategy& _branching_strat;
