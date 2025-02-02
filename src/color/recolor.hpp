@@ -2,7 +2,6 @@
 #define RECOLOR_HPP
 
 #include "common.hpp"
-#include "constraints.hpp"
 
 /*
     @brief abstract functional class that wraps Recolor method; (partially) recolors a graph 
@@ -16,12 +15,11 @@ class RecolorStrategy {
 
             @param vertices     set of vertices which compose the graph
             @param edges        set of edges which compose the graph
-            @param constraints  constraints on the colors that a vertex of the given graph can assume
             @param coloring     full coloring of the graph
 
             @returns            0 if recoloring failed, otherwise how much the highest color was reduced
         */
-        virtual unsigned int Recolor(VertexSet& vertices, const Edges& edges, Constraints& config, 
+        virtual unsigned int Recolor(VertexSet& vertices, const Edges& edges, 
                                     std::vector<unsigned short>& coloring) const = 0;
 };
 
@@ -45,12 +43,11 @@ class GreedySwapRecolorStrategy : public RecolorStrategy {
 
             @param vertices     set of vertices which compose the graph
             @param edges        set of edges which compose the graph
-            @param constraints  constraints on the colors that a vertex of the given graph can assume
             @param coloring     full coloring of the graph
 
             @returns            0 if recoloring failed, otherwise how much the highest color was reduced
         */
-        unsigned int Recolor(VertexSet& vertices, const Edges& edges, Constraints& config, 
+        unsigned int Recolor(VertexSet& vertices, const Edges& edges, 
                             std::vector<unsigned short>& coloring) const override;
 };
 

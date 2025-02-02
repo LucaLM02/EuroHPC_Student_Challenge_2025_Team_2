@@ -2,7 +2,8 @@
 #define BRANCHING_STRATEGY_HPP
 
 #include "common.hpp"
-#include "constraints.hpp"
+#include "graph.hpp"
+
 #include <random>
 #include <memory>
 
@@ -11,11 +12,11 @@ class BranchingStrategy {
         BranchingStrategy() 
         {}
 
-        virtual std::pair<unsigned int, unsigned int> ChooseVertices(Constraints& config);
+        virtual std::pair<unsigned int, unsigned int> ChooseVertices(const Graph& graph);
     protected:
         std::pair<unsigned int, unsigned int> _vertex_pair;
 
-        virtual void _PermuteVertices(Constraints& config) = 0;
+        virtual void _PermuteVertices(const Graph& graph) = 0;
 };
 
 class RandomBranchingStrategy : public BranchingStrategy {
@@ -28,7 +29,7 @@ class RandomBranchingStrategy : public BranchingStrategy {
         }
     
     protected:
-        virtual void _PermuteVertices(Constraints& config) override;
+        virtual void _PermuteVertices(const Graph& graph) override;
 
         std::unique_ptr<std::mt19937> _random_generator;
 

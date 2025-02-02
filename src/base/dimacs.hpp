@@ -14,7 +14,7 @@ public:
     
 protected: public:
     //std::vector<Edge> edges;
-    std::vector<std::vector<int>> edges;
+    std::vector<Edge> edges;
     
     std::vector<int> degrees;
     unsigned int numVertices;
