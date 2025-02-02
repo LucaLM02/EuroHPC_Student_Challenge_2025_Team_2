@@ -48,10 +48,17 @@ class BranchNBoundSeq {
        public:
 	BranchNBoundSeq(BranchingStrategy& branching_strat,
 			CliqueStrategy& clique_strat,
-			ColorStrategy& color_strat)
+			ColorStrategy& color_strat,
+			const std::string& log_file_path)
 	    : _branching_strat(branching_strat),
 	      _clique_strat(clique_strat),
-	      _color_strat(color_strat) {}
+	      _color_strat(color_strat) {
+		_log_file.open(log_file_path);
+		if (!_log_file.is_open()) {
+			throw std::runtime_error("Failed to open log file: " +
+						 log_file_path);
+		}
+	}
 
 	/**
 	 * @brief Solves a graph using the sequential branch-and-bound
@@ -64,6 +71,14 @@ class BranchNBoundSeq {
 	 */
 	int Solve(Graph& g, int timeout_seconds = 60,
 		  int iteration_threshold = 1000);
+
+	// Destructor to close the log file
+	~BranchNBoundSeq() {
+		if (_log_file.is_open()) {
+			_log_file << "Closing log file.\n";
+			_log_file.close();
+		}
+	}
 };
 
 #endif	// BRANCH_N_BOUND_SEQ_HPP

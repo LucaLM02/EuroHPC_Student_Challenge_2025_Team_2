@@ -22,8 +22,8 @@ int BranchNBoundSeq::Solve(Graph& g, int timeout_seconds,
 	auto start_time = std::chrono::steady_clock::now();
 
 	// Initialize bounds
-	int lb = _clique_strat->clique(g);
-	int ub = _color_strat->color(g);
+	int lb = _clique_strat->Clique(g);
+	int ub = _color_strat->Color(g);
 	int best_ub = ub;
 
 	// Log initial bounds

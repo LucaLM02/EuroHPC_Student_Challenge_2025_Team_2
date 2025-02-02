@@ -42,7 +42,13 @@ class BranchNBoundPar {
 			ColorStrategy& color_strat)
 	    : _branching_strat(branching_strat),
 	      _clique_strat(clique_strat),
-	      _color_strat(color_strat) {}
+	      _color_strat(color_strat) {
+		_log_file.open(log_file_path);
+		if (!_log_file.is_open()) {
+			throw std::runtime_error("Failed to open log file: " +
+						 log_file_path);
+		}
+	}
 
 	// TODO: Either input vector of Graphs to solve or one at a time popped
 	// from a Graph queue?
