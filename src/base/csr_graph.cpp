@@ -69,7 +69,7 @@ void CSRGraph::AddEdge(int v, int w) {
 
 }
 
-void CSRGraph::GetNeighbours(int vertex, std::set<int> &result) const {
+void CSRGraph::GetNeighbours(int vertex, std::vector<int> &result) const {
     result.clear();
 }
 
@@ -85,8 +85,7 @@ size_t CSRGraph::GetNumEdges() const {
     return 0;
 }
 
-bool CSRGraph::MergeVertices(int v, int w) {
-    return false;
+void CSRGraph::MergeVertices(int v, int w) {
 }
 
 int CSRGraph::GetNeighboursIndex(int vertex) const {

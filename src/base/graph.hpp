@@ -9,7 +9,7 @@
 
     @details
     Simple abstract class that represents a graph, composed by vertices, which can assume 
-    any value >= 0, and edges, represented (from user perspective) as a std::pair<int, int>
+    any value > 0, and edges, represented (from user perspective) as a std::pair<int, int>
     <br>
     The graph can be modified, since it is useful for applying Zykov coloring algorithm.
     Vertex and edges can be added and removed. 2 vertices can be merged (see MergeVertices 
@@ -53,7 +53,7 @@ class Graph {
             @note 
             If the 2 vertices were neighbours, the final vertex `v` will have a loop
         */
-        virtual bool MergeVertices(int v, int w) = 0;
+        virtual void MergeVertices(int v, int w) = 0;
 
         /*
             @brief gets the neighbours of `vertex` as a vector
@@ -68,8 +68,6 @@ class Graph {
         virtual void GetNeighbours(int vertex, std::set<int> &result) const = 0;
 
         virtual bool HasEdge(int v, int w) const = 0;
-        virtual void GetEdges(int vertex, std::set<std::pair<int,int>> &result) const = 0;
-        virtual void GetEdges(int vertex, std::vector<std::pair<int, int>> &result) const = 0;
 
         /*
             @brief returns set of vertices used in the graphc

@@ -4,6 +4,16 @@
 #include "graph.hpp"
 #include "dimacs.hpp"
 
+/*
+    TODO: handle properly vertex removal: since offset is accessed as offset[vertex], if
+          vertices aren't renamed when vertex is removed, then the entry of `vertex` must
+          remain
+    TODO: otherwise could be possible to impose a rewriting of the vertices when the topology changes
+        - like RemoveVertex(int w, bool reorder=false);
+    TODO: write docs
+    TODO: vertices numbering convention starts from 1, so an extra space at index 0 is added but not used
+*/
+
 class CSRGraph : public Graph {
 
 private:
@@ -20,15 +30,13 @@ public:
     void RemoveEdge(int v, int w) override;
     void AddVertex(int v) override;
     void RemoveVertex(int v) override;
-    bool MergeVertices(int v, int w) override;
+    void MergeVertices(int v, int w) override;
 
     void GetNeighbours(int vertex, std::vector<int> &result) const override;
     void GetNeighbours(int vertex, std::set<int> &result) const override;
     int GetNeighboursIndex(int vertex) const;
 
     bool HasEdge(int v, int w) const = 0;
-    void GetEdges(int vertex, std::set<std::pair<int,int>> &result) const override;
-    void GetEdges(int vertex, std::vector<std::pair<int, int>> &result) const override;
 
     size_t GetNumVertices() const override;
     size_t GetNumEdges() const override;

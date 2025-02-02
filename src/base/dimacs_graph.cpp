@@ -1,12 +1,15 @@
 #include "dimacs_graph.hpp"
 
+#include <iostream>
+
 DimacsGraph::DimacsGraph(Dimacs& dimacs) 
 : _dimacs{dimacs}
 {
-    // NOTE: assuming _dimacs has continuous vertices from i=0 to i=numVertices-1
-    for ( int i=0; i<_dimacs.numVertices; i++) {
+    // NOTE: assuming _dimacs has continuous vertices from i=1 to i=numVertices
+    for ( int i=1; i<=_dimacs.numVertices; i++) {
         _vertices.insert(i);
     }
+
 }
 
 void DimacsGraph::AddEdge(int v, int w) {
@@ -17,8 +20,13 @@ void DimacsGraph::AddEdge(int v, int w) {
 
 void DimacsGraph::RemoveEdge(int v, int w) {
     std::pair<int, int> edge;
+    bool has_removed=false;
     for (int i = 0; i < _dimacs.edges.size(); i++) {
         edge = _dimacs.edges[i];
+        if ( has_removed ) {
+            i--;
+            has_removed = false;
+        }
 
         if ( (edge.first == v && edge.second == w) ||
              (edge.first == w && edge.second == v)) {
@@ -34,6 +42,21 @@ void DimacsGraph::AddVertex(int v) {
 
 void DimacsGraph::RemoveVertex(int v) {
     _vertices.erase(v);
+    _dimacs.numVertices--;      // however the vertices are not contiguous necessarly!
+
+    std::pair<int, int> edge;
+    bool has_removed = false;
+    for (int i = 0; i < _dimacs.edges.size(); i++) {
+        if ( has_removed ) {
+            i--;
+            has_removed = false;
+        }
+        edge = _dimacs.edges[i];
+        if ( edge.first == v || edge.second == v ) {
+            _dimacs.edges.erase(_dimacs.edges.begin() + i);
+            has_removed = true;
+        }
+    }
 }
 
 void DimacsGraph::GetNeighbours(int vertex, std::vector<int> &result) const {
@@ -66,12 +89,11 @@ bool DimacsGraph::HasEdge(int v, int w) const {
     return false;
 }
 
-void DimacsGraph::GetEdges(int vertex, std::set<std::pair<int,int>> &result) const {
-
+void DimacsGraph::GetVertices(std::set<int> &result) const {
+    result = this->_vertices;
 }
-
-void DimacsGraph::GetEdges(int vertex, std::vector<std::pair<int, int>> &result) const {
-
+void DimacsGraph::GetVertices(std::vector<int> &result) const {
+    std::copy(_vertices.begin(), _vertices.end(), std::back_inserter(result));
 }
 
 size_t DimacsGraph::GetNumVertices() const {
@@ -82,31 +104,54 @@ size_t DimacsGraph::GetNumEdges() const {
     return _dimacs.getNumEdges();
 }
 
-bool DimacsGraph::MergeVertices(int v, int w) {
+void DimacsGraph::MergeVertices(int v, int w) {
 
     std::set<int> v_neighbours;
     this->GetNeighbours(v, v_neighbours);
 
+    std::cout << "Neighbours of " << v << ":";
+    std::cout << std::endl;
+
     std::pair<int, int> edge;
+    bool has_removed = false;
     for ( int i=0; i < _dimacs.edges.size(); i++ ) {
+        if ( has_removed ) {
+            i--;
+            has_removed = false;
+        }
         edge = _dimacs.edges[i];
         if (edge.first == w) {
-            if (!v_neighbours.contains(edge.second)) 
+            if (!v_neighbours.contains(edge.second)) {
                 // adding vertex as neighbour of v
                 _dimacs.edges[i].first = v;
-            else 
+            } else {
                 // duplicate, erasing it
+                has_removed = true;
                 _dimacs.edges.erase(_dimacs.edges.begin()+i);
+            }
         } else if (edge.second == w) {
-            if (!v_neighbours.contains(edge.first))
+            if (!v_neighbours.contains(edge.first)) {
                 // adding vertex as neighbour of v
                 _dimacs.edges[i].second = v;
-            else
+            } else {
                 // duplicate, erasing it
+                has_removed = true;
                 _dimacs.edges.erase(_dimacs.edges.begin()+i);
+            }
         } 
     }
 
     // "removing" vertex v
-    _dimacs.numVertices--;      // however the vertices are not contiguous necessarly!
+    has_removed = false;
+    for (int i=0; i<_dimacs.edges.size(); i++) {
+        if ( has_removed ) {
+            i--;
+            has_removed = false;
+        }
+
+        if ( _dimacs.edges.size() == w ) 
+            _dimacs.edges.erase(_dimacs.edges.begin()+i);
+    }
+    this->RemoveVertex(w);
+
 }
