@@ -8,8 +8,7 @@ unsigned int GreedyFindColor(const VertexSet& vertices,
                              const Edges& edges,
                              const unsigned int vertex_index,
                              std::vector<unsigned short>& coloring, 
-                             unsigned int current_max_k,
-                             const Constraints& constraints) {
+                             unsigned int current_max_k) {
     unsigned int neighbour_index;
     unsigned int neighbour_color;
 
@@ -33,11 +32,6 @@ unsigned int GreedyFindColor(const VertexSet& vertices,
         }
     }
 
-    for ( unsigned int vertex_b : constraints.GetDiffConstraints(vertex_index)) {
-        if ( coloring[vertex_b] != 0 ) {
-
-        }
-    }
 
     // finds the first color available
     int k=0;
@@ -52,7 +46,6 @@ unsigned int GreedyFindColor(const VertexSet& vertices,
 
 // TODO: config should be used
 void GreedyColorStrategy::Color(VertexSet& vertices, const Edges& edges, 
-                          const Constraints& constraints, 
                           std::vector<unsigned short>& coloring, 
                           unsigned short& max_k,
                           const unsigned int& expected_maximum_color) const
@@ -84,7 +77,7 @@ void GreedyColorStrategy::Color(VertexSet& vertices, const Edges& edges,
         vertex_index = vertices[vertex_scroll];
 
         // probably can be done more efficiently but for now only readability is important
-        assigned_color = GreedyFindColor(vertices, edges, vertex_index, coloring, max_k, constraints);     
+        assigned_color = GreedyFindColor(vertices, edges, vertex_index, coloring, max_k);
         if ( max_k < assigned_color ) {
             max_k = assigned_color;
         }

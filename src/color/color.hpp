@@ -2,7 +2,6 @@
 #define COLOR_HPP
 
 #include "common.hpp"
-#include "constraints.hpp"
 
 /*
     @brief functional class that wraps Color method. Colors a graph in such a way that no 
@@ -18,13 +17,11 @@ class ColorStrategy {
 
             @param vertices               vertices of the graph. Can be modified by the method
             @param edges                  edges of the graph
-            @param constraints            constraints on the color that a vertex of the given graph can assume
             @param coloring               the color for each vertex, using the same order of vertices
             @param k_mx                   highest color used
             @param expected_maximum_color expected maximum color
         */
         virtual void Color(VertexSet& vertices, const Edges& edges, 
-                           const Constraints& constraints, 
                            std::vector<unsigned short>& coloring, 
                            unsigned short& k_max,
                            const unsigned int& expected_maximum_color) const = 0;
@@ -53,7 +50,6 @@ class GreedyColorStrategy : public ColorStrategy {
             @param expected_maximum_color expected maximum color
         */
         void Color(VertexSet& vertices, const Edges& edges, 
-                   const Constraints& constraints, 
                    std::vector<unsigned short>& coloring, 
                    unsigned short& max_k,
                    const unsigned int& expected_maximum_color) const override;

@@ -2,6 +2,7 @@
 #include <cstring>
 
 
+// TODO: does the Dimacs contains both (v,w) and (w,v) ? no, only (v,w) -> ADAPT THE CODE
 CSRGraph::CSRGraph(const Dimacs& dimacs_graph) {
     std::vector<Dimacs::Edge> unsorted_edges = dimacs_graph.edges;
 
@@ -46,7 +47,7 @@ CSRGraph::CSRGraph(const CSRGraph& other, bool new_edge) {
 */
 
 // TODO: ADD ALSO W-V EDGE
-void CSRGraph::addEdge(int v, int w) {
+void CSRGraph::AddEdge(int v, int w) {
     
     if ( this->edges.size() == this->edges.max_size()) {
         this->edges.reserve(this->edges.size()*2);
@@ -68,23 +69,26 @@ void CSRGraph::addEdge(int v, int w) {
 
 }
 
-std::vector<int> CSRGraph::getNeighbours(int vertex) const {
-    return std::vector<int>();
+void CSRGraph::GetNeighbours(int vertex, std::vector<int> &result) const {
+    result.clear();
 }
 
-size_t CSRGraph::getNumVertices() const {
+void CSRGraph::GetNeighbours(int vertex, std::set<int> &result) const {
+    result.clear();
+}
+
+size_t CSRGraph::GetNumVertices() const {
     return 0;
 }
 
-size_t CSRGraph::getNumEdges() const {
+size_t CSRGraph::GetNumEdges() const {
     return 0;
 }
 
-bool CSRGraph::merge(int v, int w) {
-    return false;
+void CSRGraph::MergeVertices(int v, int w) {
 }
 
-int CSRGraph::getNeighboursIndex(int vertex) const {
+int CSRGraph::GetNeighboursIndex(int vertex) const {
     return 0;
 }
 

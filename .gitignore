@@ -36,5 +36,6 @@
 
 # build
 build/
-tests/
-*CMakeLists.txt
+*CMakeFiles/
+*Makefile
+*cmake_install.cmake
