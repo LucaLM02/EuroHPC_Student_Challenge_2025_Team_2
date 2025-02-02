@@ -4,10 +4,6 @@
 #include "graph.hpp"
 #include "dimacs.hpp"
 
-/*
-    TODO: handle the fact that only symmetric vertices are
-*/
-
 class DimacsGraph : public Graph {
     public:
         DimacsGraph(Dimacs& dimacs);
@@ -17,6 +13,7 @@ class DimacsGraph : public Graph {
         virtual void RemoveEdge(int v, int w) override;
         virtual void AddVertex(int v) override;
         virtual void RemoveVertex(int v) override;
+        virtual void RemoveVertexWithRenaming(int v) override;
         virtual void MergeVertices(int v, int w) override;
 
         // --------------------- GETTERS ----------------------

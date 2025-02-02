@@ -59,6 +59,11 @@ void DimacsGraph::RemoveVertex(int v) {
     }
 }
 
+// TODO: finish this
+void DimacsGraph::RemoveVertexWithRenaming(int v) {
+    this->RemoveVertex(v);
+}
+
 void DimacsGraph::GetNeighbours(int vertex, std::vector<int> &result) const {
     result.clear();
     for ( const std::pair<int, int> &edge : _dimacs.edges ) {
