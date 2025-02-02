@@ -36,5 +36,4 @@
 
 # build
 build/
-tests/
 *CMakeLists.txt
