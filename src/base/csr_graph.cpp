@@ -299,7 +299,7 @@ size_t CSRGraph::GetNumVertices() const {
 }
 
 size_t CSRGraph::GetNumEdges() const {
-    return 
+    return edges.size();
 }
 
 void CSRGraph::MergeVertices(int v, int w) {
