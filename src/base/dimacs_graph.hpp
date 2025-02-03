@@ -4,10 +4,6 @@
 #include "graph.hpp"
 #include "dimacs.hpp"
 
-/*
-    TODO: handle the fact that only symmetric vertices are
-*/
-
 class DimacsGraph : public Graph {
     public:
         DimacsGraph(Dimacs& dimacs);
@@ -17,6 +13,7 @@ class DimacsGraph : public Graph {
         virtual void RemoveEdge(int v, int w) override;
         virtual void AddVertex(int v) override;
         virtual void RemoveVertex(int v) override;
+        virtual void RemoveVertexWithRenaming(int v) override;
         virtual void MergeVertices(int v, int w) override;
 
         // --------------------- GETTERS ----------------------
@@ -24,16 +21,32 @@ class DimacsGraph : public Graph {
         virtual void GetNeighbours(int vertex, std::set<int> &result) const override;
 
         virtual bool HasEdge(int v, int w) const override;
-        virtual void GetVertices(std::set<int> &result) const;
-        virtual void GetVertices(std::vector<int> &result) const;
+        virtual void GetUnorderedVertices(std::set<int> &result) const override;
+        virtual const std::vector<int>& GetVertices() const override;
+
+        virtual void SetVertices(std::vector<int>& vertices);
 
         virtual size_t GetNumVertices() const override;
         virtual size_t GetNumEdges() const override;
+
+        virtual unsigned int GetDegree(int vertex) const;
+        virtual std::vector<int> GetDegrees() const;
+        virtual unsigned int GetMaxDegree() const;
+        virtual int GetVertexWithMaxDegree() const;
+
         virtual ~DimacsGraph() = default;
 
-    public:
+    private:
+        /**
+         * @brief removes the vertex without touching offset, degrees and edges
+         * 
+         * @param vertex 
+         */
+        void _RemoveOnlyVertex(int vertex);
+        void _RemoveDegree(int vertex);
+
         Dimacs&       _dimacs;
-        std::set<int> _vertices;
+        std::vector<int> _vertices;
 
 };
 

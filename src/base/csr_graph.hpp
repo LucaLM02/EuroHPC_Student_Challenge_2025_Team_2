@@ -12,13 +12,17 @@
         - like RemoveVertex(int w, bool reorder=false);
     TODO: write docs
     TODO: vertices numbering convention starts from 1, so an extra space at index 0 is added but not used
+    TODO: possible optimization (in memory, changes a little the time): do not store each edge twice but only once
+            - however this complicates a lot the access time for the neighbours
 */
 
 class CSRGraph : public Graph {
 
 private:
     int nEdges;
+    int _effective_nEdges;
     int nVertices;
+    std::set<int> _vertices;        // TODO: fill this
     std::vector<int> edges;
     std::vector<int> offsets;
 
@@ -30,6 +34,7 @@ public:
     void RemoveEdge(int v, int w) override;
     void AddVertex(int v) override;
     void RemoveVertex(int v) override;
+    void RemoveVertexWithRenaming(int v) override;
     void MergeVertices(int v, int w) override;
 
     void GetNeighbours(int vertex, std::vector<int> &result) const override;
