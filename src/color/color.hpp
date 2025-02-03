@@ -2,6 +2,7 @@
 #define COLOR_HPP
 
 #include "common.hpp"
+#include "graph.hpp"
 
 /*
     @brief functional class that wraps Color method. Colors a graph in such a way that no 
@@ -21,7 +22,7 @@ class ColorStrategy {
             @param k_mx                   highest color used
             @param expected_maximum_color expected maximum color
         */
-        virtual void Color(VertexSet& vertices, const Edges& edges, 
+        virtual void Color(Graph &graph,
                            std::vector<unsigned short>& coloring, 
                            unsigned short& k_max,
                            const unsigned int& expected_maximum_color) const = 0;
@@ -49,7 +50,7 @@ class GreedyColorStrategy : public ColorStrategy {
             @param k_mx                   highest color used
             @param expected_maximum_color expected maximum color
         */
-        void Color(VertexSet& vertices, const Edges& edges, 
+        void Color(Graph& graph,
                    std::vector<unsigned short>& coloring, 
                    unsigned short& max_k,
                    const unsigned int& expected_maximum_color) const override;

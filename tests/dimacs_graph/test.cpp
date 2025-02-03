@@ -20,24 +20,25 @@ void test_neighbors(const Graph& graph, int neighbors_of, int indentation=0) {
 }
 
 void test_basics(const Graph& graph, unsigned int indentation = 0) {
-    std::vector<int> vertices;
-    graph.GetVertices(vertices);
+    const std::vector<int>& vertices = graph.GetVertices();
 
     std::string indentation_string;
 
     for ( int i=0; i<indentation; i++) {
         indentation_string.append("  ");
     }
-    std::cout << indentation_string << "Num vertices:   " << graph.GetNumVertices() << std::endl;
-    std::cout << indentation_string << "Vertices:       " << TestFunctions::VecToString(vertices) << std::endl; 
-    std::cout << indentation_string << "Num edges:      " << graph.GetNumEdges() << std::endl;
+    std::cout << indentation_string << "Num vertices:           " << graph.GetNumVertices() << std::endl;
+    std::cout << indentation_string << "Vertices:               " << TestFunctions::VecToString(vertices) << std::endl; 
+    std::cout << indentation_string << "Num edges:              " << graph.GetNumEdges() << std::endl;
+    std::cout << indentation_string << "Degrees:                " << TestFunctions::VecToString(graph.GetDegrees()) << std::endl;
+    std::cout << indentation_string << "Max degree:             " << graph.GetMaxDegree() << std::endl;
+    std::cout << indentation_string << "Vertex of max degree:   " << graph.GetVertexWithMaxDegree() << std::endl;
 }
 
 void full_basics_test(const Graph& graph, unsigned int indentation=0) {
     test_basics(graph, indentation);
 
-    std::vector<int> vertices;
-    graph.GetVertices(vertices);
+    const std::vector<int>& vertices = graph.GetVertices();
     for ( int i : vertices ) {
         test_neighbors(graph, i, indentation);
     }
@@ -66,6 +67,12 @@ void test_graph_manipulation(Graph& graph) {
     full_basics_test(graph, 1);
 }
 
+void test_vertex_order_change(Graph &graph, std::vector<int> &&new_order) {
+    graph.SetVertices(new_order);
+    std::cout << "After changing the vertex order to " << TestFunctions::VecToString(new_order) << std::endl;
+    full_basics_test(graph, 1);
+}
+
 int main() {
     Dimacs dimacs;
     std::string file_name = "10_vertices_graph";
@@ -80,4 +87,7 @@ int main() {
     full_basics_test(graph, 1);
     
     test_graph_manipulation(graph);
+
+    test_vertex_order_change(graph, {5, 1, 4, 7, 8, 3});     // 6 was merged into 7; 2 was deleted
+
 }
