@@ -5,14 +5,15 @@
 #include "graph.hpp"
 
 /**
- *  @brief functional class that wraps Color method. Colors a graph in such a way that no 
- *         vertices have the same color
+ *  @brief functional class that wraps Color method. Colors a graph in such a way that 
+ *         no adjacent vertices have the same color
  *  @see the description of method Color
  */
 class ColorStrategy {
     public:
         /**
-          * @details Colors a graph in such a way that no vertices have the same color
+          * @details Colors a graph in such a way that no adjacent vertices have the 
+          *          same color
           *          Colors are contiguosly used from k=1 to `k_max`, where `k_max` is 
           *          decided dynamically by this method
           * 
