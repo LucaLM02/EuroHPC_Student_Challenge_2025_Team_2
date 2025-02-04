@@ -3,14 +3,8 @@
 #include <iostream>
 #include <algorithm>
 
-DimacsGraph::DimacsGraph(Dimacs& dimacs) 
-: _dimacs{dimacs}
-{
-    // NOTE: assuming _dimacs has continuous vertices from i=1 to i=numVertices
-    for ( int i=1; i<=_dimacs.numVertices; i++) {
-        _vertices.push_back(i);
-    }
-
+DimacsGraph* DimacsGraph::LoadFromDimacs(const std::string& file_name) {
+    return new DimacsGraph(file_name);
 }
 
 void DimacsGraph::AddEdge(int v, int w) {
@@ -44,14 +38,12 @@ void DimacsGraph::RemoveEdge(int v, int w) {
     
 }
 
-void DimacsGraph::AddVertex(int v) {
+int DimacsGraph::AddVertex() {
+    int v = _vertices.size();
     _vertices.push_back(v);
 
-    if ( v > _dimacs.degrees.size() - 1) {
-        _dimacs.degrees.resize(v+1, 0);
-    } 
-
-    // no need for degrees[v] = 0;
+    _dimacs.degrees.push_back(0);
+    return v;
 }
 
 void DimacsGraph::RemoveVertex(int v) {
@@ -187,26 +179,19 @@ void DimacsGraph::MergeVertices(int v, int w) {
 unsigned int DimacsGraph::GetDegree(int vertex) const {
     return _dimacs.degrees[vertex];
 }
-std::vector<int> DimacsGraph::GetDegrees() const {
-    std::vector<int> degrees;
-    degrees.reserve(_vertices.size());
+const std::vector<int>& DimacsGraph::GetDegrees() const {
+    // horrible and stupid solution, it's temporary
+    _tmp_degrees.clear();
+    _tmp_degrees.reserve(_vertices.size());
     for ( int vertex : _vertices ) {
-        degrees.push_back(_dimacs.degrees[vertex]);
+        _tmp_degrees.push_back(_dimacs.degrees[vertex]);
     }
-    return degrees;
+
+    return _tmp_degrees;
 }
 
 unsigned int DimacsGraph::GetMaxDegree() const {
     return *std::max_element(_dimacs.degrees.begin(), _dimacs.degrees.end());
-}
-
-void DimacsGraph::_RemoveOnlyVertex(int v) {
-    _vertices.erase(std::find(_vertices.begin(), _vertices.end(), v));
-    _dimacs.numVertices--;      // however the vertices are not contiguous necessarly!
-}
-
-void DimacsGraph::_RemoveDegree(int vertex) {
-    _dimacs.degrees[vertex] = 0;
 }
 
 int DimacsGraph::GetVertexWithMaxDegree() const {
@@ -214,4 +199,24 @@ int DimacsGraph::GetVertexWithMaxDegree() const {
                 _dimacs.degrees.begin(), 
                 std::max_element(_dimacs.degrees.begin(), _dimacs.degrees.end())
            );
+}
+
+// ---------------------------- PROTECTED --------------------------------
+DimacsGraph::DimacsGraph(const std::string& file_name) {
+    _dimacs.load(file_name.c_str());
+    // NOTE: assuming _dimacs has continuous vertices from i=1 to i=numVertices
+    for ( int i=1; i<=_dimacs.numVertices; i++) {
+        _vertices.push_back(i);
+    }
+
+}
+
+// ----------------------------- PRIVATE ----------------------------------
+void DimacsGraph::_RemoveOnlyVertex(int v) {
+    _vertices.erase(std::find(_vertices.begin(), _vertices.end(), v));
+    _dimacs.numVertices--;      // however the vertices are not contiguous necessarly!
+}
+
+void DimacsGraph::_RemoveDegree(int vertex) {
+    _dimacs.degrees[vertex] = 0;
 }
