@@ -1,260 +1,71 @@
 #include "csr_graph.hpp"
 
+#include <iostream>
 #include <cstring>
 #include <cmath>
 
-
-// TODO: does the Dimacs contains both (v,w) and (w,v) ? no, only (v,w) -> ADAPT THE CODE
-CSRGraph::CSRGraph(const Dimacs& dimacs_graph) {
-    std::vector<Dimacs::Edge> unsorted_edges = dimacs_graph.edges;
-
-    this->nVertices = dimacs_graph.numVertices;
-    this->nEdges    = dimacs_graph.getNumEdges();
-
-    this->offsets.resize(this->nVertices+1); // slot 0 is not used; vertices are counted from 1
-
-    // offsets array from degrees
-    for (int i=2; i<=this->nVertices; i++) {
-        this->offsets[i] = this->offsets[i-1] + dimacs_graph.degrees[i-1];
-    }
-
-    this->edges.resize(this->nEdges);
-
-    // given the offsets, building the edges vector
-    std::vector<int> placed_edges_per_vertex(this->nVertices+1);
-    std::fill(placed_edges_per_vertex.begin(), placed_edges_per_vertex.end(), 0);
-    std::pair<int, int> edge;
-    int edge_index;
-    for (int i=0; i<this->nEdges; i++) {
-        edge = dimacs_graph.edges[i];
-
-        edge_index = this->offsets[edge.first] + placed_edges_per_vertex[edge.first];
-        this->edges[edge_index] = edge.second;
-
-        edge_index = this->offsets[edge.second] + placed_edges_per_vertex[edge.second];
-        this->edges[edge_index] = edge.first;
-
-        placed_edges_per_vertex[edge.first]++;
-        placed_edges_per_vertex[edge.second]++;
-    }
+CSRGraph* CSRGraph::LoadFromDimacs(const std::string& file_name) {
+    Dimacs dimacs;
+    dimacs.load(file_name.c_str());
+    CSRGraph* graph = new CSRGraph(dimacs);
+    return graph;
 }
-
-
-CSRGraph::CSRGraph(const CSRGraph& other) {
-    
-}
-
-/*
-CSRGraph::CSRGraph(const CSRGraph& other, bool new_edge) {
-    this->nVertices = other.nVertices;
-    this->nEdges = other.nEdges;
-    if ( new_edge ) 
-        this->nEdges += 1;
-    
-
-}
-*/
 
 void CSRGraph::AddEdge(int v, int w) {
-    if ( this->edges.size() == this->edges.max_size()) {
-        this->edges.reserve(this->edges.size()*2);
-    }
-
-    this->edges.push_back(0);
-    this->edges.push_back(0);
-
-    int max = std::max(v,w);
-    const int min = std::min(v,w);
-
-    nEdges++;
-
-    // translates the elements after <max,min> vertex
-    if ( v == w ) {
-        // TODO
-        _effective_nEdges++;    // only <v,w>=<v,v> added
-    } else {
-
-        /* offsets: |---A------B----|                       A = offset[min], B = offset[max]
-         * edges:   |-----------(-------)-----[---]----|    () = neighbours of min, [] = neighbours of max
-         *                                 
-         * 1. The part ]----| needs to be translated by 2
-         *      1.a translating edges
-         *      1.b increasing by 2 the offsets
-         * 2. Right after ] the element min is inserted    -> <max, min> edge
-         * 3. The part )----] needs to be translated by 1
-         *      3.a translating edges
-         *      3.b increasing by 1 the offsets
-         * 4. Right after ) the element max is inserted    -> <min, max> edge
-         */
-
-        int last_edge_of_max;
-        if (  max < *_vertices.rbegin() ) {
-
-            // 1.a
-            for (int i = _effective_nEdges-1; i>=this->offsets[max+1]; i--) {
-                this->edges[i+2] = this->edges[i];
-            }
-
-            // 2.a
-            for (int i = max+1; i <= offsets.size(); i++) {
-                offsets[i] += 2;
-            }
-
-            last_edge_of_max = this->offsets[max+1]-1;  // points to the first edge next to the last of max
-        } else {
-            // skipping 1.
-
-            // 2 shifts so I write 3 position after (so +2)
-            last_edge_of_max = _effective_nEdges + 2;       // points to the empty space next to the last edge of max
-            max = *_vertices.rbegin();
-        }
-        
-        // 2. adds <v,w> edge
-        this->edges[last_edge_of_max] = min;
-
-        // 3.a translates the elements between <min,max> and <max,min> vertex
-        for (int i = last_edge_of_max-2; i>=this->offsets[min+1]; i--) {
-            this->edges[i+1] = this->edges[i];
-        }
-
-        // 3.b translated the offsets after <v,w> edge
-        for (int i=min+1; i<=max; i++) {
-            this->offsets[i]++;
-        }
-
-        // 4. adds <v,w> edge
-        this->edges[this->offsets[min+1]-1] = max;
-
-        _effective_nEdges += 2;     // both <v,w> and <w,v> are added
-    }
+    _edges[v].push_back(w);
+    _edges[w].push_back(v);
+    _nEdges++;
+    _cache_degrees_invalidated = true;
 }
 
 void CSRGraph::RemoveEdge(int v, int w) {
-    // Opposite of what is done in AddEdge
-
-    int x_index, y_index;
-    int last_edge_of_max;
-
-    int max = std::max(v,w);
-    const int min = std::min(v,w);
-
-    // translates the elements after <max,min> vertex
-    if ( v == w ) {
-        // TODO
-        _effective_nEdges--;    // only <v,w>=<v,v> added
-    } else {
-
-        /* offsets: |---A------B----|                       A = offset[min], B = offset[max]
-         * edges:   |-----------(---X---)-----[-Y-]----|    () = neighbours of min, [] = neighbours of max
-         *                                 
-         * 1. Searching where w is between ( and ): X
-         * 2. Searching where v is between [ and ]: Y
-         * 3. Translating elements from X to [ by Y
-         *      3.a translating the edges by -1
-         *      3.b shifting by -1 the offsets
-         * 5. Translating elements from Y to |
-         * 
-         * note if v != w then min < max <= highest_vertex
-         */
-
-
-        // 1. finding X index
-        x_index == -1;
-        for (int i = this->offsets[min]; i < this->offsets[min+1]; i++) {
-            if ( this->edges[i] == max ) {
-                x_index = i;
-                break;
-            }
-        }
-
-        if ( x_index == -1 ) {
-            return;
-        }
-
-        if ( max == *_vertices.rbegin() ) {
-            last_edge_of_max = _effective_nEdges;
-        } else {
-            last_edge_of_max = this->offsets[max+1];
-        }
-
-        // 2. finding Y index
-        for (int i = this->offsets[max]; i < last_edge_of_max; i++) {
-            if ( this->edges[i] == min ) {
-                y_index = i;
-                break;
-            }
-        }
-
-        // y_index != -1 for sure since x_index != -1
-
-        // 3.a translates the elements between X and Y
-        for (int i = x_index; i < y_index; i++) {
-            this->edges[i] = this->edges[i+1];
-        }
-
-        _effective_nEdges--;    // one is removed
-
-        // 3.b shifts by -1 the offsets between min and max
-        for (int i=min+1; i<=max; i++) {
-            this->offsets[i]--;
-        }
-
-        // 4.a translates the elements between Y and |
-        for (int i = y_index+1; i < _effective_nEdges; i++) {
-            this->edges[i-2] = this->edges[i];
-        }
-
-        _effective_nEdges--;     // also <max, min> is removed
-
-        // 4.b shifts by -2 the offsets between max and the end
-        for (int i = max+1; i < offsets.size(); i++) {
-            this->offsets[i] -= 2;
-        }
-
+    // efficiently removes the edges by taking the edge to remove, swapping it with the 
+    // last element and then removing it
+    // complexity is still O(n)
+    auto it = std::find(_edges[v].begin(), _edges[v].end(), w);
+    if (it != _edges[v].end()) {
+        std::swap(*it, _edges[v].back()); 
+        _edges[v].pop_back(); 
+        _cache_degrees_invalidated = true;
+        _nEdges--;
     }
+
+    it = std::find(_edges[w].begin(), _edges[w].end(), v);
+    if (it != _edges[w].end()) {
+        std::swap(*it, _edges[w].back()); 
+        _edges[w].pop_back(); 
+        _cache_degrees_invalidated = true;
+    }
+
 
 }
 
-void CSRGraph::AddVertex(int v) {
-    if ( v <= 0 ) return;
+int CSRGraph::AddVertex() {
+    int v = _vertices.size();
 
-    _vertices.insert(v);
-    int next_v = *_vertices.upper_bound(v);
-    
-    offsets.push_back(0);
-    // moving the offsets by 1 position
-    for (int i=offsets.size()-1; i > next_v; i--) {
-        offsets[i] = offsets[i-1];
-    }
+    _vertices.push_back(v);
+    _edges.emplace_back(0);
 
-    offsets[v] = offsets[v-1];
+    return v;
 }
 
 void CSRGraph::RemoveVertex(int v) {
-    if ( v < 0 || v > offsets.size() ) {
-        return;
+    // removing the vertex
+    _vertices.erase(std::find(_vertices.begin(), _vertices.end(), v));
+
+    // removing the vertices
+    _nEdges -= _edges[v].size();
+    _edges[v].clear();
+    for ( int vertex : _vertices ) {
+        auto it = std::find(_edges[vertex].begin(), _edges[vertex].end(), v);
+        if (it != _edges[vertex].end()) {
+            std::swap(*it, _edges[vertex].back()); 
+            _edges[vertex].pop_back(); 
+            _cache_degrees_invalidated = true;
+        }
     }
 
-    int delta;
-    if ( v == *_vertices.rbegin() ) {
-        delta = _effective_nEdges - this->offsets[v];
-    } else {
-        delta = this->offsets[v+1] - this->offsets[v];
 
-        // removing edges of v
-        std::memmove(&edges[this->offsets[v]], &edges[this->offsets[v+1]], _effective_nEdges - this->offsets[v+1]);
-
-        // removing also all the other vertices
-    }
-
-    // decreasing offsets
-    for ( int i=v+1; i < offsets.size(); i++ ) {
-        offsets[i] -= delta;
-    }
-
-    _effective_nEdges -= delta*2;
-
-    _vertices.erase(v);
 }
 
 // TODO: finish this
@@ -262,36 +73,94 @@ void CSRGraph::RemoveVertexWithRenaming(int v) {
     this->RemoveVertex(v);
 }
 
+
+void CSRGraph::MergeVertices(int v, int w) {
+    // O(2*#neighbours*log(#neighbours))
+    std::sort(_edges[v].begin(), _edges[v].end());
+    std::sort(_edges[w].begin(), _edges[w].end());
+
+
+    std::vector<int> deleted_edges;
+    std::vector<int> modified_edges;
+    deleted_edges.reserve(_edges[w].size());
+    modified_edges.reserve(_edges[w].size());
+
+    _edges[v].reserve(_edges[v].size() + _edges[w].size());
+
+    // merging neighbours of w into v, avoiding duplicates
+    // O(#neighbours*log(#neighbours))
+    for ( const int nw : _edges[w] ) {
+        if ( !std::binary_search(_edges[v].begin(), _edges[v].end(), nw) ) {
+            _edges[v].push_back(nw);
+            modified_edges.push_back(nw);
+        } else {
+            deleted_edges.push_back(nw);
+        }
+    }
+
+    _edges[w].clear();
+    _vertices.erase(std::find(_vertices.begin(), _vertices.end(), w));
+
+    // deleting `w` from the neighbour lists of common neighbours between `v` and `w`
+    for ( const int deleted_edge : deleted_edges ) {
+
+        // O(#neighbours) but I rarely iterate over the full vector
+        auto it = std::find(_edges[deleted_edge].begin(), _edges[deleted_edge].end(), w);
+        if (it != _edges[deleted_edge].end()) {
+            std::swap(*it, _edges[deleted_edge].back()); 
+            _edges[deleted_edge].pop_back(); 
+            _cache_degrees_invalidated = true;
+            _nEdges--;
+        }
+    }
+
+    // modifying `w` into `v` in the neighbour lists of all the other neighbours of `w`
+    for ( const int modified_edge : modified_edges ) {
+
+        // O(#neighbours) but I rarely iterate over the full vector
+        for (int i = 0; i < _edges[modified_edge].size(); i++) {
+            if ( _edges[modified_edge][i] == w ) {
+                _edges[modified_edge][i] = v;
+                break;
+            }
+        }
+    }
+
+}
+
 void CSRGraph::GetNeighbours(int vertex, std::vector<int> &result) const {
-    result.clear();
-
-    int end_edge_index;
-    if ( vertex == *_vertices.rbegin() ) {
-        end_edge_index = _effective_nEdges;
-    } else {
-        end_edge_index = this->offsets[vertex+1];
-    }
-
-    result.reserve(end_edge_index - this->offsets[vertex]);
-
-    for ( int i = this->offsets[vertex]; i < end_edge_index; i++ ) {
-        result.push_back(edges[i]);
-    }
+    result = _edges[vertex];
 }
 
 void CSRGraph::GetNeighbours(int vertex, std::set<int> &result) const {
-    result.clear();
+    for ( int w : _edges[vertex] ) {
+        result.insert(w);
+    }
+    
+}
 
-    int end_edge_index;
-    if ( vertex == *_vertices.rbegin() ) {
-        end_edge_index = _effective_nEdges;
+bool CSRGraph::HasEdge(int v, int w) const {
+    // with this check I search through the shorter vector
+    if ( _edges[v].size() > _edges[w].size() ) {
+        return ( std::find(_edges[w].begin(), _edges[w].end(), v) != _edges[v].end());
     } else {
-        end_edge_index = this->offsets[vertex+1];
+        return ( std::find(_edges[v].begin(), _edges[v].end(), w) != _edges[v].end());
     }
+}
 
-    for ( int i = this->offsets[vertex]; i < end_edge_index; i++ ) {
-        result.insert(edges[i]);
+void CSRGraph::GetUnorderedVertices(std::set<int> &result) const {
+    for ( int vertex : _vertices ) {
+        result.insert(vertex);
     }
+}
+
+const std::vector<int>& CSRGraph::GetVertices() const {
+    return _vertices;
+}
+
+void CSRGraph::SetVertices(std::vector<int>& vertices) {
+    _vertices = vertices;
+    _cache_degrees_invalidated = true;
 }
 
 size_t CSRGraph::GetNumVertices() const {
@@ -299,13 +168,67 @@ size_t CSRGraph::GetNumVertices() const {
 }
 
 size_t CSRGraph::GetNumEdges() const {
-    return edges.size();
+    return _nEdges;
 }
 
-void CSRGraph::MergeVertices(int v, int w) {
+unsigned int CSRGraph::GetDegree(int vertex) const {
+    return _edges[vertex].size();
 }
 
-int CSRGraph::GetNeighboursIndex(int vertex) const {
-    return 0;
+const std::vector<int>& CSRGraph::GetDegrees() const {
+    if ( _cache_degrees_invalidated ) {
+        _ComputeCacheDegrees();
+        _cache_degrees_invalidated = false;
+    }
+    return _cache_degrees;
 }
 
+unsigned int CSRGraph::GetMaxDegree() const {
+    if ( _cache_degrees_invalidated ) {
+        _ComputeCacheDegrees();
+        _cache_degrees_invalidated = false;
+    }
+
+    return *std::max_element(_cache_degrees.begin(), _cache_degrees.end());
+}
+
+int CSRGraph::GetVertexWithMaxDegree() const {
+    if ( _cache_degrees_invalidated ) {
+        _ComputeCacheDegrees();
+        _cache_degrees_invalidated = false;
+    }
+
+    int max_index = std::distance(_cache_degrees.begin(), 
+                                  std::max_element(
+                                    _cache_degrees.begin(), 
+                                    _cache_degrees.end()));
+    return _vertices[max_index];
+}
+
+// ------------------------ PROTECTED --------------------------
+CSRGraph::CSRGraph(const Dimacs& dimacs_graph) 
+: _vertices(static_cast<int>(dimacs_graph.numVertices)), 
+  _nEdges{dimacs_graph.getNumEdges()},
+  _edges(dimacs_graph.numVertices + 1u)
+{
+
+    int size = _vertices.size();
+    for ( int vertex = 1; vertex <= size; vertex++ ) {
+        _vertices[vertex-1] = vertex;
+        _edges[vertex].reserve(dimacs_graph.degrees[vertex]);
+    }
+
+    for ( const std::pair<int, int>& edge : dimacs_graph.edges ) {
+        _edges[edge.first].push_back(edge.second);
+        _edges[edge.second].push_back(edge.first);
+    }
+
+}
+
+void CSRGraph::_ComputeCacheDegrees() const {
+    _cache_degrees.clear();
+    _cache_degrees.resize(_vertices.size());
+    for (int i = 0; i < _vertices.size(); i++) {
+        _cache_degrees[i] = _edges[_vertices[i]].size();
+    }
+}
