@@ -113,13 +113,36 @@ class Graph {
          */
         virtual void GetUnorderedVertices(std::set<int> &result) const = 0;
         /**
-         *  @brief returns vector of vertices used in the graph. The order matters here
+         *  @brief returns vector of vertices used in the graph. The order matters here.
+         *         When a vertex is added or deleted, the result might be updated 
+         *         "automatically" since it is a reference to an inner object
          *  @details
          *  Returns vector of vertices used in the graph <br>
          *  Note that vertices aren't necessarily the number between 0 and GetNumVertices(),
          *  they shall be any sequence of numbers >= 0
          */
         virtual const std::vector<int>& GetVertices() const = 0;
+
+        /**
+         * @brief with vectors such as the one returned by GetDegrees(), user might want to
+         *        know each element (so at each index) which vertex is assigned.
+         *        This is the method for gathering that information
+         * @param index index to map to vertex
+         * @return the vertex associated to index
+         * @warning the behaviour is undefined if index is not associated to any vertex
+         */
+        virtual int GetVertexByIndex(int index) const = 0;
+
+        /**
+         * @brief returns the vertices deleted from the graph. When a vertex is deleted,
+         *        the result is "automatically" updated, since it is a reference to an
+         *        inner object
+         * @note when the graph vertices are renamed with values from 1 to GetNumVertices(), 
+         *       then this this function will return an empty set, until a new vertex is 
+         *       deleted
+         * @return std::set<int>
+         */
+        virtual const std::set<int>& GetDeletedVertices() const = 0;
 
         /**
          * @brief sets the vertices of the graph. Used typically to set the order of them
@@ -139,11 +162,23 @@ class Graph {
          */
         virtual unsigned int GetDegree(int vertex) const = 0;
         /**
-         * @brief Returns an array of degrees, one for each vertex
-         * Note: no order is imposed
+         * @brief Returns an array of degrees, ordered as the vertices are
+         * @note Since it is a reference to an inner element, depending on the implementation,
+         *       it could vary when the graph is modified
+         * @note Also, don't to degrees[vertex], instead if you have 
          * @return std::vector<int> array of degrees
+         * @see GetVertexByIndex for understanding at which vertex a certain degree 
+         *      is associated
          */
         virtual const std::vector<int>& GetDegrees() const = 0;
+        /**
+         * @brief returns, through the reference parameter, the degrees in the same order 
+         *        of the vertices
+         * @param result the degree's vector to fill
+         * @see GetVertexByIndex for understanding at which vertex a certain degree 
+         *      is associated
+         */
+        virtual void GetDegrees(std::vector<int>& result) const = 0;
         /**
          * @brief Returns the maximum degree (delta(G)) among the degree of all vertices of this graph
          * 
