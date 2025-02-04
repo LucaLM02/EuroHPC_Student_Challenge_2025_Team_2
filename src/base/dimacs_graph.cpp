@@ -115,6 +115,16 @@ const std::vector<int>& DimacsGraph::GetVertices() const {
     return _vertices;
 }
 
+int DimacsGraph::GetVertexByIndex(int index) const
+{
+    return _vertices[index];
+}
+
+const std::set<int> &DimacsGraph::GetDeletedVertices() const
+{
+    return _deleted_vertices;
+}
+
 void DimacsGraph::SetVertices(std::vector<int> &vertices) {
     this->_vertices = vertices;
 }
@@ -190,6 +200,16 @@ const std::vector<int>& DimacsGraph::GetDegrees() const {
     return _tmp_degrees;
 }
 
+void DimacsGraph::GetDegrees(std::vector<int> &result) const
+{
+    result.clear();
+    result.reserve(_vertices.size());
+    for ( int vertex : _vertices ) {
+        result.push_back(_dimacs.degrees[vertex]);
+    }
+
+}
+
 unsigned int DimacsGraph::GetMaxDegree() const {
     return *std::max_element(_dimacs.degrees.begin(), _dimacs.degrees.end());
 }
@@ -213,6 +233,7 @@ DimacsGraph::DimacsGraph(const std::string& file_name) {
 
 // ----------------------------- PRIVATE ----------------------------------
 void DimacsGraph::_RemoveOnlyVertex(int v) {
+    _deleted_vertices.insert(v);
     _vertices.erase(std::find(_vertices.begin(), _vertices.end(), v));
     _dimacs.numVertices--;      // however the vertices are not contiguous necessarly!
 }

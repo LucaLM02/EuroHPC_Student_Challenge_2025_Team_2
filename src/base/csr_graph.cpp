@@ -52,6 +52,7 @@ int CSRGraph::AddVertex() {
 void CSRGraph::RemoveVertex(int v) {
     // removing the vertex
     _vertices.erase(std::find(_vertices.begin(), _vertices.end(), v));
+    _removed_vertices.insert(v);
 
     // removing the vertices
     _nEdges -= _edges[v].size();
@@ -100,6 +101,7 @@ void CSRGraph::MergeVertices(int v, int w) {
 
     _edges[w].clear();
     _vertices.erase(std::find(_vertices.begin(), _vertices.end(), w));
+    _removed_vertices.insert(w);
 
     // deleting `w` from the neighbour lists of common neighbours between `v` and `w`
     for ( const int deleted_edge : deleted_edges ) {
@@ -158,6 +160,16 @@ const std::vector<int>& CSRGraph::GetVertices() const {
     return _vertices;
 }
 
+int CSRGraph::GetVertexByIndex(int index) const
+{
+    return _vertices[index];
+}
+
+const std::set<int> &CSRGraph::GetDeletedVertices() const
+{
+    return _removed_vertices;
+}
+
 void CSRGraph::SetVertices(std::vector<int>& vertices) {
     _vertices = vertices;
     _cache_degrees_invalidated = true;
@@ -181,6 +193,20 @@ const std::vector<int>& CSRGraph::GetDegrees() const {
         _cache_degrees_invalidated = false;
     }
     return _cache_degrees;
+}
+
+void CSRGraph::GetDegrees(std::vector<int> &result) const
+{
+    if ( _cache_degrees_invalidated ) {
+        _ComputeCacheDegrees();
+        _cache_degrees_invalidated = false;
+    }
+
+    result.clear();
+    result.reserve(_cache_degrees.size());
+    for (int i = 0; i < _cache_degrees.size(); i++) {
+        result.push_back(_cache_degrees[i]);
+    }
 }
 
 unsigned int CSRGraph::GetMaxDegree() const {

@@ -29,12 +29,15 @@ class DimacsGraph : public Graph {
 
         virtual void GetUnorderedVertices(std::set<int> &result) const override;
         virtual const std::vector<int>& GetVertices() const override;
+        virtual int GetVertexByIndex(int index) const;
+        virtual const std::set<int>& GetDeletedVertices() const override;
 
         virtual size_t GetNumVertices() const override;
         virtual size_t GetNumEdges() const override;
 
         virtual unsigned int GetDegree(int vertex) const;
         virtual const std::vector<int>& GetDegrees() const;
+        virtual void GetDegrees(std::vector<int>& result) const;
         virtual unsigned int GetMaxDegree() const;
         virtual int GetVertexWithMaxDegree() const;
 
@@ -54,6 +57,7 @@ class DimacsGraph : public Graph {
 
         Dimacs       _dimacs;
         std::vector<int> _vertices;
+        std::set<int> _deleted_vertices;
         mutable std::vector<int> _tmp_degrees;
 
 };

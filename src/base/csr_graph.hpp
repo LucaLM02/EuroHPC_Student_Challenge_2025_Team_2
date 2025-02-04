@@ -54,12 +54,15 @@ class CSRGraph : public Graph {
 
         virtual void GetUnorderedVertices(std::set<int> &result) const override;
         virtual const std::vector<int>& GetVertices() const override;
+        virtual int GetVertexByIndex(int index) const;
+        virtual const std::set<int>& GetDeletedVertices() const override;
 
         virtual size_t GetNumVertices() const override;
         virtual size_t GetNumEdges() const override;
 
         virtual unsigned int GetDegree(int vertex) const;
         virtual const std::vector<int>& GetDegrees() const;
+        virtual void GetDegrees(std::vector<int>& result) const;
         virtual unsigned int GetMaxDegree() const;
         virtual int GetVertexWithMaxDegree() const;
 
@@ -70,7 +73,7 @@ class CSRGraph : public Graph {
         void _ComputeCacheDegrees() const;
         size_t _nEdges;
         std::vector<int> _vertices;         // TODO: fill this
-        std::vector<int> _removed_vertices_;
+        std::set<int> _removed_vertices;
         std::vector<std::vector<int>> _edges;
         mutable std::vector<int> _cache_degrees;
         mutable bool _cache_degrees_invalidated = true;
