@@ -30,6 +30,30 @@ namespace TestFunctions {
         return ss.str();
     }
 
+    bool CheckColoring(const Graph& graph) {
+        unsigned short current_color;
+        std::vector<int> neighbours;
+        for ( int vertex : graph.GetVertices() ) {
+            current_color = graph.GetColor(vertex);
+            graph.GetNeighbours(vertex, neighbours);
+
+            if ( current_color == 0 ) {
+                std::cout << "Vertex: " << vertex << " has no color" << std::endl;
+                return false;
+            }
+
+            for ( int neighbour : neighbours ) {
+                if ( graph.GetColor(neighbour) == current_color ) {
+                    std::cout << "Vertex: " << vertex << " Color: " << current_color 
+                              << " Neighbour: " << neighbour << " Color: " << graph.GetColor(neighbour) << std::endl;
+                    return false;
+                } 
+            }
+            
+        }
+        return true;
+    }
+
 }
 
 #endif // TEST_COMMON_HPP

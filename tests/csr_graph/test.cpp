@@ -1,10 +1,12 @@
-#include "dimacs_graph.hpp"
+#include "csr_graph.hpp"
 #include "dimacs.hpp"
 
 #include "test_common.hpp"
 
+#include <cmath>
 #include <iostream>
 #include <string>
+#include <chrono>
 
 void test_neighbors(const Graph& graph, int neighbors_of, int indentation=0) {
     std::vector<int> vertices;
@@ -73,15 +75,42 @@ void test_vertex_order_change(Graph &graph, std::vector<int> &&new_order) {
     full_basics_test(graph, 1);
 }
 
+void test_ordering(Graph& graph) {
+    // =============================== ORDER BY DEGREE ==================================
+    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+
+    graph.SortByDegree();
+
+    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+    long elapsed_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end-begin).count();
+    std::cout << "Time to order by degree a graph with " << graph.GetNumVertices() << " vertices and " 
+              << graph.GetNumEdges() << " edges: " << std::scientific << elapsed_time/std::pow(10, 9) << std::endl;
+
+    std::cout << "Vertices ordered by degree:" << std::endl 
+              << TestFunctions::VecToString(graph.GetVertices()) << std::endl;
+    std::cout << "Vertices' degrees:" << std::endl
+              << TestFunctions::VecToString(graph.GetDegrees()) << std::endl;
+    
+    // ============================== ORDER BY EX DEGREE ================================
+    begin = std::chrono::steady_clock::now();
+
+    graph.SortByExdegree();
+
+    end = std::chrono::steady_clock::now();
+    elapsed_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end-begin).count();
+    std::cout << "Time to order by exdegree a graph with " << graph.GetNumVertices() << " vertices and " 
+              << graph.GetNumEdges() << " edges: " << std::scientific << elapsed_time/std::pow(10, 9) << std::endl;
+}
+
 int main() {
     Dimacs dimacs;
-    std::string file_name = "10_vertices_graph";
+    std::string file_name = "10_vertices_graph.clq";
 
     if ( !dimacs.load(file_name.c_str()) ) {
         std::cout << dimacs.getError() << std::endl;
     }
 
-    DimacsGraph graph(dimacs);
+    CSRGraph& graph = *CSRGraph::LoadFromDimacs(file_name);
 
     std::cout << "Graph creation" << std::endl;
     full_basics_test(graph, 1);
@@ -89,5 +118,9 @@ int main() {
     test_graph_manipulation(graph);
 
     test_vertex_order_change(graph, {5, 1, 4, 7, 8, 3});     // 6 was merged into 7; 2 was deleted
+
+    CSRGraph& heavier_graph = *CSRGraph::LoadFromDimacs("school1.col");
+    
+    test_ordering(heavier_graph);
 
 }
