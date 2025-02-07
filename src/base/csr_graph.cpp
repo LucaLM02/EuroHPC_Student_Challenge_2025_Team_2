@@ -184,11 +184,11 @@ void CSRGraph::OrderByExdegree(bool ascending)
 
     static auto ascendingCompare = 
     [&](int v, int w) -> bool {
-        return neighbours[v] < neighbours[w];
+        return ex_degrees[v] < ex_degrees[w];
     };
     static auto descendingCompare = 
     [&](int v, int w) -> bool {
-        return neighbours[v] > neighbours[w];
+        return ex_degrees[v] > ex_degrees[w];
     };
 
     if ( ascending ) {
