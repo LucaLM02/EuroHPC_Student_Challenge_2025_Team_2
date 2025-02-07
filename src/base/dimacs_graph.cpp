@@ -184,7 +184,7 @@ void DimacsGraph::MergeVertices(int v, int w) {
 unsigned int DimacsGraph::GetDegree(int vertex) const {
     return _dimacs.degrees[vertex];
 }
-const std::vector<int>& DimacsGraph::GetDegrees() const {
+std::vector<int> DimacsGraph::GetDegrees() const {
     // horrible and stupid solution, it's temporary
     _tmp_degrees.clear();
     _tmp_degrees.reserve(_vertices.size());

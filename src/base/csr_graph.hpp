@@ -53,7 +53,7 @@ class CSRGraph : public Graph {
         virtual size_t GetNumEdges() const override;
 
         virtual unsigned int GetDegree(int vertex) const override;
-        virtual const std::vector<int>& GetDegrees() const override;
+        virtual std::vector<int> GetDegrees() const override;
         virtual void GetDegrees(std::vector<int>& result) const override;
         virtual unsigned int GetMaxDegree() const override;
         virtual int GetVertexWithMaxDegree() const override;
@@ -68,7 +68,6 @@ class CSRGraph : public Graph {
 
     private:
         CSRGraph(const Dimacs& dimacs_graph);
-        void _ComputeCacheDegrees() const;
 
         /**
          * @brief number of edges in the graph

@@ -213,7 +213,7 @@ class Graph {
          * @see GetVertexByIndex for understanding at which vertex a certain degree 
          *      is associated
          */
-        virtual const std::vector<int>& GetDegrees() const = 0;
+        virtual std::vector<int> GetDegrees() const = 0;
         /**
          * @brief returns, through the reference parameter, the degrees in the same order 
          *        of the vertices

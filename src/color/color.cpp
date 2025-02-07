@@ -95,4 +95,5 @@ void GreedyColorStrategy::Color(Graph& graph,
     }
 
     graph.SetVertices(vertices);
+    graph.SetColoring(coloring);
 }
