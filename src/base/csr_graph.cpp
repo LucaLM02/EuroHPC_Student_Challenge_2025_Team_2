@@ -15,7 +15,9 @@ void CSRGraph::AddEdge(int v, int w) {
     _edges[v].push_back(w);
     _edges[w].push_back(v);
     _nEdges++;
-    _cache_degrees_invalidated = true;
+
+    _degrees[v]++;
+    _degrees[w]++;
 }
 
 void CSRGraph::RemoveEdge(int v, int w) {
@@ -26,7 +28,7 @@ void CSRGraph::RemoveEdge(int v, int w) {
     if (it != _edges[v].end()) {
         std::swap(*it, _edges[v].back()); 
         _edges[v].pop_back(); 
-        _cache_degrees_invalidated = true;
+        _degrees[v]--;
         _nEdges--;
     }
 
@@ -34,17 +36,20 @@ void CSRGraph::RemoveEdge(int v, int w) {
     if (it != _edges[w].end()) {
         std::swap(*it, _edges[w].back()); 
         _edges[w].pop_back(); 
-        _cache_degrees_invalidated = true;
+        _degrees[w]--;
     }
 
 
 }
 
 int CSRGraph::AddVertex() {
-    int v = _vertices.size();
+    int v = _max_vertex + 1;
+    _max_vertex++;
 
     _vertices.push_back(v);
+    _coloring.push_back(0);
     _edges.emplace_back(0);
+
 
     return v;
 }
@@ -62,16 +67,10 @@ void CSRGraph::RemoveVertex(int v) {
         if (it != _edges[vertex].end()) {
             std::swap(*it, _edges[vertex].back()); 
             _edges[vertex].pop_back(); 
-            _cache_degrees_invalidated = true;
+            _degrees[vertex]--;
         }
     }
 
-
-}
-
-// TODO: finish this
-void CSRGraph::RemoveVertexWithRenaming(int v) {
-    this->RemoveVertex(v);
 }
 
 
@@ -111,7 +110,7 @@ void CSRGraph::MergeVertices(int v, int w) {
         if (it != _edges[deleted_edge].end()) {
             std::swap(*it, _edges[deleted_edge].back()); 
             _edges[deleted_edge].pop_back(); 
-            _cache_degrees_invalidated = true;
+            _degrees[deleted_edge]--;
             _nEdges--;
         }
     }
@@ -128,6 +127,88 @@ void CSRGraph::MergeVertices(int v, int w) {
         }
     }
 
+}
+
+void CSRGraph::SetColoring(const std::vector<unsigned short>& colors)
+{
+    _coloring = colors;
+}
+
+void CSRGraph::SetColoring(int vertex, unsigned short color)
+{
+    _coloring[vertex] = color;
+}
+
+void CSRGraph::ClearColoring()
+{
+    for (int vertex : _vertices ) {
+        _coloring[vertex] = 0;
+    }
+}
+
+void CSRGraph::OrderByDegree(bool ascending)
+{
+    static auto ascendingCompare = 
+    [&](int v, int w) -> bool {
+        return _degrees[v] < _degrees[w];
+    };
+    static auto descendingCompare = 
+    [&](int v, int w) -> bool {
+        return _degrees[v] > _degrees[w];
+    };
+
+    if ( ascending ) {
+        std::sort(_vertices.begin(), _vertices.end(), ascendingCompare);
+    } else {
+        std::sort(_vertices.begin(), _vertices.end(), descendingCompare);
+    }
+}
+
+void CSRGraph::OrderByExdegree(bool ascending)
+{
+    std::vector<int> ex_degrees(_degrees.size());
+    std::vector<int> neighbours;
+    for ( int vertex : _vertices ) {
+        GetNeighbours(vertex, neighbours);
+        ex_degrees[vertex] = sizeof(neighbours);
+        for ( int neighbour : neighbours ) {
+            ex_degrees[vertex] += GetDegree(neighbour);
+        }
+    }
+
+    static auto ascendingCompare = 
+    [&](int v, int w) -> bool {
+        return neighbours[v] < neighbours[w];
+    };
+    static auto descendingCompare = 
+    [&](int v, int w) -> bool {
+        return neighbours[v] > neighbours[w];
+    };
+
+    if ( ascending ) {
+        std::sort(_vertices.begin(), _vertices.end(), ascendingCompare);
+    } else {
+        std::sort(_vertices.begin(), _vertices.end(), descendingCompare);
+    }
+
+}
+
+void CSRGraph::OrderByColor(bool ascending)
+{
+    static auto ascendingCompare = 
+    [&](int v, int w) -> bool {
+        return _coloring[v] < _coloring[w];
+    };
+    static auto descendingCompare = 
+    [&](int v, int w) -> bool {
+        return _coloring[v] > _coloring[w];
+    };
+
+    if ( ascending ) {
+        std::sort(_vertices.begin(), _vertices.end(), ascendingCompare);
+    } else {
+        std::sort(_vertices.begin(), _vertices.end(), descendingCompare);
+    }
 }
 
 void CSRGraph::GetNeighbours(int vertex, std::vector<int> &result) const {
@@ -172,7 +253,6 @@ const std::set<int> &CSRGraph::GetDeletedVertices() const
 
 void CSRGraph::SetVertices(std::vector<int>& vertices) {
     _vertices = vertices;
-    _cache_degrees_invalidated = true;
 }
 
 size_t CSRGraph::GetNumVertices() const {
@@ -188,54 +268,59 @@ unsigned int CSRGraph::GetDegree(int vertex) const {
 }
 
 const std::vector<int>& CSRGraph::GetDegrees() const {
-    if ( _cache_degrees_invalidated ) {
-        _ComputeCacheDegrees();
-        _cache_degrees_invalidated = false;
-    }
-    return _cache_degrees;
+    return _degrees;
 }
 
 void CSRGraph::GetDegrees(std::vector<int> &result) const
 {
-    if ( _cache_degrees_invalidated ) {
-        _ComputeCacheDegrees();
-        _cache_degrees_invalidated = false;
-    }
-
     result.clear();
-    result.reserve(_cache_degrees.size());
-    for (int i = 0; i < _cache_degrees.size(); i++) {
-        result.push_back(_cache_degrees[i]);
+    result.reserve(_degrees.size());
+    for (int i = 0; i < _degrees.size(); i++) {
+        result.push_back(_degrees[i]);
     }
 }
 
 unsigned int CSRGraph::GetMaxDegree() const {
-    if ( _cache_degrees_invalidated ) {
-        _ComputeCacheDegrees();
-        _cache_degrees_invalidated = false;
-    }
-
-    return *std::max_element(_cache_degrees.begin(), _cache_degrees.end());
+    return *std::max_element(_degrees.begin(), _degrees.end());
 }
 
 int CSRGraph::GetVertexWithMaxDegree() const {
-    if ( _cache_degrees_invalidated ) {
-        _ComputeCacheDegrees();
-        _cache_degrees_invalidated = false;
-    }
-
-    int max_index = std::distance(_cache_degrees.begin(), 
+    int max_index = std::distance(_degrees.begin(), 
                                   std::max_element(
-                                    _cache_degrees.begin(), 
-                                    _cache_degrees.end()));
+                                    _degrees.begin(), 
+                                    _degrees.end()));
     return _vertices[max_index];
+}
+
+std::vector<int> CSRGraph::GetMergedVertices(int vertex) const
+{
+    return {};
+}
+
+std::vector<unsigned short> CSRGraph::GetColoring() const
+{
+    return _coloring;
+}
+
+unsigned short CSRGraph::GetColor(int vertex) const
+{
+    return _coloring[vertex];
+}
+
+std::unique_ptr<Graph> CSRGraph::Clone() const
+{
+    std::unique_ptr<CSRGraph> graph = std::make_unique<CSRGraph>(*this);
+
+    return std::move(graph);
 }
 
 // ------------------------ PROTECTED --------------------------
 CSRGraph::CSRGraph(const Dimacs& dimacs_graph) 
 : _vertices(static_cast<int>(dimacs_graph.numVertices)), 
   _nEdges{dimacs_graph.getNumEdges()},
-  _edges(dimacs_graph.numVertices + 1u)
+  _edges(dimacs_graph.numVertices + 1u),
+  _coloring(dimacs_graph.numVertices + 1u),
+  _max_vertex(dimacs_graph.numVertices)
 {
 
     int size = _vertices.size();
@@ -252,9 +337,9 @@ CSRGraph::CSRGraph(const Dimacs& dimacs_graph)
 }
 
 void CSRGraph::_ComputeCacheDegrees() const {
-    _cache_degrees.clear();
-    _cache_degrees.resize(_vertices.size());
+    _degrees.clear();
+    _degrees.resize(_vertices.size());
     for (int i = 0; i < _vertices.size(); i++) {
-        _cache_degrees[i] = _edges[_vertices[i]].size();
+        _degrees[i] = _edges[_vertices[i]].size();
     }
 }

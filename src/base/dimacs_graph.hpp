@@ -4,6 +4,8 @@
 #include "graph.hpp"
 #include "dimacs.hpp"
 
+#include <memory>
+
 class DimacsGraph : public Graph {
     public:
 
@@ -16,10 +18,20 @@ class DimacsGraph : public Graph {
 
         virtual int AddVertex() override;
         virtual void RemoveVertex(int v) override;
-        virtual void RemoveVertexWithRenaming(int v) override;
         virtual void SetVertices(std::vector<int>& vertices);
 
         virtual void MergeVertices(int v, int w) override;
+
+        virtual void SetColoring(const std::vector<unsigned short>& colors) override {};
+        virtual void SetColoring(int vertex, unsigned short color) override {};
+        virtual void ClearColoring() override {};
+
+        // -------------------- ORDERING ----------------------
+
+        virtual void OrderByDegree(bool ascending=true) override {}
+        virtual void OrderByExdegree(bool ascending=true) override {}
+        virtual void OrderByColor(bool ascending=true) override {};
+
 
         // --------------------- GETTERS ----------------------
         virtual void GetNeighbours(int vertex, std::vector<int> &result) const override;
@@ -29,17 +41,24 @@ class DimacsGraph : public Graph {
 
         virtual void GetUnorderedVertices(std::set<int> &result) const override;
         virtual const std::vector<int>& GetVertices() const override;
-        virtual int GetVertexByIndex(int index) const;
+        virtual int GetVertexByIndex(int index) const override;
         virtual const std::set<int>& GetDeletedVertices() const override;
 
         virtual size_t GetNumVertices() const override;
         virtual size_t GetNumEdges() const override;
 
-        virtual unsigned int GetDegree(int vertex) const;
-        virtual const std::vector<int>& GetDegrees() const;
-        virtual void GetDegrees(std::vector<int>& result) const;
-        virtual unsigned int GetMaxDegree() const;
-        virtual int GetVertexWithMaxDegree() const;
+        virtual unsigned int GetDegree(int vertex) const override;
+        virtual const std::vector<int>& GetDegrees() const override;
+        virtual void GetDegrees(std::vector<int>& result) const override;
+        virtual unsigned int GetMaxDegree() const override;
+        virtual int GetVertexWithMaxDegree() const override;
+
+        virtual std::vector<int> GetMergedVertices(int vertex) const override { return {}; };
+
+        virtual std::vector<unsigned short> GetColoring() const override { return {}; };
+        virtual unsigned short GetColor(int vertex) const override { return 0; };
+
+        virtual std::unique_ptr<Graph> Clone() const override;
 
         virtual ~DimacsGraph() = default;
 

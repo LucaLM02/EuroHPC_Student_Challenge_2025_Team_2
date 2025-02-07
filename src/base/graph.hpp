@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <set>
+#include <memory>
 
 /**
  *  @brief Abstract class that represents an undirected (possibly loop-)graph, composed by a set of vertices and edges. 
@@ -25,6 +26,7 @@ class Graph {
          */
         virtual ~Graph() = default;
 
+        // ================================== MODIFIERS ==================================
         /**
          *  @brief adds the edge <v,w>=<w,v> to the graph
          * 
@@ -39,11 +41,21 @@ class Graph {
          *  @warning undefined behaviour if either v or w don't belong to this graph vertices
          */
         virtual void RemoveEdge(int v, int w) = 0;
+
+
+        /**
+         * @brief sets the vertices of the graph. Used typically to set the order of them
+         * @warning undefined behaviour if vertices is not a permutation of 
+         *          this->GetVertices()
+         */
+        virtual void SetVertices(std::vector<int>& vertices) = 0;
+
         /**
          *  @brief adds a vertex to the graph
          * 
          */
         virtual int AddVertex() = 0;
+        
         /**
          *  @brief removes a vertex from the graph without changing the other vertices.
          * 
@@ -59,16 +71,6 @@ class Graph {
         virtual void RemoveVertex(int v) = 0;
 
         /**
-         *  @brief removes a vertex from the graph renaming other vertices
-         * 
-         *  @details
-         *  Removes a vertex from the graph. <br>
-         *  Opposed to RemoveVertex, it renames the other vertices in such a way that the final
-         *  vertices are contiguous from 1 to GetNumVertices() (both included).
-         */
-        virtual void RemoveVertexWithRenaming(int v) = 0;
-
-        /**
          *  @brief merges vertex v and vertex w into one single vertex, which will be called vertex v
          *  @details
          *  Merges vertex v and vertex w into one single vertex, which will be called vertex v
@@ -79,6 +81,54 @@ class Graph {
          */
         virtual void MergeVertices(int v, int w) = 0;
 
+
+        /**
+         * @brief sets the coloring of the graph, i.e. one color for each vertex
+         * 
+         * @param colors color vector, which should be ordered as vertices are. 
+         *               Each color must be >= 0. Color = 0 means that no color is
+         *               assigned to that vertex
+         */
+        virtual void SetColoring(const std::vector<unsigned short>& colors) = 0;
+        /**
+         * @brief sets the color of a single vertex
+         * 
+         * @param vertex vertex to which color is being set
+         * @param color color to set (>= 0, if = 0 then it has no color)
+         */
+        virtual void SetColoring(int vertex, unsigned short color) = 0;
+        /**
+         * @brief clears the coloring of the graph. 
+         */
+        virtual void ClearColoring() = 0;
+
+        // ================================== ORDERING ===================================
+
+        //virtual void Order(GraphOrdering ...)
+
+        /**
+         * @brief orders the vertices by degree. 
+         * 
+         * @param ascending ascending or descending order
+         */
+        virtual void OrderByDegree(bool ascending=true) = 0;
+
+        /**
+         * @brief orders the vertices by the ex degree (see long description)
+         * @details ex-degree = vertex degree + sum of the degrees of the neighbours
+         * @param ascending ascending or descending order
+         */
+        virtual void OrderByExdegree(bool ascending=true) = 0;
+
+        /**
+         * @brief orders the vertices by their color
+         * 
+         * @param ascending ascending or descending order
+         */
+        virtual void OrderByColor(bool ascending=true) = 0;
+
+
+        // ================================== GETTERS ====================================
         /**
          *  @brief gets the neighbours of `vertex` as a vector
          *  @details
@@ -144,13 +194,6 @@ class Graph {
          */
         virtual const std::set<int>& GetDeletedVertices() const = 0;
 
-        /**
-         * @brief sets the vertices of the graph. Used typically to set the order of them
-         * @warning undefined behaviour if vertices is not a permutation of 
-         *          this->GetVertices()
-         */
-        virtual void SetVertices(std::vector<int>& vertices) = 0;
-
         virtual size_t GetNumVertices() const = 0;
         virtual size_t GetNumEdges() const = 0;
         /**
@@ -191,6 +234,32 @@ class Graph {
          * @return int the vertex with the max degree
          */
         virtual int GetVertexWithMaxDegree() const = 0;
+
+        /**
+         * @brief Get the vertices that were merged into the given vertex. The first element is the vertex itself
+         *  
+         * @param vertex 
+         */
+        virtual std::vector<int> GetMergedVertices(int vertex) const = 0;
+
+        /**
+         * @brief gets the coloring of the graph
+         * 
+         * @return std::vector<unsigned short> vector of colors, ordered as the vertices are
+         */
+        virtual std::vector<unsigned short> GetColoring() const = 0;
+        
+        /**
+         * @brief gets the color of a certain vertex. If vertex is not in the graph or
+         *        if the vertex is not colored, 0 is returned, otherwise a value > 0.
+         * 
+         * @param vertex vertex of which the color is returned
+         * @return unsigned short color of the vertex
+         */
+        virtual unsigned short GetColor(int vertex) const = 0;
+
+        // ================================= COPYING ====================================
+        virtual std::unique_ptr<Graph> Clone() const = 0;
 
 };
 

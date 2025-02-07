@@ -32,8 +32,9 @@ void test_csr_graph(const std::string& file_name) {
     test_graph(*graph);
 }
 
+
 int main() {
-    const std::string file_name = "10_vertices_graph.clq";
+    const std::string file_name = "jean.col";
 
     std::cout << "-- COLORING DIMACS GRAPH --" << std::endl;
     test_dimacs_graph(file_name);

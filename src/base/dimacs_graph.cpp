@@ -71,11 +71,6 @@ void DimacsGraph::RemoveVertex(int v) {
     _RemoveDegree(v);
 }
 
-// TODO: finish this
-void DimacsGraph::RemoveVertexWithRenaming(int v) {
-    this->RemoveVertex(v);
-}
-
 void DimacsGraph::GetNeighbours(int vertex, std::vector<int> &result) const {
     result.clear();
     for ( const std::pair<int, int> &edge : _dimacs.edges ) {
@@ -219,6 +214,13 @@ int DimacsGraph::GetVertexWithMaxDegree() const {
                 _dimacs.degrees.begin(), 
                 std::max_element(_dimacs.degrees.begin(), _dimacs.degrees.end())
            );
+}
+
+std::unique_ptr<Graph> DimacsGraph::Clone() const
+{
+    std::unique_ptr<DimacsGraph> clone = std::make_unique<DimacsGraph>(*this);
+
+    return std::move(clone);
 }
 
 // ---------------------------- PROTECTED --------------------------------

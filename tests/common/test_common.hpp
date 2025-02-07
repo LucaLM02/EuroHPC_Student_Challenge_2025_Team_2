@@ -30,6 +30,13 @@ namespace TestFunctions {
         return ss.str();
     }
 
+    bool CheckColoring(const Graph& graph, const std::vector<unsigned short>& coloring) {
+        for ( int vertex : graph.GetVertices() ) {
+            
+        }
+        return true;
+    }
+
 }
 
 #endif // TEST_COMMON_HPP
