@@ -34,9 +34,9 @@ class CSRGraph : public Graph {
         virtual void ClearColoring() override;
 
         // -------------------- ORDERING ----------------------
-        virtual void OrderByDegree(bool ascending=true) override;
-        virtual void OrderByExdegree(bool ascending=true) override;
-        virtual void OrderByColor(bool ascending=true) override;
+        virtual void SortByDegree(bool ascending=true) override;
+        virtual void SortByExdegree(bool ascending=true) override;
+        virtual void SortByColor(bool ascending=true) override;
 
         // --------------------- GETTERS ----------------------
         virtual void GetNeighbours(int vertex, std::vector<int> &result) const override;

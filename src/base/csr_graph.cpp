@@ -152,7 +152,7 @@ void CSRGraph::ClearColoring()
     }
 }
 
-void CSRGraph::OrderByDegree(bool ascending)
+void CSRGraph::SortByDegree(bool ascending)
 {
     static auto ascendingCompare = 
     [&](int v, int w) -> bool {
@@ -170,7 +170,7 @@ void CSRGraph::OrderByDegree(bool ascending)
     }
 }
 
-void CSRGraph::OrderByExdegree(bool ascending)
+void CSRGraph::SortByExdegree(bool ascending)
 {
     std::vector<int> ex_degrees(_degrees.size());
     std::vector<int> neighbours;
@@ -199,7 +199,7 @@ void CSRGraph::OrderByExdegree(bool ascending)
 
 }
 
-void CSRGraph::OrderByColor(bool ascending)
+void CSRGraph::SortByColor(bool ascending)
 {
     static auto ascendingCompare = 
     [&](int v, int w) -> bool {

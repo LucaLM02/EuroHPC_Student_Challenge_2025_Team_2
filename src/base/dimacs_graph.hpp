@@ -28,9 +28,9 @@ class DimacsGraph : public Graph {
 
         // -------------------- ORDERING ----------------------
 
-        virtual void OrderByDegree(bool ascending=true) override {}
-        virtual void OrderByExdegree(bool ascending=true) override {}
-        virtual void OrderByColor(bool ascending=true) override {};
+        virtual void SortByDegree(bool ascending=true) override {}
+        virtual void SortByExdegree(bool ascending=true) override {}
+        virtual void SortByColor(bool ascending=true) override {};
 
 
         // --------------------- GETTERS ----------------------

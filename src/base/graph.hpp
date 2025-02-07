@@ -111,21 +111,21 @@ class Graph {
          * 
          * @param ascending ascending or descending order
          */
-        virtual void OrderByDegree(bool ascending=true) = 0;
+        virtual void SortByDegree(bool ascending=true) = 0;
 
         /**
          * @brief orders the vertices by the ex degree (see long description)
          * @details ex-degree = vertex degree + sum of the degrees of the neighbours
          * @param ascending ascending or descending order
          */
-        virtual void OrderByExdegree(bool ascending=true) = 0;
+        virtual void SortByExdegree(bool ascending=true) = 0;
 
         /**
          * @brief orders the vertices by their color
          * 
          * @param ascending ascending or descending order
          */
-        virtual void OrderByColor(bool ascending=true) = 0;
+        virtual void SortByColor(bool ascending=true) = 0;
 
 
         // ================================== GETTERS ====================================
