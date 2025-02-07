@@ -1,6 +1,5 @@
 #include "csr_graph.hpp"
 
-#include <iostream>
 #include <cstring>
 #include <cmath>
 
@@ -176,17 +175,18 @@ void CSRGraph::SortByExdegree(bool ascending)
     std::vector<int> neighbours;
     for ( int vertex : _vertices ) {
         GetNeighbours(vertex, neighbours);
-        ex_degrees[vertex] = sizeof(neighbours);
+        ex_degrees[vertex] = neighbours.size();
         for ( int neighbour : neighbours ) {
             ex_degrees[vertex] += GetDegree(neighbour);
         }
     }
 
-    static auto ascendingCompare = 
+
+    auto ascendingCompare = 
     [&](int v, int w) -> bool {
         return ex_degrees[v] < ex_degrees[w];
     };
-    static auto descendingCompare = 
+    auto descendingCompare = 
     [&](int v, int w) -> bool {
         return ex_degrees[v] > ex_degrees[w];
     };
@@ -218,7 +218,7 @@ void CSRGraph::SortByColor(bool ascending)
 }
 
 void CSRGraph::GetNeighbours(int vertex, std::vector<int> &result) const {
-    result = _edges[vertex];
+    result.assign(_edges[vertex].begin(), _edges[vertex].end());
 }
 
 void CSRGraph::GetNeighbours(int vertex, std::set<int> &result) const {
@@ -270,7 +270,7 @@ size_t CSRGraph::GetNumEdges() const {
 }
 
 unsigned int CSRGraph::GetDegree(int vertex) const {
-    return _edges[vertex].size();
+    return _edges.at(vertex).size();
 }
 
 std::vector<int> CSRGraph::GetDegrees() const {
@@ -349,7 +349,7 @@ CSRGraph::CSRGraph(const Dimacs& dimacs_graph)
     }
 
     _degrees.clear();
-    _degrees.resize(_vertices.size());
+    _degrees.resize(_vertices.size()+1);
     for (int i = 0; i < _vertices.size(); i++) {
         _degrees[_vertices[i]] = _edges[_vertices[i]].size();
     }

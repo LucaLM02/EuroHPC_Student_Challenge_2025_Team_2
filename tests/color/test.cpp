@@ -29,6 +29,7 @@ void test_graph(Graph& graph) {
     std::cout << "Coloring: " << TestFunctions::VecToString(coloring) << std::endl;
     std::cout << "Max k:    " << max_k << std::endl;
     std::cout << "Is valid: " << TestFunctions::CheckColoring(graph) << std::endl;
+
 }
 
 void test_dimacs_graph(const std::string& file_name) {
@@ -40,16 +41,22 @@ void test_dimacs_graph(const std::string& file_name) {
 void test_csr_graph(const std::string& file_name) {
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 
-    CSRGraph* graph = CSRGraph::LoadFromDimacs(file_name);
+    CSRGraph& graph = *CSRGraph::LoadFromDimacs(file_name);
 
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
 
     long elapsed_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end-begin).count();
 
-    std::cout << "Time to load a graph with " << graph->GetNumVertices() << "vertices and " 
-              << graph->GetNumEdges() << " edges: " << std::scientific << elapsed_time/std::pow(10, 9) << std::endl;
+    std::cout << "Time to load a graph with " << graph.GetNumVertices() << "vertices and " 
+              << graph.GetNumEdges() << " edges: " << std::scientific << elapsed_time/std::pow(10, 9) << std::endl;
 
-    test_graph(*graph);
+    graph.SortByDegree(false);
+
+    test_graph(graph);
+
+    std::cout << " ======================== COLORING WITH FEEDBACK ORDER ========================" << std::endl;
+
+    test_graph(graph);
 }
 
 
