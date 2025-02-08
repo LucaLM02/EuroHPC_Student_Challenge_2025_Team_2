@@ -9,9 +9,9 @@
 #include <utility>
 #include <vector>
 
+#include "branching_strategy.hpp"
 #include "clique_strategy.hpp"
 #include "color.hpp"
-#include "branching_strategy.hpp"
 #include "graph.hpp"
 
 /**
@@ -32,7 +32,7 @@ class BranchNBoundSeq {
 	 *
 	 * @param message The message to log.
 	 */
-	void Log(const std::string& message);
+	void Log(const std::string& message, int depth, bool is_branching);
 
 	/**
 	 * @brief Checks if the solver has exceeded the timeout.
