@@ -25,8 +25,8 @@ int BranchNBoundSeq::Solve(Graph& g, int timeout_seconds,
 
 	int lb = _clique_strat.FindClique(g);
 	unsigned short ub;
-	std::vector<unsigned short> coloring;
-	_color_strat.Color(g, coloring, ub);
+	//std::vector<unsigned short> coloring;
+	_color_strat.Color(g, ub);
 	unsigned short best_ub = ub;
 
 	// Log initial bounds
@@ -55,6 +55,8 @@ int BranchNBoundSeq::Solve(Graph& g, int timeout_seconds,
 		auto current_G = std::move(current.g);
 		int current_lb = current.lb;
 		int current_ub = current.ub;
+
+		std::cout << "lb: " << current_lb << " ub: " << current_ub << std::endl;
 
 		// Log current node
 		Log("Processing node: lb = " + std::to_string(current_lb) +
@@ -94,8 +96,8 @@ int BranchNBoundSeq::Solve(Graph& g, int timeout_seconds,
 		G1->MergeVertices(u, v);
 			int lb1 = _clique_strat.FindClique(*G1);
 			unsigned short ub1;
-			std::vector<unsigned short> coloring1(G1->GetNumVertices(), 0);
-			_color_strat.Color(*G1, coloring1,ub1);
+			//std::vector<unsigned short> coloring1(G1->GetNumVertices(), 0);
+			_color_strat.Color(*G1,ub1);
 			Log("Branch 1 (merge): lb = " + std::to_string(lb1) +
 			    ", ub = " + std::to_string(ub1));
 			if (lb1 < best_ub) {
@@ -107,8 +109,8 @@ int BranchNBoundSeq::Solve(Graph& g, int timeout_seconds,
 		G2->AddEdge(u, v);
 		int lb2 = _clique_strat.FindClique(*G2);
 		unsigned short ub2;
-		std::vector<unsigned short> coloring2(G2->GetNumVertices(), 0);
-		_color_strat.Color(*G2, coloring2, ub2);
+		//std::vector<unsigned short> coloring2(G2->GetNumVertices(), 0);
+		_color_strat.Color(*G2, ub2);
 		Log("Branch 2 (add edge): lb = " + std::to_string(lb2) +
 		    ", ub = " + std::to_string(ub2));
 		if ((lb2 < best_ub) && (lb2 < ub1)) {

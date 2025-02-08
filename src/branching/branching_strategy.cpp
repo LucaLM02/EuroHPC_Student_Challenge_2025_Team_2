@@ -12,9 +12,14 @@ RandomBranchingStrategy::RandomBranchingStrategy(int num_vertices)
 
 std::pair<unsigned int, unsigned int> 
 RandomBranchingStrategy::ChooseVertices(const Graph &graph, PairType& type) {
+    //check if the graph is complete
+    int n = graph.GetNumVertices();
+    if(graph.GetNumEdges() == n*(n-1)/2) {
+        return std::make_pair(-1, -1);
+    }
     do 
     {
-        std::uniform_int_distribution<int> u(0, graph.GetNumVertices()-1);
+        std::uniform_int_distribution<int> u(0, n-1);
         _vertex_pair.first   = graph.GetVertices()[u(*_random_generator)];
         _vertex_pair.second  = graph.GetVertices()[u(*_random_generator)];
 
