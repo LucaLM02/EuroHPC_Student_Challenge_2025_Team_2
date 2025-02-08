@@ -8,6 +8,7 @@
  *  @see the description of methods
  */
 class CliqueStrategy {
+    public:
     /**
      * @brief finds a clique of the graph.
      * 
@@ -31,6 +32,7 @@ class CliqueStrategy {
  * 
  */
 class StubCliqueStrategy : public CliqueStrategy {
+    public:
     void FindClique(const Graph& graph,
                     std::vector<int>& clique) const;
     

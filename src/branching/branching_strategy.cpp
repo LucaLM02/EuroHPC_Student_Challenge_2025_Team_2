@@ -12,18 +12,25 @@ RandomBranchingStrategy::RandomBranchingStrategy(int num_vertices)
 
 std::pair<unsigned int, unsigned int> 
 RandomBranchingStrategy::ChooseVertices(const Graph &graph, PairType& type) {
+    //check if the graph is complete
+    int n = graph.GetNumVertices();
+    if(graph.GetNumEdges() == n*(n-1)/2) {
+        return std::make_pair(-1, -1);
+    }
     do 
     {
-        std::uniform_int_distribution<int> u(1, graph.GetNumVertices());
-        _vertex_pair.first   = u(*_random_generator);
-        _vertex_pair.second  = u(*_random_generator);
+        std::uniform_int_distribution<int> u(0, n-1);
+        _vertex_pair.first   = graph.GetVertices()[u(*_random_generator)];
+        _vertex_pair.second  = graph.GetVertices()[u(*_random_generator)];
 
     } while ( 
+        /*
         (
             graph.GetDeletedVertices().contains(_vertex_pair.first) ||
             graph.GetDeletedVertices().contains(_vertex_pair.second)
         ) &&
-        graph.HasEdge(_vertex_pair.first, _vertex_pair.second) );
+         */
+        graph.HasEdge(_vertex_pair.first, _vertex_pair.second) || _vertex_pair.first == _vertex_pair.second );
 
     return _vertex_pair;
 }
