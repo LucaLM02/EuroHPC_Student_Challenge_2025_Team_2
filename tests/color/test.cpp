@@ -6,7 +6,9 @@
 #include "graph.hpp"
 #include "dimacs_graph.hpp"
 #include "csr_graph.hpp"
+
 #include "color.hpp"
+
 #include "test_common.hpp"
 
 void test_graph(Graph& graph) {

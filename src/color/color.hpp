@@ -34,11 +34,12 @@ class ColorStrategy {
 class GreedyColorStrategy : public ColorStrategy {
     public:
         /**
-         *  @details Colors a graph in such a way that no vertices have the same color
-         *           Colors are contiguosly used from k=1 to `k_max`, where `k_max` is 
-         *           decided dynamically by this method
-         *           For each vertex the lowest possible color is chosen
-         *           Coloring is set to the graph and accessible with `Graph::GetColoring()`
+         * @brief Colors a graph in such a way that no vertices have the same color
+         *         Colors are contiguosly used from k=1 to `k_max`, where `k_max` is 
+         *         decided dynamically by this method
+         *         For each vertex the lowest possible color is chosen
+         *         Coloring is set to the graph and accessible with `Graph::GetColoring()`
+         * @note It DOES NOT sort the vertices by color
          *  
          *  @param graph        the graph to color
          *  @param k_mx         highest color used

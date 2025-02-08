@@ -74,14 +74,9 @@ void test_vertex_order_change(Graph &graph, std::vector<int> &&new_order) {
 }
 
 int main() {
-    Dimacs dimacs;
     std::string file_name = "10_vertices_graph";
 
-    if ( !dimacs.load(file_name.c_str()) ) {
-        std::cout << dimacs.getError() << std::endl;
-    }
-
-    DimacsGraph graph(dimacs);
+    DimacsGraph& graph = *DimacsGraph::LoadFromDimacs(file_name);
 
     std::cout << "Graph creation" << std::endl;
     full_basics_test(graph, 1);

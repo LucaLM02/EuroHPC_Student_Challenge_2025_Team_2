@@ -64,7 +64,6 @@ void GreedyColorStrategy::Color(Graph& graph,
     }
 
     graph.SetFullColoring(coloring);
-    graph.SortByColor(false);
 }
 
 

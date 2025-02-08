@@ -295,6 +295,16 @@ std::vector<int> CSRGraph::GetDegrees() const {
     return degrees;
 }
 
+std::vector<int> CSRGraph::GetFullDegrees() const
+{
+    return _degrees;
+}
+
+void CSRGraph::GetFullDegrees(std::vector<int> &result) const
+{
+    result = _degrees;
+}
+
 void CSRGraph::GetDegrees(std::vector<int> &result) const
 {
     result.clear();

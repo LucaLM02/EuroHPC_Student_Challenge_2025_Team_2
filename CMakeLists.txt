@@ -8,5 +8,6 @@ project(MyProject)
 add_subdirectory(src)                # Build source files first
 add_subdirectory(tests/common)       # Build test utilities
 add_subdirectory(tests/color)        # Build color test
+add_subdirectory(tests/dsatur_color) # Build dsatur color test
 add_subdirectory(tests/dimacs_graph) # Build dimacs graph test
-add_subdirectory(tests/csr_graph) # Build csr graphc test
+add_subdirectory(tests/csr_graph)    # Build csr graphc test

@@ -127,21 +127,21 @@ class Graph {
          * 
          * @param ascending ascending or descending order
          */
-        virtual void SortByDegree(bool ascending=true) = 0;
+        virtual void SortByDegree(bool ascending=false) = 0;
 
         /**
          * @brief orders the vertices by the ex degree (see long description)
          * @details ex-degree = vertex degree + sum of the degrees of the neighbours
          * @param ascending ascending or descending order
          */
-        virtual void SortByExdegree(bool ascending=true) = 0;
+        virtual void SortByExdegree(bool ascending=false) = 0;
 
         /**
          * @brief orders the vertices by their color
          * 
          * @param ascending ascending or descending order
          */
-        virtual void SortByColor(bool ascending=true) = 0;
+        virtual void SortByColor(bool ascending=false) = 0;
 
 
         // ================================== GETTERS ====================================
@@ -229,9 +229,7 @@ class Graph {
         virtual unsigned int GetDegree(int vertex) const = 0;
         /**
          * @brief Returns an array of degrees, ordered as the vertices are
-         * @note Since it is a reference to an inner element, depending on the implementation,
-         *       it could vary when the graph is modified
-         * @note Also, don't to degrees[vertex], instead if you have 
+         * @note Also, don't to degrees[vertex], see GetFullDegrees() for this
          * @return std::vector<int> array of degrees
          * @see GetVertexByIndex for understanding at which vertex a certain degree 
          *      is associated
@@ -245,6 +243,19 @@ class Graph {
          *      is associated
          */
         virtual void GetDegrees(std::vector<int>& result) const = 0;
+        /**
+         * @brief returns, through the reference parameter, the degrees such 
+         *        that result[vertex] -> vertex_degree
+         * @return std::vector<int> array of degrees
+         */
+        virtual std::vector<int> GetFullDegrees() const = 0;
+        /**
+         * @brief returns, through the reference parameter, the degrees such 
+         *        that result[vertex] -> vertex_degree
+         * @param result the degree's vector to fill
+         */
+        virtual void GetFullDegrees(std::vector<int>& result) const = 0;
+
         /**
          * @brief Returns the maximum degree (delta(G)) among the degree of all vertices of this graph
          * 
