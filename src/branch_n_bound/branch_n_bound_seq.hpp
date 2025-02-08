@@ -9,7 +9,8 @@
 #include <utility>
 #include <vector>
 
-#include "bound_strategies.hpp"
+#include "clique_strategy.hpp"
+#include "color.hpp"
 #include "branching_strategy.hpp"
 #include "graph.hpp"
 
@@ -25,6 +26,13 @@ class BranchNBoundSeq {
 	CliqueStrategy& _clique_strat;
 	ColorStrategy& _color_strat;
 	std::ofstream _log_file;
+
+	/**
+	 * @brief Logs a message to the log file.
+	 *
+	 * @param message The message to log.
+	 */
+	void Log(const std::string& message);
 
 	/**
 	 * @brief Checks if the solver has exceeded the timeout.

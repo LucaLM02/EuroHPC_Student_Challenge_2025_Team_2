@@ -5,6 +5,8 @@
 #include <set>
 #include <tuple>
 #include <vector>
+#include <memory>
+#include "graph.hpp"
 
 template <class Value>
 using VertexMap = std::map<unsigned int, Value, std::less<unsigned int>>;
@@ -31,14 +33,18 @@ void GetNeighbours(const Edges& edges, const unsigned int vertex_index,
  * @brief Structure to manage branches and priorities in parallel
  * branch-and-bound solver.
  */
+using GraphPtr = std::unique_ptr<Graph>;
 struct Branch {
-	Graph& g;
+	GraphPtr g;
 	int lb;
-	int ub;
+	unsigned short ub;
 	int depth;
 	bool operator<(const Branch& other) const {
 		return depth < other.depth;
 	}
+
+	Branch(GraphPtr graph, int lower, unsigned short upper, int dp) 
+        : g(std::move(graph)), lb(lower), ub(upper), depth(dp) {}
 };
 
 #endif	// COMMON_HPP

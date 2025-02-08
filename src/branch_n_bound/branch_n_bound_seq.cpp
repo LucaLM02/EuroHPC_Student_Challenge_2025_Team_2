@@ -22,17 +22,20 @@ int BranchNBoundSeq::Solve(Graph& g, int timeout_seconds,
 	auto start_time = std::chrono::steady_clock::now();
 
 	// Initialize bounds
-	int lb = _clique_strat->Clique(g);
-	int ub = _color_strat->Color(g);
-	int best_ub = ub;
+
+	int lb = _clique_strat.FindClique(g);
+	unsigned short ub;
+	std::vector<unsigned short> coloring;
+	_color_strat.Color(g, coloring, ub);
+	unsigned short best_ub = ub;
 
 	// Log initial bounds
 	Log("Initial bounds: lb = " + std::to_string(lb) +
 	    ", ub = " + std::to_string(ub));
 
-	// Queue stores (current_G, current_lb, current_ub)
-	std::queue<std::pair<Graph*, std::pair<int, int>>> queue;
-	queue.push({&g, {lb, ub}});
+	using BranchQueue = std::priority_queue<Branch, std::vector<Branch>>;
+	BranchQueue queue;
+	queue.push(Branch(g.Clone(), lb, ub, 1)); // Initial branch with depht 1
 
 	// Counter for iterations where best_ub remains unchanged
 	int best_ub_unchanged_count = 0;
@@ -47,11 +50,11 @@ int BranchNBoundSeq::Solve(Graph& g, int timeout_seconds,
 		}
 
 		// Dequeue the next branch
-		auto current = queue.front();
+		Branch current = std::move(const_cast<Branch&>(queue.top()));
 		queue.pop();
-		Graph* current_G = current.first;
-		int current_lb = current.second.first;
-		int current_ub = current.second.second;
+		auto current_G = std::move(current.g);
+		int current_lb = current.lb;
+		int current_ub = current.ub;
 
 		// Log current node
 		Log("Processing node: lb = " + std::to_string(current_lb) +
@@ -73,7 +76,8 @@ int BranchNBoundSeq::Solve(Graph& g, int timeout_seconds,
 		}
 
 		// Find two non-adjacent vertices u and v according to strategy
-		auto [u, v] = _branching_strat->ChooseVertices(*current_G);
+		auto type = _branching_strat.PairType::DontCare;
+		auto [u, v] = _branching_strat.ChooseVertices(*current_G, type);
 		Log("Branching on vertices: u = " + std::to_string(u) +
 		    ", v = " + std::to_string(v));
 
@@ -81,32 +85,34 @@ int BranchNBoundSeq::Solve(Graph& g, int timeout_seconds,
 		// leaf branch)
 		if (u == -1 || v == -1) {
 			Log("Graph is complete. Chromatic number = " +
-			    std::to_string(current_G->getNumVertices()));
-			return current_G->getNumVertices();
+			    std::to_string(current_G->GetNumVertices()));
+			return current_G->GetNumVertices();
 		}
 
 		// Branch 1 - Merge u and v (assign same color)
-		Graph* G1 = new Graph(*current_G);  // Copy Graph
-		bool merged = G1->merge(u, v);
-		if (merged) {
-			int lb1 = _clique_strat->clique(*G1);
-			int ub1 = _color_strat->color(*G1);
+		auto G1 = current_G->Clone();  // Copy Graph
+		G1->MergeVertices(u, v);
+			int lb1 = _clique_strat.FindClique(*G1);
+			unsigned short ub1;
+			std::vector<unsigned short> coloring1(G1->GetNumVertices(), 0);
+			_color_strat.Color(*G1, coloring1,ub1);
 			Log("Branch 1 (merge): lb = " + std::to_string(lb1) +
 			    ", ub = " + std::to_string(ub1));
 			if (lb1 < best_ub) {
-				queue.push({G1, {lb1, ub1}});
+				queue.push(Branch(std::move(G1), lb1, ub1, 1));
 			}
-		}
 
 		// Branch 2 - Add edge between u and v (assign different colors)
-		Graph* G2 = new Graph(*current_G);  // Copy Graph
-		G2->addEdge(u, v);
-		int lb2 = _clique_strat->clique(*G2);
-		int ub2 = _color_strat->color(*G2);
+		auto G2 = current_G->Clone();  // Copy Graph
+		G2->AddEdge(u, v);
+		int lb2 = _clique_strat.FindClique(*G2);
+		unsigned short ub2;
+		std::vector<unsigned short> coloring2(G2->GetNumVertices(), 0);
+		_color_strat.Color(*G2, coloring2, ub2);
 		Log("Branch 2 (add edge): lb = " + std::to_string(lb2) +
 		    ", ub = " + std::to_string(ub2));
 		if ((lb2 < best_ub) && (lb2 < ub1)) {
-			queue.push({G2, {lb2, ub2}});
+			queue.push(Branch(std::move(G2), lb2, ub2, 1));
 		}
 
 		// Update best_ub
