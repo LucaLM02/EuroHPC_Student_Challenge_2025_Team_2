@@ -90,6 +90,7 @@ class Graph {
          *               assigned to that vertex
          */
         virtual void SetColoring(const std::vector<unsigned short>& colors) = 0;
+
         /**
          * @brief sets the color of a single vertex
          * 
@@ -97,6 +98,21 @@ class Graph {
          * @param color color to set (>= 0, if = 0 then it has no color)
          */
         virtual void SetColoring(int vertex, unsigned short color) = 0;
+
+        /**
+         * @brief sets the coloring of the graph, i.e. one color for each vertex. 
+         *        The difference arieses in how colors vector is composed.
+         *        If the graph has non continuous numbering, `colors` will have
+         *        entries set to 0 which aren't used.
+         *        However, this method is typically computationally ligher for
+         *        both the user of this class and this class
+         * 
+         * @param colors color vector. For each vertex its color is accessible as
+         *               colors[vertex]. This means that if the graph has a non 
+         *               contiguous numbering, `colors` will have entries set to 0.
+         */
+        virtual void SetFullColoring(const std::vector<unsigned short>& colors) = 0;
+
         /**
          * @brief clears the coloring of the graph. 
          */
@@ -184,6 +200,13 @@ class Graph {
         virtual int GetVertexByIndex(int index) const = 0;
 
         /**
+         * @brief returns the vertex with the highest value in the graph
+         * 
+         * @return int 
+         */
+        virtual int GetHighestVertex() const = 0;
+
+        /**
          * @brief returns the vertices deleted from the graph. When a vertex is deleted,
          *        the result is "automatically" updated, since it is a reference to an
          *        inner object
@@ -248,6 +271,20 @@ class Graph {
          * @return std::vector<unsigned short> vector of colors, ordered as the vertices are
          */
         virtual std::vector<unsigned short> GetColoring() const = 0;
+
+        /**
+         * @brief gets the coloring of the graph, i.e. one color for each vertex. 
+         *        The difference arieses in how colors vector is composed.
+         *        If the graph has non continuous numbering, `colors` will have
+         *        entries set to 0 which aren't used.
+         *        However, this method is typically computationally ligher for
+         *        both the user of this class and this class
+         * 
+         * @returns The color vector. For each vertex its color is accessible as
+         *          colors[vertex]. This means that if the graph has a non 
+         *          contiguous numbering, `colors` will have entries set to 0.
+         */
+        virtual std::vector<unsigned short> GetFullColoring() const = 0;
         
         /**
          * @brief gets the color of a certain vertex. If vertex is not in the graph or

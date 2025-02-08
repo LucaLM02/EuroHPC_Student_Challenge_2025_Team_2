@@ -144,6 +144,11 @@ void CSRGraph::SetColoring(int vertex, unsigned short color)
     _coloring[vertex] = color;
 }
 
+void CSRGraph::SetFullColoring(const std::vector<unsigned short> &colors)
+{
+    _coloring = colors;
+}
+
 void CSRGraph::ClearColoring()
 {
     for (int vertex : _vertices ) {
@@ -252,6 +257,17 @@ int CSRGraph::GetVertexByIndex(int index) const
     return _vertices[index];
 }
 
+int CSRGraph::GetHighestVertex() const
+{
+    int max_vertex = 0;
+    for ( int vertex : _vertices ) {
+        if ( vertex > max_vertex ) {
+            max_vertex = vertex;
+        }
+    }
+    return max_vertex;
+}
+
 const std::set<int> &CSRGraph::GetDeletedVertices() const
 {
     return _removed_vertices;
@@ -314,6 +330,11 @@ std::vector<unsigned short> CSRGraph::GetColoring() const
     }
 
     return colors;
+}
+
+std::vector<unsigned short> CSRGraph::GetFullColoring() const
+{
+    return _coloring;
 }
 
 unsigned short CSRGraph::GetColor(int vertex) const

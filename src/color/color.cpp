@@ -4,14 +4,14 @@
 #include <iostream>
 #include <cmath>
 
-unsigned int GreedyFindColor(const Graph& graph,
-                             const unsigned int vertex_index,
+unsigned short GreedyFindColor(const Graph& graph,
+                             const unsigned int vertex,
                              std::vector<unsigned short>& coloring, 
                              unsigned int current_max_k) {
-    unsigned int neighbour_color;
+    unsigned short neighbour_color;
 
     std::vector<int> neighbours;
-    graph.GetNeighbours(vertex_index, neighbours);
+    graph.GetNeighbours(vertex, neighbours);
 
     unsigned int max_colors = std::max(
                                 static_cast<unsigned int>(neighbours.size()), 
@@ -31,7 +31,7 @@ unsigned int GreedyFindColor(const Graph& graph,
 
 
     // finds the first color available
-    int k=0;
+    unsigned short k=0;
     while ( color_used[k] == true ) {
         k++;
     }
@@ -41,28 +41,11 @@ unsigned int GreedyFindColor(const Graph& graph,
     return k+1;
 }
 
-// TODO: config should be used
 void GreedyColorStrategy::Color(Graph& graph,
-                                std::vector<unsigned short>& coloring, 
                                 unsigned short& max_k) const
 { 
-    // coloring algorithm explained in paper match2007 (An improved branch and bound algorithm for the maximum clique problem)
-    // should be the best one
-    // but actually here I do not have a k_min
-
-    // maybe for the first recursion levels advanced algorithms such as evolutionary/genetic algorithms, tabu search, simulated annealing,
-    // column generation could work
-
-    // what about dsatur and recursive large first?
-
-    int numVertices = graph.GetNumVertices();
-
-    std::vector<std::vector<int>> color_classes;
-    color_classes.resize(graph.GetMaxDegree());
-
     // used for accessing neighbours colors
-    coloring.resize(numVertices);
-    std::fill(coloring.begin(), coloring.end(), 0);
+    std::vector<unsigned short> coloring(graph.GetHighestVertex() + 1, 0);
 
     unsigned short assigned_color;
     const std::vector<int>& original_vertices = graph.GetVertices();
@@ -78,22 +61,10 @@ void GreedyColorStrategy::Color(Graph& graph,
         }
 
         coloring[vertex] = assigned_color;                      // saving color
-        color_classes[assigned_color-1].push_back(vertex);      // saving vertex into the color class
-    }
-        
-    // transferring from color classes to vertices
-    std::vector<int> vertices;
-    vertices.reserve(graph.GetNumVertices());
-    coloring.clear();
-
-    // remembering that colors starts from k=1...
-    for ( unsigned short k=0; k<max_k; k++) {
-        for (unsigned int vertex_scroll = 0; vertex_scroll < color_classes[k].size(); vertex_scroll++) {
-            vertices.push_back(color_classes[k][vertex_scroll]);
-            coloring.push_back(k+1);
-        }
     }
 
-    graph.SetVertices(vertices);
-    graph.SetColoring(coloring);
+    graph.SetFullColoring(coloring);
+    graph.SortByColor(false);
 }
+
+

@@ -115,6 +115,17 @@ int DimacsGraph::GetVertexByIndex(int index) const
     return _vertices[index];
 }
 
+int DimacsGraph::GetHighestVertex() const
+{
+    int max_vertex = 0;
+    for ( int vertex : _vertices ) {
+        if ( vertex > max_vertex ) {
+            max_vertex = vertex;
+        }
+    }
+    return max_vertex;
+}
+
 const std::set<int> &DimacsGraph::GetDeletedVertices() const
 {
     return _deleted_vertices;
