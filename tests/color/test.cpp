@@ -14,10 +14,9 @@ void test_graph(Graph& graph) {
 
         GreedyColorStrategy color_strategy;
 
-        std::vector<unsigned short> coloring;
         unsigned short max_k;
 
-        color_strategy.Color(graph, coloring, max_k);
+        color_strategy.Color(graph, max_k);
 
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
     long elapsed_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end-begin).count();
@@ -26,7 +25,7 @@ void test_graph(Graph& graph) {
               << graph.GetNumEdges() << " edges: " << std::scientific << elapsed_time/std::pow(10, 9) << std::endl;
 
     std::cout << "Vertices: " << TestFunctions::VecToString(graph.GetVertices()) << std::endl;
-    std::cout << "Coloring: " << TestFunctions::VecToString(coloring) << std::endl;
+    std::cout << "Coloring: " << TestFunctions::VecToString(graph.GetColoring()) << std::endl;
     std::cout << "Max k:    " << max_k << std::endl;
     std::cout << "Is valid: " << TestFunctions::CheckColoring(graph) << std::endl;
 

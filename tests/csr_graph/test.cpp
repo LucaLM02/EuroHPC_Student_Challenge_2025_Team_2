@@ -123,4 +123,38 @@ int main() {
     
     test_ordering(heavier_graph);
 
+    // MERGING VERTICES
+    graph.SortByDegree(false);
+
+    std::vector<int> vertices = graph.GetVertices();
+
+    int v;
+    int i = 1;
+    do {
+        i++;
+        v = vertices[i];
+    } while ( graph.HasEdge(v, vertices[0]));
+
+    auto begin = std::chrono::steady_clock::now();
+
+
+    heavier_graph.MergeVertices(v, vertices[0]);
+
+    auto end = std::chrono::steady_clock::now();
+    long elapsed_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end-begin).count();
+    std::cout << "Time to merge 2 vertices of a graph with " << heavier_graph.GetNumVertices() 
+              << " vertices and " << heavier_graph.GetNumEdges() << " edges: " 
+              << std::scientific << elapsed_time/std::pow(10, 9) << std::endl;
+
+
+    // ADDING EDGE
+    begin = std::chrono::steady_clock::now();
+
+    heavier_graph.AddEdge(10, 55);
+
+    end = std::chrono::steady_clock::now();
+    elapsed_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end-begin).count();
+    std::cout << "Time to add an edge to a graph with " << heavier_graph.GetNumVertices() 
+              << " vertices and " << heavier_graph.GetNumEdges() << " edges: " 
+              << std::scientific << elapsed_time/std::pow(10, 9) << std::endl;
 }

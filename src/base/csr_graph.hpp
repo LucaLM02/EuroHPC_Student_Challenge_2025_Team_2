@@ -31,6 +31,7 @@ class CSRGraph : public Graph {
         
         virtual void SetColoring(const std::vector<unsigned short>& colors) override;
         virtual void SetColoring(int vertex, unsigned short color) override;
+        virtual void SetFullColoring(const std::vector<unsigned short>& colors) override;
         virtual void ClearColoring() override;
 
         // -------------------- ORDERING ----------------------
@@ -47,6 +48,7 @@ class CSRGraph : public Graph {
         virtual void GetUnorderedVertices(std::set<int> &result) const override;
         virtual const std::vector<int>& GetVertices() const override;
         virtual int GetVertexByIndex(int index) const override;
+        virtual int GetHighestVertex() const override;
         virtual const std::set<int>& GetDeletedVertices() const override;
 
         virtual size_t GetNumVertices() const override;
@@ -59,7 +61,8 @@ class CSRGraph : public Graph {
         virtual int GetVertexWithMaxDegree() const override;
 
         virtual std::vector<int> GetMergedVertices(int vertex) const override;
-        virtual std::vector<unsigned short> GetColoring() const override ;
+        virtual std::vector<unsigned short> GetColoring() const override;
+        virtual std::vector<unsigned short> GetFullColoring() const override;
         virtual unsigned short GetColor(int vertex) const override;
 
         virtual std::unique_ptr<Graph> Clone() const override;

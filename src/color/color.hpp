@@ -12,17 +12,16 @@
 class ColorStrategy {
     public:
         /**
-          * @details Colors a graph in such a way that no adjacent vertices have the 
-          *          same color
-          *          Colors are contiguosly used from k=1 to `k_max`, where `k_max` is 
-          *          decided dynamically by this method
-          * 
-          *  @param graph        the graph to color
-          *  @param coloring     the color for each vertex, using the same order of vertices
-          *  @param k_mx         highest color used
-          */
+         * @details Colors a graph in such a way that no adjacent vertices have the 
+         *          same color
+         *          Colors are contiguosly used from k=1 to `k_max`, where `k_max` is 
+         *          decided dynamically by this method
+         *          Coloring is set to the graph and accessible with `Graph::GetColoring()`
+         * 
+         *  @param graph        the graph to color
+         *  @param k_mx         highest color used
+         */
         virtual void Color(Graph &graph,
-                           std::vector<unsigned short>& coloring, 
                            unsigned short& k_max) const = 0;
 };
 
@@ -39,15 +38,28 @@ class GreedyColorStrategy : public ColorStrategy {
          *           Colors are contiguosly used from k=1 to `k_max`, where `k_max` is 
          *           decided dynamically by this method
          *           For each vertex the lowest possible color is chosen
+         *           Coloring is set to the graph and accessible with `Graph::GetColoring()`
          *  
          *  @param graph        the graph to color
-         *  @param coloring     the color for each vertex, using the same order of vertices
          *  @param k_mx         highest color used
          */
         void Color(Graph& graph,
-                   std::vector<unsigned short>& coloring, 
                    unsigned short& max_k) const override;
 };
+
+/**
+ * @brief finds the lowest color available for a vertex given the current (partial) coloring
+ * 
+ * @param graph graph which is being colored
+ * @param vertex vertex which has to be colored
+ * @param coloring current partial coloring
+ * @param current_max_k maximum color to choose from
+ * @return unsigned int color choosen
+ */
+unsigned short GreedyFindColor(const Graph& graph,
+                             const unsigned int vertex,
+                             std::vector<unsigned short>& coloring, 
+                             unsigned int current_max_k);
 
 
 #endif // COLOR_HPP
