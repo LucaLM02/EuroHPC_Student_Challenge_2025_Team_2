@@ -94,7 +94,7 @@ void test_ordering(Graph& graph) {
     // ============================== ORDER BY EX DEGREE ================================
     begin = std::chrono::steady_clock::now();
 
-    graph.SortByExdegree();
+    graph.SortByExDegree();
 
     end = std::chrono::steady_clock::now();
     elapsed_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end-begin).count();

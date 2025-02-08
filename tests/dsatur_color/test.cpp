@@ -103,6 +103,8 @@ void test_graph(Graph& graph) {
     std::cout << "Time to color a graph with " << graph.GetNumVertices() << "vertices and " 
               << graph.GetNumEdges() << " edges: " << std::scientific << elapsed_time/std::pow(10, 9) << std::endl;
 
+    graph.SortByColor(false);
+
     std::cout << "Vertices: " << TestFunctions::VecToString(graph.GetVertices()) << std::endl;
     std::cout << "Coloring: " << TestFunctions::VecToString(graph.GetColoring()) << std::endl;
     std::cout << "Max k:    " << max_k << std::endl;
@@ -134,7 +136,7 @@ int main() {
 
     std::cout << "-- COLORING CSR GRAPH --" << std::endl;
 
-    test_csr_graph("10_vertices_graph.clq");
+    test_csr_graph("queen15_15.col");
 
     return 0;
 }

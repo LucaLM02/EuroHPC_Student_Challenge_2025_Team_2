@@ -10,6 +10,11 @@ CSRGraph* CSRGraph::LoadFromDimacs(const std::string& file_name) {
     return graph;
 }
 
+CSRGraph::CSRGraph()
+: _vertices(0), _degrees(1), _coloring(1), _edges(1), _nEdges(0), _max_vertex(0)
+{
+}
+
 void CSRGraph::AddEdge(int v, int w) {
     _edges[v].push_back(w);
     _edges[w].push_back(v);
@@ -46,7 +51,8 @@ int CSRGraph::AddVertex() {
     _max_vertex++;
 
     _vertices.push_back(v);
-    _coloring.push_back(0);
+    _degrees.emplace_back(0);
+    _coloring.emplace_back(0);
     _edges.emplace_back(0);
 
 
@@ -174,16 +180,12 @@ void CSRGraph::SortByDegree(bool ascending)
     }
 }
 
-void CSRGraph::SortByExdegree(bool ascending)
+void CSRGraph::SortByExDegree(bool ascending)
 {
     std::vector<int> ex_degrees(_degrees.size());
     std::vector<int> neighbours;
     for ( int vertex : _vertices ) {
-        GetNeighbours(vertex, neighbours);
-        ex_degrees[vertex] = neighbours.size();
-        for ( int neighbour : neighbours ) {
-            ex_degrees[vertex] += GetDegree(neighbour);
-        }
+        ex_degrees[vertex] = GetExDegree(vertex);
     }
 
 
@@ -236,7 +238,7 @@ void CSRGraph::GetNeighbours(int vertex, std::set<int> &result) const {
 bool CSRGraph::HasEdge(int v, int w) const {
     // with this check I search through the shorter vector
     if ( _edges[v].size() > _edges[w].size() ) {
-        return ( std::find(_edges[w].begin(), _edges[w].end(), v) != _edges[v].end());
+        return ( std::find(_edges[w].begin(), _edges[w].end(), v) != _edges[w].end());
     } else {
         return ( std::find(_edges[v].begin(), _edges[v].end(), w) != _edges[v].end());
     }
@@ -324,6 +326,16 @@ int CSRGraph::GetVertexWithMaxDegree() const {
                                     _degrees.begin(), 
                                     _degrees.end()));
     return max_index;      
+}
+
+int CSRGraph::GetExDegree(int vertex) const
+{
+    int ex_degree = 0;
+    for ( int neighbour : _edges[vertex] ) {
+        ex_degree += _degrees[vertex];
+    }
+
+    return ex_degree;
 }
 
 std::vector<int> CSRGraph::GetMergedVertices(int vertex) const

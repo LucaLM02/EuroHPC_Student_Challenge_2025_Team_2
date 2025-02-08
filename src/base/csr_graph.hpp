@@ -16,7 +16,7 @@ class CSRGraph : public Graph {
     public:
         static CSRGraph* LoadFromDimacs(const std::string& file_name);
 
-        CSRGraph()=default;
+        CSRGraph();
         CSRGraph(const CSRGraph& other)=default;
 
         // -------------------- MODIFIERS --------------------
@@ -36,7 +36,7 @@ class CSRGraph : public Graph {
 
         // -------------------- ORDERING ----------------------
         virtual void SortByDegree(bool ascending=false) override;
-        virtual void SortByExdegree(bool ascending=false) override;
+        virtual void SortByExDegree(bool ascending=false) override;
         virtual void SortByColor(bool ascending=false) override;
 
         // --------------------- GETTERS ----------------------
@@ -61,6 +61,7 @@ class CSRGraph : public Graph {
         virtual void GetDegrees(std::vector<int>& result) const override;
         virtual unsigned int GetMaxDegree() const override;
         virtual int GetVertexWithMaxDegree() const override;
+        virtual int GetExDegree(int vertex) const override;
 
         virtual std::vector<int> GetMergedVertices(int vertex) const override;
         virtual std::vector<unsigned short> GetColoring() const override;

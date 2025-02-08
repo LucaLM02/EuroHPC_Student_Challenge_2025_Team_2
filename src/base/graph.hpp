@@ -134,7 +134,7 @@ class Graph {
          * @details ex-degree = vertex degree + sum of the degrees of the neighbours
          * @param ascending ascending or descending order
          */
-        virtual void SortByExdegree(bool ascending=false) = 0;
+        virtual void SortByExDegree(bool ascending=false) = 0;
 
         /**
          * @brief orders the vertices by their color
@@ -268,6 +268,12 @@ class Graph {
          * @return int the vertex with the max degree
          */
         virtual int GetVertexWithMaxDegree() const = 0;
+        /**
+         * @brief gets the sum of the degrees of the vertex neighbourhood
+         * 
+         * @return int the sum of the degrees of the vertex neighbourhood
+         */
+        virtual int GetExDegree(int vertex) const = 0;
 
         /**
          * @brief Get the vertices that were merged into the given vertex. The first element is the vertex itself

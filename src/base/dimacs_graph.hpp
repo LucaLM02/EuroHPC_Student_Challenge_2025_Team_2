@@ -30,7 +30,7 @@ class DimacsGraph : public Graph {
         // -------------------- ORDERING ----------------------
 
         virtual void SortByDegree(bool ascending=true) override {}
-        virtual void SortByExdegree(bool ascending=true) override {}
+        virtual void SortByExDegree(bool ascending=true) override {}
         virtual void SortByColor(bool ascending=true) override {};
 
 
@@ -56,6 +56,7 @@ class DimacsGraph : public Graph {
         virtual void GetFullDegrees(std::vector<int>& result) const override {};
         virtual unsigned int GetMaxDegree() const override;
         virtual int GetVertexWithMaxDegree() const override;
+        virtual int GetExDegree(int vertex) const override { return 0;};
 
         virtual std::vector<int> GetMergedVertices(int vertex) const override { return {}; };
 

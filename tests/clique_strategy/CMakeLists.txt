@@ -1,31 +1,16 @@
-cmake_minimum_required(VERSION 3.10)
-project(test_clique_strategy)
+SET(GCC_MY_COMPILE_FLAGS "-g -std=c++20")  #"-g3 -std=c++20")
+SET(GCC_MY_LINK_FLAGS    "")
 
-set(CMAKE_CXX_STANDARD 20)
+SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${GCC_MY_COMPILE_FLAGS}")
+SET(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} ${GCC_MY_LINK_FLAGS}")
 
-# Add OpenMP support
-find_package(OpenMP)
-if(OpenMP_CXX_FOUND)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-endif()
+add_executable(test_clique test.cpp)
 
-# Explicitly tell CMake to include the "include" directory globally
-include_directories(${PROJECT_SOURCE_DIR}/src)
+# Link test_color executable with the main library and common test utilities
+target_link_libraries(test_clique PRIVATE chromatic_number test_common)
 
-# Ensure headers are accessible in all packages (src, include, tests)
-include_directories(${PROJECT_SOURCE_DIR}/src/clique)
-include_directories(${PROJECT_SOURCE_DIR}/src/base)
-include_directories(${PROJECT_SOURCE_DIR}/tests)
+# Include necessary headers
+target_include_directories(test_clique PRIVATE 
+    ${CMAKE_SOURCE_DIR}/src 
+    ${CMAKE_SOURCE_DIR}/tests/common)
 
-# Add the directory where fastwclq.hpp is located
-include_directories(${PROJECT_SOURCE_DIR}/src/clique)
-
-# Add executable including main.cpp
-add_executable(test_clique_strategy
-        src/clique/fastwclq.cpp
-        src/base/graph_clique.cpp
-        tests/clique_strategy/test.cpp)
-
-# Ensure target includes all directories for global header access
-target_include_directories(test_clique_strategy PRIVATE ${PROJECT_SOURCE_DIR}/src)
-target_include_directories(test_clique_strategy PRIVATE ${PROJECT_SOURCE_DIR}/tests)
