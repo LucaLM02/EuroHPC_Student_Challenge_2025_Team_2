@@ -8,6 +8,19 @@
 #include <unordered_set>
 #include <unordered_map>
 
+
+int FastCliqueStrategy::FindClique(const Graph &graph) const
+{
+
+    _solver = std::make_unique<FastWClq>(graph, _k);
+    return _solver->FindMaxWeightClique().size();
+}
+
+std::vector<int> FastCliqueStrategy::GetClique() const
+{
+    return _solver->GetMaxClique();
+}
+
 // Constructor initializes the graph reference and sets the max weight to zero
 FastWClq::FastWClq(const Graph& graph, int k) : graph_(graph), max_weight_(0), k_{k} {}
 
@@ -35,6 +48,7 @@ std::vector<int> FastWClq::FindMaxWeightClique() {
         // Check if the reduced graph is empty
         if (reduced_graph.empty() || reduced_graph.size() == 1) {
             //std::cout << "Terminating: Final Max Clique Size = " << best_clique.size() << std::endl;
+            max_clique_ = best_clique;
             return best_clique;
         }
 
@@ -43,6 +57,7 @@ std::vector<int> FastWClq::FindMaxWeightClique() {
         // Prevent infinite loops (temporary safeguard)
         if (iteration > 100) {
             //std::cerr << "ERROR: Algorithm stuck in an infinite loop. Exiting." << std::endl;
+            max_clique_ = best_clique;
             return best_clique;
         }
     }

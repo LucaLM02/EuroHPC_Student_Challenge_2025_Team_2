@@ -62,7 +62,7 @@ void test_csr_graph(const std::string& file_name) {
 
 
 int main() {
-    const std::string file_name = "queen15_15.col";
+    const std::string file_name = "queen10_10.col";
 
     std::cout << "-- COLORING DIMACS GRAPH --" << std::endl;
     //test_dimacs_graph(file_name);
