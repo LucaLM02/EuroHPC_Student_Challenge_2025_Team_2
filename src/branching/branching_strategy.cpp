@@ -1,4 +1,5 @@
 #include "branching_strategy.hpp"
+#include <algorithm>
 
 // ----------------------------- RANDOM BRANCHING STRATEGY ------------------------------
 
