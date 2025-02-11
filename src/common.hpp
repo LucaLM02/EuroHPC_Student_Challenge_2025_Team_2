@@ -43,6 +43,7 @@ struct Branch {
 		return depth < other.depth;
 	}
 
+	Branch() = default;
 	Branch(GraphPtr graph, int lower, unsigned short upper, int dp) 
         : g(std::move(graph)), lb(lower), ub(upper), depth(dp) {}
 };

@@ -5,7 +5,7 @@ SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${GCC_MY_COMPILE_FLAGS}")
 SET(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} ${GCC_MY_LINK_FLAGS}")
 
 # Find all source files in src/ and src/base/
-file(GLOB SRC_FILES common.cpp *.cpp color/*.cpp base/*.cpp branching/*.cpp branch_n_bound/branch_n_bound_seq.cpp clique/*.cpp)
+file(GLOB SRC_FILES common.cpp *.cpp color/*.cpp base/*.cpp branching/*.cpp branch_n_bound/*.cpp clique/*.cpp)
 
 # Create a static library from all source files
 add_library(chromatic_number STATIC ${SRC_FILES})

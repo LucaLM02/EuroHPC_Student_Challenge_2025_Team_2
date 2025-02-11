@@ -6,9 +6,18 @@
 #include <chrono>
 #include <iostream>
 #include <vector>
+#include <algorithm>
+#include <fstream>
+#include <queue>
+#include <utility>
+#include <omp.h>
+#include <mutex>
 
 #include "common.hpp"
 #include "graph.hpp"
+#include "branching_strategy.hpp"
+#include "clique_strategy.hpp"
+#include "color.hpp"
 
 class BranchNBoundPar {
        private:
@@ -16,6 +25,13 @@ class BranchNBoundPar {
 	CliqueStrategy& _clique_strat;
 	ColorStrategy& _color_strat;
 	std::ofstream _log_file;
+
+	/**
+	 * @brief Logs a message to the log file.
+	 *
+	 * @param message The message to log.
+	 */
+	 void Log(const std::string& message, int depth, bool is_branching);
 
 	/**
 	 * @brief Checks if the solver has exceeded the timeout.
@@ -39,7 +55,8 @@ class BranchNBoundPar {
 	 */
 	BranchNBoundPar(BranchingStrategy& branching_strat,
 			CliqueStrategy& clique_strat,
-			ColorStrategy& color_strat)
+			ColorStrategy& color_strat,
+			const std::string& log_file_path)
 	    : _branching_strat(branching_strat),
 	      _clique_strat(clique_strat),
 	      _color_strat(color_strat) {
