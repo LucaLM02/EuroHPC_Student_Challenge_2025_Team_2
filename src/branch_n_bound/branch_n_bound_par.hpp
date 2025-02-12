@@ -12,6 +12,7 @@
 #include <utility>
 #include <omp.h>
 #include <mutex>
+#include <atomic>
 
 #include "common.hpp"
 #include "graph.hpp"
