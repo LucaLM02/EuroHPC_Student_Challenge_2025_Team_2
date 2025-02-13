@@ -401,17 +401,19 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 			    current.depth);
 		}
 		// Send all p branches to all p workers.
-		while (!queue.empty()) {
-			Branch current =
-			    std::move(const_cast<Branch&>(queue.top()));
+
+		// TODO: Find an efficient and abstract way to send different Graph types to other workers.
+		// TODO: Send popped graph to a worker.
+
+		//assume we know the number of workers (p) and we have p-1 branches, we send to each worker a branch
+		for (int i = 1; i <= p; i++) {
+			Branch branch_to_send = std::move(const_cast<Branch&>(queue.top()));
 			queue.pop();
-			auto current_G = std::move(current.g);
-			int current_lb = current.lb;
-			int current_ub = current.ub;
-			// TODO: Find an efficient and abstract way to send
-			// different Graph types to other workers.
-			// TODO: Send popped graph to a worker.
+	
+			// Invia il branch al worker i
+			MPI_Send(&branch_to_send, sizeof(Branch), MPI_BYTE, i, TAG_WORK, MPI_COMM_WORLD);
 		}
+		
 		Log("[PARALLELISATION START]");
 	} else {
 
@@ -421,9 +423,6 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 
 		MPI_Status status_recv;
 		Branch branch_recv;
-    
-    	// request work
-    	MPI_Send(nullptr, 0, MPI_INT, 0, TAG_WORK_REQUEST, MPI_COMM_WORLD);
     
     	// recv work
     	MPI_Recv(&branch_recv, sizeof(Branch), MPI_BYTE, 0, TAG_WORK, MPI_COMM_WORLD, &status_recv);
