@@ -566,24 +566,17 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 						#pragma omp taskwait
 					}
 
-
-					//generate tasks
+					//generate tasks and update queue
 					#pragma omp task firstprivate(current_G, u, v)
 					{
 						create_task(active_tasks, current_G.get(), u, v, _clique_strat, _color_strat, new_branches, 1, best_ub, current.depth);
-					}
-
-					#pragma omp task firstprivate(current_G, u, v)
-					{
 						create_task(active_tasks, current_G.get(), u, v, _clique_strat, _color_strat, new_branches, 2, best_ub, current.depth);
-					}
-						
 
-					//add new branches to the queue
-					{
-						std::lock_guard<std::mutex> lock(queue_mutex);
-						for (auto& branch : new_branches) {
-							if (branch.g) queue.push(std::move(branch));
+						{
+							std::lock_guard<std::mutex> lock(queue_mutex);
+							for (auto& branch : new_branches) {
+								if (branch.g) queue.push(std::move(branch));
+							}
 						}
 					}
 
