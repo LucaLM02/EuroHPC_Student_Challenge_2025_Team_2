@@ -194,24 +194,30 @@ void thread_1_terminator(int my_rank, int p, int global_start_time,
 }
 
 // Function to listen for requests from other workers.
-//CHANGE: added mutex to avoid concurrent access to the queue
+//TODO: evaluate using iprobe instead of recv to reduce comunication overhead
+//CHANGE: added mutex to avoid concurrent access to the queue, added response to avoid sending work to workers if there is no work available(avoid also deadlock in workers)
 void thread_2_listen_for_requests(std::mutex &queue_mutex, BranchQueue &queue) {
-	int request_signal = 0;
+	MPI_Status status;
+	int request_signal;
 	while (true) {
-		MPI_Status status;
         // Listen for a request for work from other workers.
         MPI_Recv(&request_signal, 1, MPI_INT, MPI_ANY_SOURCE, TAG_WORK_REQUEST, MPI_COMM_WORLD, &status);
 
-		int destination_rank = status.MPI_SOURCE; 
+		int destination_rank = status.MPI_SOURCE;
+		int response = 0; 
 
 		std::lock_guard<std::mutex> lock(queue_mutex);
         if (!queue.empty()) {
+			response = 1;
+			MPI_Send(&response, 1, MPI_INT, destination_rank, TAG_WORK_REQUEST, MPI_COMM_WORLD);
+
             Branch branch = std::move(const_cast<Branch&>(queue.top()));
             queue.pop();
 
             MPI_Send(&branch, sizeof(Branch), MPI_BYTE, destination_rank, TAG_WORK, MPI_COMM_WORLD);
-        }
-		usleep(10000);	// Prevent CPU overload (10 ms)
+        }else{
+			MPI_Send(&response, 1, MPI_INT, destination_rank, TAG_WORK_REQUEST, MPI_COMM_WORLD);
+		}
 	}
 }
 
