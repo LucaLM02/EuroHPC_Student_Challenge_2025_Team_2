@@ -3,7 +3,7 @@
 #define ALLGATHER_WAIT_TIME 10	   // Sleep time for MPI_Allgather
 #define TIMEOUT_CHECK_WAIT_TIME 5  // Sleep time for timeout checker
 
-//tag for MPI communication
+//tags for MPI communication
 #define TAG_WORK_REQUEST 1
 #define TAG_WORK_RESPONSE 2
 #define TAG_WORK 3
@@ -33,6 +33,34 @@ void BranchNBoundPar::Log(const std::string& message, int depth = 0,
 				  << std::endl;
 		} else {
 			_log_file << indentation << message << std::endl;
+		}
+	}
+}
+
+void BranchNBoundPar::Log_par(const std::string& message, int depth = 0,
+	bool is_branching = false) {
+	if (_log_file.is_open()) {
+		int rank=0, thread_id=0;
+
+		MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+		thread_id = omp_get_thread_num();
+
+		// Indentation based on depth
+		std::string indentation(depth * 2, ' ');
+
+		#pragma omp critical
+		{
+			if (is_branching) {
+				_log_file << indentation << "[Rank " << rank 
+							<< " | Thread " << thread_id << "] "
+							<< "[Depth " << depth << "] Branching on u = " 
+							<< message << std::endl;
+			} else {
+				_log_file << indentation << "[Rank " << rank 
+							<< " | Thread " << thread_id << "] "
+							<< message << std::endl;
+			}
 		}
 	}
 }
@@ -177,9 +205,21 @@ void thread_2_listen_for_requests(std::mutex &queue_mutex, BranchQueue &queue) {
 	}
 }
 
-void create_task(std::atomic<int>& active_tasks, Graph* current_G, int u, int v,
+/**
+ * Creates a task for the OpenMP parallel region to execute.
+ * @param active_tasks The number of active tasks in the parallel region.
+ * @param current_G The current graph.
+ * @param u The first vertex to merge or add an edge.
+ * @param v The second vertex to merge or add an edge.
+ * @param _clique_strat The clique strategy.
+ * @param _color_strat The color strategy.
+ * @param new_branches The new branches to add to the queue.
+ * @param task_type The type of task to create (1 = MergeVertices, 2 = AddEdge).
+ * @param best_ub The best upper bound.
+ */
+void BranchNBoundPar::create_task(std::atomic<int>& active_tasks, Graph* current_G, int u, int v,
 CliqueStrategy& _clique_strat, ColorStrategy& _color_strat, 
-std::vector<Branch>& new_branches, int task_type, std::atomic<unsigned short>const &best_ub) {
+std::vector<Branch>& new_branches, int task_type, std::atomic<unsigned short>const &best_ub, int const &depth) {
 
 	#pragma omp atomic
     active_tasks++;
@@ -191,8 +231,11 @@ std::vector<Branch>& new_branches, int task_type, std::atomic<unsigned short>con
         int lb1 = _clique_strat.FindClique(*G1);
         unsigned short ub1;
         _color_strat.Color(*G1, ub1);
+		Log_par("[Branch 1] (Merge u, v) lb = " + std::to_string(lb1) +
+			", ub = " + std::to_string(ub1),
+		    depth);
 
-        if (lb1 < best_ub.load()) {
+        if (lb1 < best_ub.load()) { //check to avoid cuncurrent access
             new_branches[0] = Branch(std::move(G1), lb1, ub1, 1); 
         }
     } else if (task_type == 2) {
@@ -202,8 +245,11 @@ std::vector<Branch>& new_branches, int task_type, std::atomic<unsigned short>con
         int lb2 = _clique_strat.FindClique(*G2);
         unsigned short ub2;
         _color_strat.Color(*G2, ub2);
+		Log_par("[Branch 2] (Add edge u-v) lb = " + std::to_string(lb2) +
+			", ub = " + std::to_string(ub2),
+		    depth);
 
-        if ((lb2 < best_ub.load()) && (lb2 < new_branches[0].ub)) {
+        if ((lb2 < best_ub.load()) && (lb2 < new_branches[0].ub)) { //check to avoid cuncurrent access
             new_branches[1] = Branch(std::move(G2), lb2, ub2, 1);
         }
 	}
@@ -232,7 +278,9 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 	int max_tasks = omp_get_max_threads()-3; //limit number of tasks (maybe we can increase this number)
 	bool terminate = false;
 
-	if (my_rank == 0) {
+	//TODO: possibility to reduce initial time by distributing work(generate 2 branches, keep one send the other, i think this one is more scalable) to workers 
+	//or using openMP
+	if (my_rank == 0) { 
 		// Initialize bounds
 		int lb = _clique_strat.FindClique(g);
 		unsigned short ub;
@@ -458,23 +506,45 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 					current_lb = current.lb;
 					current_ub = current.ub;
 
+					Log_par("Processing node: lb = " + std::to_string(current_lb) +
+						", ub = " + std::to_string(current_ub),
+		    			current.depth);
+
 					// find solution
 					if (current_lb == current_ub) {
-						//MPI_Send(&current_ub, 1, MPI_INT, 0, TAG_SOLUTION_FOUND, MPI_COMM_WORLD); //we need also coloring?
+						MPI_Send(&current_ub, 1, MPI_INT, 0, TAG_SOLUTION_FOUND, MPI_COMM_WORLD); //check if it is correct
+						Log_par("[FOUND] Chromatic number found: " +
+							std::to_string(current_lb),
+							current.depth);
+						Log_par("========== END ==========", 0);
 						continue;
 					}
 
 					// Prune
-					if (current_lb >= best_ub.load()) continue;
+					if (current_lb >= best_ub.load()){
+						Log_par("[PRUNE] Branch pruned at depth " +
+							std::to_string(current.depth) +
+							": lb = " + std::to_string(current_lb) +
+							" >= best_ub = " + std::to_string(best_ub),
+							current.depth);
+						continue;
+					}
 
 					auto type = _branching_strat.PairType::DontCare;
 					std::pair<unsigned int, unsigned int> vertices = _branching_strat.ChooseVertices(*current_G, type);
 					u = vertices.first;
 					v = vertices.second;
+					Log_par("Branching on vertices: u = " + std::to_string(u) +
+							", v = " + std::to_string(v),
+		    				current.depth, true);
 
 					if (u == -1 || v == -1) {
-						best_ub.store(static_cast<unsigned short>(current_G->GetNumVertices()));
-						//MPI_Send(&chromatic_number, 1, MPI_INT, 0, TAG_SOLUTION_FOUND, MPI_COMM_WORLD); //we need also coloring?
+						int chromatic_number = current_G->GetNumVertices();
+						MPI_Send(&chromatic_number, 1, MPI_INT, 0, TAG_SOLUTION_FOUND, MPI_COMM_WORLD); //check
+						Log_par("Graph is complete. Chromatic number = " +
+							std::to_string(chromatic_number),
+							current.depth);
+						Log_par("========== END ==========", 0);
 						continue;
 					}
 
@@ -485,12 +555,12 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 
 						#pragma omp task firstprivate(current_G, u, v)
 						{
-							create_task(active_tasks, current_G.get(), u, v, _clique_strat, _color_strat, new_branches, 1, best_ub);
+							create_task(active_tasks, current_G.get(), u, v, _clique_strat, _color_strat, new_branches, 1, best_ub, current.depth);
 						}
 
 						#pragma omp task firstprivate(current_G, u, v)
 						{
-							create_task(active_tasks, current_G.get(), u, v, _clique_strat, _color_strat, new_branches, 2, best_ub);
+							create_task(active_tasks, current_G.get(), u, v, _clique_strat, _color_strat, new_branches, 2, best_ub, current.depth);
 						}
 						
 
@@ -504,6 +574,8 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 
 					unsigned short previous_best_ub = best_ub.load();
 					best_ub.store(std::min({previous_best_ub, new_branches[0].ub, new_branches[1].ub}));
+					Log_par("[UPDATE] Updated best_ub: " + std::to_string(best_ub),
+		    		current.depth);
 				}
 			}
 		}
