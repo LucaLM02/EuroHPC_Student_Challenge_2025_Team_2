@@ -11,7 +11,14 @@
 
 using BranchQueue = std::priority_queue<Branch, std::vector<Branch>>;
 
-//now i fixed with start time seconds, check if its better using only mpi_wtime
+/*
+* FOR JAN
+* TODO == suggested changes/improvements
+* CHANGE == changes made
+*/
+
+//CHANGE: fixed with casting start time as double
+//TODO: check if its better using only mpi_wtime instead of chrono
 bool BranchNBoundPar::CheckTimeout( 
     const std::chrono::steady_clock::time_point& start_time,
     int timeout_seconds) {
@@ -37,6 +44,7 @@ void BranchNBoundPar::Log(const std::string& message, int depth = 0,
 	}
 }
 
+//CHANGE: added thread_id to log and make it thread safe(by using critical section)
 void BranchNBoundPar::Log_par(const std::string& message, int depth = 0,
 	bool is_branching = false) {
 	if (_log_file.is_open()) {
@@ -80,6 +88,8 @@ void BranchNBoundPar::Log_par(const std::string& message, int depth = 0,
  *   p (int)           : The number of processes in the MPI communicator.
  *   best_ub (int*)    : Pointer to the variable holding the best upper bound.
  */
+
+ //CHANGE: all_best_ub is now a vector of unsigned short, best_ub is now an atomic variable(helps to avoid cuncurrent access)
 void thread_0_solution_gatherer(int p, std::atomic<unsigned short>& best_ub) {
 	std::vector<unsigned short> all_best_ub(p);
 	// Start timer for best_ub exchange interval.
@@ -97,7 +107,7 @@ void thread_0_solution_gatherer(int p, std::atomic<unsigned short>& best_ub) {
 
 		// Update the best upper bound for other threads in
 		// shared memory
-		best_ub.store(*std::min_element(all_best_ub.begin(), all_best_ub.end()));
+		best_ub.store(*std::min_element(all_best_ub.begin(), all_best_ub.end())); //safe write
 
 		// Reset timer
 		start_time = time(NULL);
@@ -184,7 +194,7 @@ void thread_1_terminator(int my_rank, int p, int global_start_time,
 }
 
 // Function to listen for requests from other workers.
-//TODO: Implement this function as response if has work than send work (reference line 388)
+//CHANGE: added mutex to avoid concurrent access to the queue
 void thread_2_listen_for_requests(std::mutex &queue_mutex, BranchQueue &queue) {
 	int request_signal = 0;
 	while (true) {
@@ -207,6 +217,8 @@ void thread_2_listen_for_requests(std::mutex &queue_mutex, BranchQueue &queue) {
 
 /**
  * Creates a task for the OpenMP parallel region to execute.
+ *  
+ * 
  * @param active_tasks The number of active tasks in the parallel region.
  * @param current_G The current graph.
  * @param u The first vertex to merge or add an edge.
@@ -258,6 +270,11 @@ std::vector<Branch>& new_branches, int task_type, std::atomic<unsigned short>con
     active_tasks--;
 }
 
+/*CHANGE:   now ub and best_ub are atomic variables(avoids concurrent access)
+			added mutex to avoid concurrent access to the queue
+			implemented system to send work to workers(line 421)
+*/
+// TODO: Add a flag to terminate the loop and avoid infinite loop
 int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshold) {
 	// Intitialize MPI
 	MPI_Init(NULL, NULL);
@@ -276,7 +293,6 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 
 	std::atomic<int> active_tasks = 0;
 	int max_tasks = omp_get_max_threads()-3; //limit number of tasks (maybe we can increase this number)
-	bool terminate = false;
 
 	//TODO: possibility to reduce initial time by distributing work(generate 2 branches, keep one send the other, i think this one is more scalable) to workers 
 	//or using openMP
@@ -400,26 +416,18 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 				std::to_string(best_ub),
 			    current.depth);
 		}
-		// Send all p branches to all p workers.
-
-		// TODO: Find an efficient and abstract way to send different Graph types to other workers.
-		// TODO: Send popped graph to a worker.
 
 		//assume we know the number of workers (p) and we have p-1 branches, we send to each worker a branch
 		for (int i = 1; i <= p; i++) {
 			Branch branch_to_send = std::move(const_cast<Branch&>(queue.top()));
 			queue.pop();
 	
-			// Invia il branch al worker i
+			// send branch to worker i
 			MPI_Send(&branch_to_send, sizeof(Branch), MPI_BYTE, i, TAG_WORK, MPI_COMM_WORLD);
 		}
 		
 		Log("[PARALLELISATION START]");
 	} else {
-
-		// TODO: Here create priority queue for branches.
-		// TODO: Here receive graph from Master, compute bounds and push it to priority queue (G, lb, ub).
-		// TODO: implement log
 
 		MPI_Status status_recv;
 		Branch branch_recv;
@@ -434,6 +442,12 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 	}
 
 	// OpenMP Parallel Region
+	/*
+	idea is assign specific threads to specific tasks, in particular the first three threads are used for 
+	gathering best_ub, checking for termination and listening for requests, than the other threads are used for
+		-one to keep popping from the queue, work_stealing, generate omp_tasks(method create_task) and add new branches to the queue
+		-others to compute the omp_tasks
+	*/
 	#pragma omp parallel shared(best_ub, queue, queue_mutex, active_tasks, max_tasks)
 	{
 		int tid = omp_get_thread_num();
@@ -455,7 +469,6 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 				thread_2_listen_for_requests(queue_mutex, queue);
 			}
 
-			// TODO: Here worker should pop first element and start branching as well as implement work stealing (maybe create own communication group for this?)
 			Branch current;
 			std::unique_ptr<Graph> current_G;
 			int current_lb;
@@ -468,7 +481,7 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 				MPI_Status status_work_steal;
 
 				//TODO:change true with flag terminate (is false until we receive a signal from terminator)
-				while (true) {  // keep dequeuing until queue is empty or we dont have other threads available
+				while (true) { // keep dequeuing until queue is empty or we dont have other threads available(or too much tasks generated)
 					bool has_work = false;
 					
 					{
@@ -480,11 +493,11 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 						}
 					}
 
-					//TODO: if response is 0 ask to others(limit number of requests?)
+					//TODO: if response is 0 ask to others(keep asking to others? limit the number of requests?)
 					// Work Stealing
 					if (!has_work) {
 
-						int target_worker = (my_rank + rand() % (p - 1) + 1) % p; //check this
+						int target_worker = (my_rank + rand() % (p - 1) + 1) % p; //check if it is correct
 
 						//ask for work
 						int response = 0;
@@ -539,7 +552,7 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 
 					if (u == -1 || v == -1) {
 						int chromatic_number = current_G->GetNumVertices();
-						MPI_Send(&chromatic_number, 1, MPI_INT, 0, TAG_SOLUTION_FOUND, MPI_COMM_WORLD); //check
+						MPI_Send(&chromatic_number, 1, MPI_INT, 0, TAG_SOLUTION_FOUND, MPI_COMM_WORLD); //check if it is correct
 						Log_par("Graph is complete. Chromatic number = " +
 							std::to_string(chromatic_number),
 							current.depth);
@@ -547,20 +560,23 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 						continue;
 					}
 
+					//TODO: check for other approaches to avoid generating too much tasks(this will wait untill all child tasks are completed)
+					//avoid generating too much tasks
 					while (active_tasks > max_tasks) {
 						#pragma omp taskwait
 					}
 
 
-						#pragma omp task firstprivate(current_G, u, v)
-						{
-							create_task(active_tasks, current_G.get(), u, v, _clique_strat, _color_strat, new_branches, 1, best_ub, current.depth);
-						}
+					//generate tasks
+					#pragma omp task firstprivate(current_G, u, v)
+					{
+						create_task(active_tasks, current_G.get(), u, v, _clique_strat, _color_strat, new_branches, 1, best_ub, current.depth);
+					}
 
-						#pragma omp task firstprivate(current_G, u, v)
-						{
-							create_task(active_tasks, current_G.get(), u, v, _clique_strat, _color_strat, new_branches, 2, best_ub, current.depth);
-						}
+					#pragma omp task firstprivate(current_G, u, v)
+					{
+						create_task(active_tasks, current_G.get(), u, v, _clique_strat, _color_strat, new_branches, 2, best_ub, current.depth);
+					}
 						
 
 					//add new branches to the queue
@@ -571,6 +587,7 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 						}
 					}
 
+					// Update local sbest_ub
 					unsigned short previous_best_ub = best_ub.load();
 					best_ub.store(std::min({previous_best_ub, new_branches[0].ub, new_branches[1].ub}));
 					Log_par("[UPDATE] Updated best_ub: " + std::to_string(best_ub),
