@@ -2,25 +2,25 @@
 #define BRANCH_N_BOUND_PAR_HPP
 
 #include <mpi.h>
-
-#include <chrono>
-#include <iostream>
-#include <vector>
-#include <algorithm>
-#include <fstream>
-#include <queue>
-#include <utility>
 #include <omp.h>
-#include <mutex>
-#include <atomic>
-#include <climits>
 #include <unistd.h>
 
-#include "common.hpp"
-#include "graph.hpp"
+#include <algorithm>
+#include <atomic>
+#include <chrono>
+#include <climits>
+#include <fstream>
+#include <iostream>
+#include <mutex>
+#include <queue>
+#include <utility>
+#include <vector>
+
 #include "branching_strategy.hpp"
 #include "clique_strategy.hpp"
 #include "color.hpp"
+#include "common.hpp"
+#include "graph.hpp"
 
 class BranchNBoundPar {
        private:
@@ -34,23 +34,25 @@ class BranchNBoundPar {
 	 *
 	 * @param message The message to log.
 	 */
-	 void Log(const std::string& message, int depth, bool is_branching);
+	void Log(const std::string& message, int depth, bool is_branching);
 
 	/**
 	 * @brief Logs a message to the log file.
 	 *
 	 * @param message The message to log.
 	 */
-	 void Log_par(const std::string& message, int depth, bool is_branching);
+	void Log_par(const std::string& message, int depth, bool is_branching);
 
 	/**
 	 * @brief Creates a task for the OpenMP parallel region to execute.
 	 *
 	 */
-	 void create_task(std::atomic<int>& active_tasks, Graph* current_G, int u, int v,
-			 CliqueStrategy& _clique_strat, ColorStrategy& _color_strat,
+	void create_task(std::atomic<int>& active_tasks, Graph* current_G,
+			 int u, int v, CliqueStrategy& _clique_strat,
+			 ColorStrategy& _color_strat,
 			 std::vector<Branch>& new_branches, int task_type,
-			 std::atomic<unsigned short>const &best_ub, int const &depth);
+			 std::atomic<unsigned short> const& best_ub,
+			 int const& depth);
 
 	/**
 	 * @brief Checks if the solver has exceeded the timeout.

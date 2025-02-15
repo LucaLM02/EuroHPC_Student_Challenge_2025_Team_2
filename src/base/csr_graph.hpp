@@ -5,6 +5,10 @@
 #include "dimacs.hpp"
 
 #include <memory>
+#include <cmath>
+#include <cstring>
+#include <sstream> // for Serialize
+
 
 /*
     TODO: otherwise could be possible to impose a rewriting of the vertices when the topology changes
@@ -67,6 +71,11 @@ class CSRGraph : public Graph {
         virtual std::vector<unsigned short> GetColoring() const override;
         virtual std::vector<unsigned short> GetFullColoring() const override;
         virtual unsigned short GetColor(int vertex) const override;
+
+        // -------------------- SERIALIZATION --------------------
+        std::string Serialize() const;
+        void Deserialize(const std::string& data);
+
 
         virtual std::unique_ptr<Graph> Clone() const override;
 

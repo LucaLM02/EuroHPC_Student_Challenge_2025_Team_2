@@ -314,7 +314,10 @@ class Graph {
 
         // ================================= COPYING ====================================
         virtual std::unique_ptr<Graph> Clone() const = 0;
-
+        
+        // ================================= SERIALIZATION ==============================
+        virtual std::string Serialize() const = 0;
+        virtual void Deserialize(const std::string& data) = 0;
 };
 
 #endif // GRAPH_HPP

@@ -7,6 +7,14 @@ DimacsGraph* DimacsGraph::LoadFromDimacs(const std::string& file_name) {
     return new DimacsGraph(file_name);
 }
 
+std::string DimacsGraph::Serialize() const {
+    // ... implementation ...
+}
+
+void DimacsGraph::Deserialize(const std::string& data) {
+    // ... implementation ...
+}
+
 void DimacsGraph::AddEdge(int v, int w) {
     if ( v >= _dimacs.degrees.size() || w >= _dimacs.degrees.size() ) {
         return;

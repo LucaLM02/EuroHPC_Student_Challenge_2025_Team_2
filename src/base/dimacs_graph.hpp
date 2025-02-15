@@ -64,6 +64,10 @@ class DimacsGraph : public Graph {
         virtual std::vector<unsigned short> GetFullColoring() const override { return {}; };
         virtual unsigned short GetColor(int vertex) const override { return 0; };
 
+        // -------------------- SERIALIZATION --------------------
+        std::string Serialize() const;
+        void Deserialize(const std::string& data);
+
         virtual std::unique_ptr<Graph> Clone() const override;
 
         virtual ~DimacsGraph() = default;
