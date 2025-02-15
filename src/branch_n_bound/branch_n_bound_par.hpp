@@ -13,6 +13,8 @@
 #include <omp.h>
 #include <mutex>
 #include <atomic>
+#include <climits>
+#include <unistd.h>
 
 #include "common.hpp"
 #include "graph.hpp"
