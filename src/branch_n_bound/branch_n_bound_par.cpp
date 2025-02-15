@@ -100,10 +100,11 @@ void BranchNBoundPar::Log_par(const std::string& message, int depth = 0,
  * @param comm The MPI communicator used for communication.
  */
 void sendBranch(const Branch& b, int dest, int tag, MPI_Comm comm) {
+	//std::cout << "Before serializing branch" << std::endl;
 	std::vector<char> buffer = b.serialize();
 	int size = buffer.size();
-	std::cout << "Sucessfully serialized branch with size " << size << " bytes."
-			  << std::endl;
+	//std::cout << "Sucessfully serialized branch with size " << size << " bytes."
+	//		  << std::endl;
 
 	MPI_Send(&size, 1, MPI_INT, dest, tag, comm);
 	MPI_Send(buffer.data(), size, MPI_BYTE, dest, tag, comm);
@@ -129,8 +130,8 @@ Branch recvBranch(int source, int tag, MPI_Comm comm) {
 
 	std::vector<char> buffer(size);
 	MPI_Recv(buffer.data(), size, MPI_BYTE, source, tag, comm, &status);
-	std::cout << "Sucessfully received serialized branch with size " << size << " bytes."
-			  << std::endl;
+	//std::cout << "Sucessfully received serialized branch with size " << size << " bytes."
+	//	  		<< std::endl;
 	return Branch::deserialize(buffer);
 }
 
@@ -201,9 +202,8 @@ void thread_1_terminator(int my_rank, int p, int global_start_time,
 	int solution_found = 0;
 	int timeout_signal = 0;
 	while (1) {
-		// std::cout << "worker: " << my_rank << " check termination
-		// loop"
-		//	  << std::endl;
+		std::cout << "worker: " << my_rank << " check termination loop"
+			  	  << std::endl;
 		if (my_rank == 0) {
 			// Master listens for solution found (Non-blocking)
 			MPI_Status status;
@@ -473,15 +473,8 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds,
 			Branch branch_to_send =
 			    std::move(const_cast<Branch&>(queue.top()));
 			queue.pop();
-
-			for (int i = 1; i <= p - 1; i++) {
-				Branch branch_to_send =
-					std::move(const_cast<Branch&>(queue.top()));
-				queue.pop();
-				// send branch to worker i
-				MPI_Send(&branch_to_send, sizeof(Branch), MPI_BYTE, i,
-					 TAG_WORK, MPI_COMM_WORLD);
-			}
+			// send branch to worker i
+			sendBranch(branch_to_send, i, TAG_WORK, MPI_COMM_WORLD);
 		}
 		// std::cout << "Queue size" << queue.size() << std::endl;
 
@@ -494,12 +487,11 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds,
 		branch_recv = recvBranch(0, TAG_WORK, MPI_COMM_WORLD);
 		std::atomic<unsigned short> best_ub = branch_recv.ub;
 
-		std::cout << "Worker: " << my_rank << " ub, lb "
-			  << branch_recv.ub << branch_recv.lb << std::endl;
+		//std::cout << "Worker: " << my_rank << std::endl;
 
 		queue.push(std::move(branch_recv));
 
-		std::cout << "Pushed to queue" << std::endl;
+		//std::cout << "Pushed to queue" << std::endl;
 	}
 
 	// OpenMP Parallel Region
@@ -512,13 +504,9 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds,
 	to compute the omp_tasks
 	*/
 
-	omp_set_num_threads(5);
 #pragma omp parallel shared(best_ub, queue, queue_mutex, active_tasks, \
 				max_tasks)
 	{
-		std::cout << "rank " << my_rank
-			  << " thread #: " << omp_get_max_threads()
-			  << std::endl;
 		int tid = omp_get_thread_num();
 
 		// Both master's and worker's thread 0 goes in here.

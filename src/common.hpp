@@ -7,6 +7,7 @@
 #include <tuple>
 #include <vector>
 #include <cstring>
+#include <iostream>
 
 #include "graph.hpp"
 #include "csr_graph.hpp"
@@ -61,7 +62,9 @@ struct Branch {
 	// Method to serialize branch
 	std::vector<char> serialize() const {
 		std::vector<char> buffer;
+		//std::cout << "Before graph serialization " << std::endl;
 		std::string graphData = g->Serialize();
+		//std::cout << "After graph serialization " << std::endl;
 		size_t graphSize = graphData.size();
 	
 		buffer.resize(sizeof(lb) + sizeof(ub) + sizeof(depth) + sizeof(graphSize) + graphSize);

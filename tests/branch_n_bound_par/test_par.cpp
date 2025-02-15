@@ -32,7 +32,7 @@ int main() {
 	BranchNBoundPar solver(branching_strategy, clique_strategy,
 			       color_strategy, "log.txt");
 
-	int chromatic_number = solver.Solve(*graph, 100, 100000);
+	int chromatic_number = solver.Solve(*graph, 60, 100000);
 
 	std::cout << "Chromatic number: " << chromatic_number << std::endl;
 

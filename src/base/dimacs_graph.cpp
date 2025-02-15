@@ -9,6 +9,7 @@ DimacsGraph* DimacsGraph::LoadFromDimacs(const std::string& file_name) {
 
 std::string DimacsGraph::Serialize() const {
     // ... implementation ...
+    return "";
 }
 
 void DimacsGraph::Deserialize(const std::string& data) {
