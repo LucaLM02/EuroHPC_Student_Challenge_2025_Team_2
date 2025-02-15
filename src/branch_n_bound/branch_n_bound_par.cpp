@@ -90,13 +90,12 @@ void BranchNBoundPar::Log_par(const std::string& message, int depth = 0,
  */
 
  //CHANGE: all_best_ub is now a vector of unsigned short, best_ub is now an atomic variable(helps to avoid cuncurrent access)
-void thread_0_solution_gatherer(int p, std::atomic<unsigned short>& best_ub) {
+void thread_0_solution_gatherer(int p, std::atomic<unsigned short>& best_ub, int &my_rank) {
 	std::vector<unsigned short> all_best_ub(p);
-	// Start timer for best_ub exchange interval.
-	time_t start_time = time(NULL);
 
 	while (1) { //TODO: use flag to avoid infinite loop
 
+		std::cout << "worker: " << my_rank << " best sol updated" << std::endl;
 		// Wait for the time threshold. Allgather in done every
 		// ALLGATHER_WAIT_TIME seconds.
 		sleep(ALLGATHER_WAIT_TIME);
@@ -108,9 +107,6 @@ void thread_0_solution_gatherer(int p, std::atomic<unsigned short>& best_ub) {
 		// Update the best upper bound for other threads in
 		// shared memory
 		best_ub.store(*std::min_element(all_best_ub.begin(), all_best_ub.end())); //safe write
-
-		// Reset timer
-		start_time = time(NULL);
 	}
 }
 
@@ -138,6 +134,7 @@ void thread_1_terminator(int my_rank, int p, int global_start_time,
 	int solution_found = 0;
 	int timeout_signal = 0;
 	while (1) {
+		std::cout << "worker: " << my_rank << " check termination loop" << std::endl;
 		if (my_rank == 0) {
 			// Master listens for solution found (Non-blocking)
 			MPI_Status status;
@@ -158,7 +155,6 @@ void thread_1_terminator(int my_rank, int p, int global_start_time,
 				break;	// Exit loop after broadcasting solution
 					// found
 			}
-
 			// Check if timeout is reached, broadcast timeout signal
 			// TODO: Do we really care if workers exit forcefully
 			// with MPI finalize? If we dont, we dont need all this
@@ -196,13 +192,14 @@ void thread_1_terminator(int my_rank, int p, int global_start_time,
 // Function to listen for requests from other workers.
 //TODO: evaluate using iprobe instead of recv to reduce comunication overhead
 //CHANGE: added mutex to avoid concurrent access to the queue, added response to avoid sending work to workers if there is no work available(avoid also deadlock in workers)
-void thread_2_listen_for_requests(std::mutex &queue_mutex, BranchQueue &queue) {
+void thread_2_listen_for_requests(std::mutex &queue_mutex, BranchQueue &queue, int &my_rank) {
 	MPI_Status status;
 	int request_signal;
 	while (true) {
+
+		std::cout << "worker: " << my_rank << " listening for stealing requests" << std::endl;
         // Listen for a request for work from other workers.
         MPI_Recv(&request_signal, 1, MPI_INT, MPI_ANY_SOURCE, TAG_WORK_REQUEST, MPI_COMM_WORLD, &status);
-
 		int destination_rank = status.MPI_SOURCE;
 		int response = 0; 
 
@@ -422,9 +419,8 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 				std::to_string(best_ub),
 			    current.depth);
 		}
-
 		//assume we know the number of workers (p) and we have p-1 branches, we send to each worker a branch
-		for (int i = 1; i <= p; i++) {
+		for (int i = 1; i <= p-1; i++) {
 			Branch branch_to_send = std::move(const_cast<Branch&>(queue.top()));
 			queue.pop();
 	
@@ -443,8 +439,6 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 		std::atomic<unsigned short> best_ub = branch_recv.ub;
 
 		queue.push(std::move(branch_recv));
-		
-		int best_ub_unchanged_count = 0; //do we need this?
 	}
 
 	// OpenMP Parallel Region
@@ -454,14 +448,17 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 		-one to keep popping from the queue, work_stealing, generate omp_tasks(method create_task) and add new branches to the queue
 		-others to compute the omp_tasks
 	*/
+
+	omp_set_num_threads(5);
 	#pragma omp parallel shared(best_ub, queue, queue_mutex, active_tasks, max_tasks)
 	{
+		std::cout << "rank " << my_rank << " thread #: " << omp_get_max_threads() << std::endl;
 		int tid = omp_get_thread_num();
 		
 		// Both master's and worker's thread 0 goes in here.
 		if (tid == 0) {
 			// Updates (gathers) best_ub from time to time.
-			thread_0_solution_gatherer(p, best_ub);
+			thread_0_solution_gatherer(p, best_ub, my_rank);
 		}
 		// Both master's and worker's thread 1 goes in here.
 		if (tid == 1) {
@@ -472,7 +469,7 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 		if (my_rank != 0) {
 			//worker thread used for listening for requests about work stealing
 			if (tid == 2) {
-				thread_2_listen_for_requests(queue_mutex, queue);
+				thread_2_listen_for_requests(queue_mutex, queue, my_rank);
 			}
 
 			Branch current;
