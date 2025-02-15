@@ -202,12 +202,10 @@ void thread_1_terminator(int my_rank, int p, int global_start_time,
 	int solution_found = 0;
 	int timeout_signal = 0;
 	while (1) {
-		std::cout << "worker: " << my_rank << " check termination loop"
-			  	  << std::endl;
 		if (my_rank == 0) {
 			// Master listens for solution found (Non-blocking)
 			MPI_Status status;
-			int flag;
+			int flag = 0;
 			MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD,
 				   &flag, &status);
 			// Check if a solution is being communicated
