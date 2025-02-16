@@ -638,7 +638,7 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 
 					std::shared_ptr<Graph> local_g = std::move(current_G->Clone());
 
-					#pragma omp task default(shared) firstprivate (u, v) 	
+					#pragma omp task default(shared) firstprivate(local_g, u, v) 	
 					{
 						//std::cout << "Rank: " << my_rank << " start task" << std::endl;
 						active_tasks.fetch_add(1);
@@ -665,7 +665,7 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 						std::cout << "Rank: " << my_rank << " copy graph" << std::endl;
 						G1->MergeVertices(u, v);
 						std::cout << "Rank: " << my_rank << " merge vertices" << std::endl;
-						int lb1 = _clique_strat.	(*G1);
+						int lb1 = _clique_strat.FindClique(*G1);
 						unsigned short ub1;
 						_color_strat.Color(*G1, ub1);
 						Log_par("[Branch 1] (Merge u, v) "
