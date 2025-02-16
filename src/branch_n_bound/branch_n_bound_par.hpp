@@ -15,6 +15,7 @@
 #include <queue>
 #include <utility>
 #include <vector>
+#include <thread>
 
 #include "branching_strategy.hpp"
 #include "clique_strategy.hpp"
@@ -37,7 +38,7 @@ class BranchNBoundPar {
 	void Log(const std::string& message, int depth, bool is_branching);
 
 	/**
-	 * @brief Logs a message to the log file.
+	 * @brief Logs a message to the log file in a openmp parallel section.
 	 *
 	 * @param message The message to log.
 	 */

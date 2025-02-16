@@ -43,28 +43,53 @@ struct Branch {
 	int lb;
 	unsigned short ub;
 	int depth;
+
+	// Default constructor
+	Branch() = default;
+
+	// Parameterized constructor
+	Branch(GraphPtr graph, int lower, unsigned short upper, int dp)
+	    : g(std::move(graph)), lb(lower), ub(upper), depth(dp) {}
+
+	// Copy constructor
+	Branch(const Branch& b)
+	    : g(b.g->Clone()), lb(b.lb), ub(b.ub), depth(b.depth) {}
+
+	// Move constructor
+	Branch(Branch&& b) noexcept
+	    : g(std::move(b.g)), lb(b.lb), ub(b.ub), depth(b.depth) {}
+
+	// Copy assignment operator
+	Branch& operator=(const Branch& other) {
+		if (this != &other) {
+			g = other.g->Clone();
+			lb = other.lb;
+			ub = other.ub;
+			depth = other.depth;
+		}
+		return *this;
+	}
+
+	// Move assignment operator
+	Branch& operator=(Branch&& other) noexcept {
+		if (this != &other) {
+			g = std::move(other.g);
+			lb = other.lb;
+			ub = other.ub;
+			depth = other.depth;
+		}
+		return *this;
+	}
+
+	// Comparison operator for priority queue
 	bool operator<(const Branch& other) const {
 		return depth < other.depth;
 	}
-	Branch& operator=(const Branch& other) {
-		g = std::move(other.g->Clone());
-		lb = other.lb;
-		ub = other.ub;
-		depth = other.depth;
-		return *this;
-	}
-	Branch() = default;
-	Branch(const Branch& b)
-	    : g(std::move(b.g->Clone())), lb(b.lb), ub(b.ub), depth(b.depth) {};
-	Branch(GraphPtr graph, int lower, unsigned short upper, int dp)
-	    : g(std::move(graph)), lb(lower), ub(upper), depth(dp) {}
 
 	// Method to serialize branch
 	std::vector<char> serialize() const {
 		std::vector<char> buffer;
-		//std::cout << "Before graph serialization " << std::endl;
 		std::string graphData = g->Serialize();
-		//std::cout << "After graph serialization " << std::endl;
 		size_t graphSize = graphData.size();
 	
 		buffer.resize(sizeof(lb) + sizeof(ub) + sizeof(depth) + sizeof(graphSize) + graphSize);

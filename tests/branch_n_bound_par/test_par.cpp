@@ -13,8 +13,10 @@
 #include "dimacs.hpp"
 #include "test_common.hpp"
 
+#include <mpi.h>
+
 //TODO: case p=1 cause problems
-int main() {
+int main(int argc, char** argv) {
 	Dimacs dimacs;
 	std::string file_name = "10_vertices_graph.col";
 
@@ -25,6 +27,7 @@ int main() {
 
 	CSRGraph* graph = CSRGraph::LoadFromDimacs(file_name);
 
+
 	RandomBranchingStrategy branching_strategy(graph->GetNumVertices());
 	FastCliqueStrategy clique_strategy;
 	DSaturColorStrategy color_strategy;
@@ -32,9 +35,21 @@ int main() {
 	BranchNBoundPar solver(branching_strategy, clique_strategy,
 			       color_strategy, "log.txt");
 
-	int chromatic_number = solver.Solve(*graph, 10, 100000);
+	int provided;
+	MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
 
-	std::cout << "Chromatic number: " << chromatic_number << std::endl;
+	if (provided < MPI_THREAD_MULTIPLE) {
+		std::cerr << "MPI does not support full multithreading!" << std::endl;
+		MPI_Abort(MPI_COMM_WORLD, 1);
+	}
+	
+	int chromatic_number = solver.Solve(*graph, 30, 100000);
 
+	int my_rank;
+	MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+	if (my_rank == 0)
+		std::cout << "Chromatic number: " << chromatic_number << std::endl;
+
+	MPI_Finalize();
 	return 0;
 }
