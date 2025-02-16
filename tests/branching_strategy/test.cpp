@@ -15,6 +15,10 @@ int main() {
 
     Graph& graph = *CSRGraph::LoadFromDimacs(file_name);
 
+    graph.AddEdge(5, 6);
+    graph.AddEdge(3, 6);
+    graph.AddEdge(6, 1);
+
     NeighboursBranchingStrategy branching_strategy;
 
     auto [v, u] = branching_strategy.ChooseVertices(graph);

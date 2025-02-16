@@ -229,6 +229,7 @@ void CSRGraph::GetNeighbours(int vertex, std::vector<int> &result) const {
 }
 
 void CSRGraph::GetNeighbours(int vertex, std::set<int> &result) const {
+    result.clear();
     for ( int w : _edges[vertex] ) {
         result.insert(w);
     }

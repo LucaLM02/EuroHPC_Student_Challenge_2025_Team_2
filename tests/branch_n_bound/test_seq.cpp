@@ -31,7 +31,7 @@ int main() {
 	BranchNBoundSeq solver(branching_strategy, clique_strategy,
 			       color_strategy, "log.txt");
 
-	int chromatic_number = solver.Solve(*graph, 10000, 100000);
+	int chromatic_number = solver.Solve(*graph, 60, 100000);
 
 	std::cout << "Chromatic number: " << chromatic_number << std::endl;
 
