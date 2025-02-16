@@ -12,7 +12,7 @@ RandomBranchingStrategy::RandomBranchingStrategy(int num_vertices)
 
 
 std::pair<int, int> 
-RandomBranchingStrategy::ChooseVertices(const Graph &graph) {
+RandomBranchingStrategy::ChooseVertices(Graph &graph) {
     //check if the graph is complete
     int n = graph.GetNumVertices();
     if(graph.GetNumEdges() == n*(n-1)/2) {
@@ -41,7 +41,7 @@ RandomBranchingStrategy::ChooseVertices(const Graph &graph) {
 DegreeBranchingStrategy::DegreeBranchingStrategy() {}
 
 std::pair<int, int> 
-DegreeBranchingStrategy::ChooseVertices(const Graph &graph) {
+DegreeBranchingStrategy::ChooseVertices(Graph &graph) {
     std::pair<int, int> vertex_pair;
     const std::set<int>& deleted_vertices = graph.GetDeletedVertices();
 
@@ -94,7 +94,7 @@ void IndependentSetBranchingStrategy::
 }
 
 std::pair<int, int> 
-IndependentSetBranchingStrategy::ChooseVertices(const Graph &graph)
+IndependentSetBranchingStrategy::ChooseVertices(Graph &graph)
 {
     // TODO: this is not enough, not all combination are explored in this way
 
@@ -181,48 +181,46 @@ IndependentSetBranchingStrategy::ChooseVertices(const Graph &graph)
     return vertex_pair;
 }
 
-std::pair<int, int> NeighboursBranchingStrategy::ChooseVertices(const Graph &graph)
+std::pair<int, int> NeighboursBranchingStrategy::ChooseVertices(Graph &graph)
 {
-    //graph.SortByDegree();     NECESSARY
     std::vector<int> vertices = graph.GetVertices();
-    int vertex_x;
-    std::set<int> x_neighbours;
+    int vertex_x, vertex_y, vertex_w, vertex_z;
+    std::set<int> w_neighbours;
+    std::set<int> z_neighbours;
 
-    // choosing the vertex with highest degree but not connected to all other vertices
-    int i = 0;
-    do {
-        vertex_x = vertices[i];
-        i++;
-    } while ( graph.GetDegree(vertex_x) == vertices.size() - 1 );
-
-    graph.GetNeighbours(vertex_x, x_neighbours);
-
-    int vertex_y;
     int max_common_neighbours = -1;
-    int cur_common_neighbours;
-    // looking for vertex_y among all vertices not neighbours of vertex_x
-    for ( int vertex_z_index = 1; vertex_z_index < vertices.size(); vertex_z_index++ ) {
-        int vertex_z = vertices[vertex_z_index];
-        if ( x_neighbours.contains(vertex_z) ) {
-            continue;
-        }
-        std::set<int> z_neighbours;
-        graph.GetNeighbours(vertex_z, z_neighbours);
+    int curr_common_neighbours;
 
-        // counting common neighbours
-        cur_common_neighbours = 0;
-        for ( int z_neighbour : z_neighbours ) {
-            if ( x_neighbours.contains(z_neighbour) ) {
-                cur_common_neighbours++;
+    for ( int i = 0; i < vertices.size(); i++ ) {
+        vertex_w = vertices[i];
+        graph.GetNeighbours(vertex_w, w_neighbours);
+
+        for ( int j = i + 1; j < vertices.size(); j++ ) {
+            vertex_z = vertices[j];
+            
+            // skipping adjacent vertices
+            if ( graph.HasEdge(vertex_w, vertex_z) ) {
+                continue;
+            }
+
+            graph.GetNeighbours(vertex_z, z_neighbours);
+
+            curr_common_neighbours = 0;
+            for ( int neighbour_z : z_neighbours ) {
+                if ( w_neighbours.contains(neighbour_z) ) {
+                    curr_common_neighbours++;
+                }
+            }
+
+            if ( max_common_neighbours < curr_common_neighbours ) {
+                max_common_neighbours = curr_common_neighbours;
+                vertex_x = vertex_w;
+                vertex_y = vertex_z;
             }
         }
 
-        // updating the selected vertex
-        if ( cur_common_neighbours > max_common_neighbours ) {
-            vertex_y = vertex_z;
-            max_common_neighbours = cur_common_neighbours;
-        }
     }
     
+
     return {vertex_x, vertex_y};
 }

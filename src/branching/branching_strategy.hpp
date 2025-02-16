@@ -21,7 +21,7 @@ class BranchingStrategy {
         {}
 
         virtual std::pair<int, int> 
-        ChooseVertices(const Graph& graph) = 0;
+        ChooseVertices(Graph& graph) = 0;
 };
 
 class RandomBranchingStrategy : public BranchingStrategy {
@@ -29,7 +29,7 @@ class RandomBranchingStrategy : public BranchingStrategy {
         RandomBranchingStrategy(int num_vertices);
 
         virtual std::pair<int, int> 
-        ChooseVertices(const Graph& graph) override;
+        ChooseVertices(Graph& graph) override;
 
     protected:
         std::pair<unsigned int, unsigned int> _vertex_pair;
@@ -43,7 +43,7 @@ class DegreeBranchingStrategy : public BranchingStrategy {
         DegreeBranchingStrategy();
 
         virtual std::pair<int, int> 
-        ChooseVertices(const Graph& graph) override;
+        ChooseVertices(Graph& graph) override;
 
 };
 
@@ -90,7 +90,7 @@ class IndependentSetBranchingStrategy : public BranchingStrategy {
          */
         void FindIndependentSets(const Graph& graph, unsigned int number);
         virtual std::pair<int, int> 
-        ChooseVertices(const Graph& graph) override;
+        ChooseVertices(Graph& graph) override;
     
     protected:
 
@@ -117,7 +117,7 @@ class CliqueBranchingStrategy : public BranchingStrategy {
         CliqueBranchingStrategy(/*const CliqueStrategy& clique*/);
 
         virtual std::pair<int, int> 
-        ChooseVertices(const Graph& graph) override;
+        ChooseVertices(Graph& graph) override;
 };
 
 /**
@@ -132,7 +132,7 @@ class NeighboursBranchingStrategy : public BranchingStrategy {
         NeighboursBranchingStrategy() = default;
 
         virtual std::pair<int, int> 
-        ChooseVertices(const Graph& graph) override;
+        ChooseVertices(Graph& graph) override;
 };
 
 #endif // BRANCHING_STRATEGY_HPP

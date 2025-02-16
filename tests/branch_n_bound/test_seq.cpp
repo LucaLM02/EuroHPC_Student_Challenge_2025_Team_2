@@ -24,7 +24,7 @@ int main() {
 
 	CSRGraph* graph = CSRGraph::LoadFromDimacs(file_name);
 
-	RandomBranchingStrategy branching_strategy(graph->GetNumVertices());
+	NeighboursBranchingStrategy branching_strategy;
 	FastCliqueStrategy clique_strategy;
 	DSaturColorStrategy color_strategy;
 

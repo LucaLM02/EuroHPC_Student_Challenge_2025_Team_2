@@ -96,7 +96,7 @@ void CSRGraph::MergeVertices(int v, int w) {
     // merging neighbours of w into v, avoiding duplicates
     // O(#neighbours*log(#neighbours))
     for ( const int nw : _edges[w] ) {
-        if ( !std::binary_search(_edges[v].begin(), _edges[v].end(), nw) ) {
+        if ( !std::binary_search(_edges[v].begin(), _edges[v].end(), nw) && nw != v ) {
             _edges[v].push_back(nw);
             modified_edges.push_back(nw);
             _degrees[v]++;
@@ -164,11 +164,11 @@ void CSRGraph::ClearColoring()
 
 void CSRGraph::SortByDegree(bool ascending)
 {
-    static auto ascendingCompare = 
+    auto ascendingCompare = 
     [&](int v, int w) -> bool {
         return _degrees[v] < _degrees[w];
     };
-    static auto descendingCompare = 
+    auto descendingCompare = 
     [&](int v, int w) -> bool {
         return _degrees[v] > _degrees[w];
     };
@@ -288,7 +288,7 @@ size_t CSRGraph::GetNumEdges() const {
 }
 
 unsigned int CSRGraph::GetDegree(int vertex) const {
-    return _edges.at(vertex).size();
+    return _degrees[vertex];
 }
 
 std::vector<int> CSRGraph::GetDegrees() const {
@@ -387,8 +387,18 @@ CSRGraph::CSRGraph(const Dimacs& dimacs_graph)
     }
 
     for ( const std::pair<int, int>& edge : dimacs_graph.edges ) {
-        _edges[edge.first].push_back(edge.second);
-        _edges[edge.second].push_back(edge.first);
+        // skipping already inserted edges
+        if ( std::find(_edges[edge.first].begin(), 
+                       _edges[edge.first].end(), 
+                        edge.second) != _edges[edge.first].end() ) {
+            continue;
+        }
+        if ( edge.first != edge.second ) {
+            _edges[edge.first].push_back(edge.second);
+            _edges[edge.second].push_back(edge.first);
+        } else if ( edge.first == edge.second ) {
+            _edges[edge.first].push_back(edge.second);
+        } 
     }
 
     _degrees.clear();
