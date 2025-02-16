@@ -11,8 +11,8 @@ RandomBranchingStrategy::RandomBranchingStrategy(int num_vertices)
 }
 
 
-std::pair<unsigned int, unsigned int> 
-RandomBranchingStrategy::ChooseVertices(const Graph &graph, PairType& type) {
+std::pair<int, int> 
+RandomBranchingStrategy::ChooseVertices(Graph &graph) {
     //check if the graph is complete
     int n = graph.GetNumVertices();
     if(graph.GetNumEdges() == n*(n-1)/2) {
@@ -40,8 +40,8 @@ RandomBranchingStrategy::ChooseVertices(const Graph &graph, PairType& type) {
 
 DegreeBranchingStrategy::DegreeBranchingStrategy() {}
 
-std::pair<unsigned int, unsigned int> 
-DegreeBranchingStrategy::ChooseVertices(const Graph &graph, PairType& type) {
+std::pair<int, int> 
+DegreeBranchingStrategy::ChooseVertices(Graph &graph) {
     std::pair<int, int> vertex_pair;
     const std::set<int>& deleted_vertices = graph.GetDeletedVertices();
 
@@ -93,8 +93,8 @@ void IndependentSetBranchingStrategy::
     }
 }
 
-std::pair<unsigned int, unsigned int> 
-IndependentSetBranchingStrategy::ChooseVertices(const Graph &graph, PairType& type)
+std::pair<int, int> 
+IndependentSetBranchingStrategy::ChooseVertices(Graph &graph)
 {
     // TODO: this is not enough, not all combination are explored in this way
 
@@ -179,4 +179,48 @@ IndependentSetBranchingStrategy::ChooseVertices(const Graph &graph, PairType& ty
 
     _iteration_counter++;
     return vertex_pair;
+}
+
+std::pair<int, int> NeighboursBranchingStrategy::ChooseVertices(Graph &graph)
+{
+    std::vector<int> vertices = graph.GetVertices();
+    int vertex_x, vertex_y, vertex_w, vertex_z;
+    std::set<int> w_neighbours;
+    std::set<int> z_neighbours;
+
+    int max_common_neighbours = -1;
+    int curr_common_neighbours;
+
+    for ( int i = 0; i < vertices.size(); i++ ) {
+        vertex_w = vertices[i];
+        graph.GetNeighbours(vertex_w, w_neighbours);
+
+        for ( int j = i + 1; j < vertices.size(); j++ ) {
+            vertex_z = vertices[j];
+            
+            // skipping adjacent vertices
+            if ( graph.HasEdge(vertex_w, vertex_z) ) {
+                continue;
+            }
+
+            graph.GetNeighbours(vertex_z, z_neighbours);
+
+            curr_common_neighbours = 0;
+            for ( int neighbour_z : z_neighbours ) {
+                if ( w_neighbours.contains(neighbour_z) ) {
+                    curr_common_neighbours++;
+                }
+            }
+
+            if ( max_common_neighbours < curr_common_neighbours ) {
+                max_common_neighbours = curr_common_neighbours;
+                vertex_x = vertex_w;
+                vertex_y = vertex_z;
+            }
+        }
+
+    }
+    
+
+    return {vertex_x, vertex_y};
 }
