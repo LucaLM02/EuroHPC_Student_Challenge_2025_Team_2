@@ -4,6 +4,7 @@
 #include "graph.hpp"
 #include "dimacs.hpp"
 
+#include <iostream>
 #include <memory>
 #include <cmath>
 #include <cstring>
@@ -73,8 +74,9 @@ class CSRGraph : public Graph {
         virtual unsigned short GetColor(int vertex) const override;
 
         // -------------------- SERIALIZATION --------------------
-        std::string Serialize() const;
-        void Deserialize(const std::string& data);
+        bool isEqual(const Graph &ot) const override;
+        std::string Serialize() const override;
+        void Deserialize(const std::string& data) override;
 
 
         virtual std::unique_ptr<Graph> Clone() const override;

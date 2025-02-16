@@ -26,6 +26,8 @@ class Graph {
          */
         virtual ~Graph() = default;
 
+        virtual bool isEqual(const Graph &ot) const = 0;
+
         // ================================== MODIFIERS ==================================
         /**
          *  @brief adds the edge <v,w>=<w,v> to the graph

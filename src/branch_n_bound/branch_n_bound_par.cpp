@@ -50,8 +50,7 @@ void BranchNBoundPar::Log(const std::string& message, int depth = 0,
 	}
 }
 
-void BranchNBoundPar::Log_par(const std::string& message, int depth = 0,
-			      bool is_branching = false) {
+void BranchNBoundPar::Log_par(const std::string& message, int depth = 0, bool is_branching = false) {
 	if (_log_file.is_open()) {
 		int rank = 0, thread_id = 0;
 
@@ -62,7 +61,7 @@ void BranchNBoundPar::Log_par(const std::string& message, int depth = 0,
 		// Indentation based on depth
 		std::string indentation(depth * 2, ' ');
 		// TODO: Logging everything with this critical section is not efficient
-#pragma omp critical
+		#pragma omp critical
 		{
 			if (is_branching) {
 				_log_file << indentation << "[Rank " << rank
@@ -155,7 +154,7 @@ void thread_0_terminator(int my_rank, int p, int global_start_time, int timeout_
 			// Master listens for solution found (Non-blocking)
 			MPI_Status status;
 			int flag = 0;
-			MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &flag, &status);
+			MPI_Iprobe(MPI_ANY_SOURCE, TAG_SOLUTION_FOUND, MPI_COMM_WORLD, &flag, &status);
 			// Check if a solution is being communicated
 			if (flag) {
 				int solution;
@@ -311,8 +310,7 @@ void BranchNBoundPar::create_task(
 			implemented system to send work to workers(line 421)
 */
 // TODO: Add a flag to terminate the loop and avoid infinite loop
-int BranchNBoundPar::Solve(Graph& g, int timeout_seconds,
-			   int iteration_threshold) {
+int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshold) {
 	// Intitialize MPI
 	//MPI_Init(NULL, NULL);
 
@@ -330,7 +328,7 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds,
 	BranchQueue queue;
 
 	std::atomic<int> active_tasks = 0;
-	int max_tasks = omp_get_max_threads() - 3;	// limit number of tasks (maybe we can increase this number)
+	int max_tasks = 10;	// limit number of tasks (maybe we can increase this number)
 
 	// TODO: possibility to reduce initial time by distributing
 	// work(generate 2 branches, keep one send the other, i think this one
@@ -376,7 +374,7 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds,
 				    "found: " +
 					std::to_string(current_lb),
 				    current.depth);
-				Log("========== END ==========", 0);
+					Log("========== END ==========", 0);
 				best_ub = current_lb;
 				break;
 			}
@@ -409,7 +407,7 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds,
 				    "Chromatic number = " +
 					std::to_string(best_ub),
 				    current.depth);
-				Log("========== END ==========", 0);
+					Log("========== END ==========", 0);
 				break;
 			}
 
@@ -470,7 +468,28 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds,
 
 		// recv work
 		branch_recv = recvBranch(0, TAG_WORK, MPI_COMM_WORLD);
+
+		Dimacs dimacs;
+		std::string file_name = "10_vertices_graph.col";
+
+		if (!dimacs.load(file_name.c_str())) {
+			std::cout << dimacs.getError() << std::endl;
+			return 1;
+		}
+
+		CSRGraph* graph = CSRGraph::LoadFromDimacs(file_name);
+
+		if(graph->isEqual(*branch_recv.g)){
+			std::cout << "Graphs are equal" << std::endl;
+		}
+		else{
+			std::cout << "Graphs are not equal" << std::endl;
+		}
+
+
 		std::atomic<unsigned short> best_ub = branch_recv.ub;
+
+		//std::cout << "ub_recv: " << _clique_strat.FindClique(*branch_recv.g) << std::endl;
 
 		//std::cout << "Worker: " << my_rank << std::endl;
 
@@ -489,7 +508,7 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds,
 	to compute the omp_tasks
 	*/
 	omp_set_num_threads(10);
-	#pragma omp parallel shared(best_ub, queue, queue_mutex, active_tasks, max_tasks)
+	#pragma omp parallel default(shared)
 	{
 		int tid = omp_get_thread_num();
 
@@ -515,7 +534,7 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds,
 				std::cout << "Rank: " << my_rank << " Exited thread_2_listen_for_requests func." << std::endl;
 			}
 
-			std::shared_ptr<Graph> current_G;
+			std::unique_ptr<Graph> current_G;
 			int current_lb;
 			unsigned short current_ub;
 			unsigned int u, v;
@@ -611,30 +630,42 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds,
 					//std::cout << "Rank: " << my_rank << " generating tasks" << std::endl;
 					// generate tasks and update queue
 					int current_depth = current.depth;
-					#pragma omp task default(shared) firstprivate(current_G, u, v) 
+
+					int lb_og_pre = _clique_strat.FindClique(*current_G);
+					unsigned short ub_og_pre;
+					_color_strat.Color(*current_G, ub_og_pre);
+					std::cout << "lb_og_pre " << lb_og_pre << " ub_og_pre " << ub_og_pre << std::endl;
+
+					std::shared_ptr<Graph> local_g = std::move(current_G->Clone());
+
+					#pragma omp task default(shared) firstprivate (u, v) 	
 					{
 						//std::cout << "Rank: " << my_rank << " start task" << std::endl;
 						active_tasks.fetch_add(1);
 						//std::cout << "Rank: " << my_rank << " increase tasks" << std::endl;
-						
-						std::cout << "u: " << u << " v: " << v << std::endl;
+
+						//std::cout << "current_G edges: " << current_G->GetNumEdges() << " vertices "<< current_G->GetNumVertices() << std::endl;
+						//std::cout << "u: " << u << " v: " << v << std::endl;
 
 						std::vector<Branch> new_branches(2);
 
-						int lb_og = _clique_strat.FindClique(*current_G);
+						std::cout << " ub_og " << std::endl;
+						int lb_og = _clique_strat.FindClique(*local_g);
 						unsigned short ub_og;
-						_color_strat.Color(*current_G, ub_og);
+						std::cout << "lb_og " << lb_og << " ub_og " << ub_og << std::endl;
+						_color_strat.Color(*local_g, ub_og);
+						std::cout << "lb_og " << lb_og << " ub_og " << ub_og << std::endl;
 						Log_par("[Branch 0] Original "
 						    "lb = " + std::to_string(lb_og) +
 							", ub = " + std::to_string(ub_og),
 						    current_depth);
 						
 						// MergeVertices
-						auto G1 = current_G->Clone();
-						//std::cout << "Rank: " << my_rank << " copy graph" << std::endl;
+						auto G1 = local_g->Clone();
+						std::cout << "Rank: " << my_rank << " copy graph" << std::endl;
 						G1->MergeVertices(u, v);
-						//std::cout << "Rank: " << my_rank << " merge vertices" << std::endl;
-						int lb1 = _clique_strat.FindClique(*G1);
+						std::cout << "Rank: " << my_rank << " merge vertices" << std::endl;
+						int lb1 = _clique_strat.	(*G1);
 						unsigned short ub1;
 						_color_strat.Color(*G1, ub1);
 						Log_par("[Branch 1] (Merge u, v) "
@@ -646,7 +677,7 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds,
 							new_branches[0] = Branch(std::move(G1), lb1, ub1, 1);
 						}
 						// AddEdge
-						auto G2 = current_G->Clone();
+						auto G2 = local_g->Clone();
 						G2->AddEdge(u, v);
 						int lb2 = _clique_strat.FindClique(*G2);
 						unsigned short ub2;
@@ -662,7 +693,7 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds,
 						}
 
 						active_tasks.fetch_sub(1);
-						//std::cout << "Rank: " << my_rank << " decrease tasks" << std::endl;
+						std::cout << "Rank: " << my_rank << " decrease tasks" << std::endl;
 					
 						{
 							std::lock_guard<std::mutex> lock(queue_mutex);
@@ -681,7 +712,7 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds,
 				}
 			}
 		}
-		# pragma omp barrier
+		//# pragma omp barrier
 	}
 	std::cout << "Rank: " << my_rank << " Finalizing" << std::endl;
 	// End execution

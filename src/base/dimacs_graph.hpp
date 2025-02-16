@@ -12,6 +12,9 @@ class DimacsGraph : public Graph {
         static DimacsGraph* LoadFromDimacs(const std::string& file_name);
         DimacsGraph() = default;
 
+        bool isEqual(const Graph &ot) const override{
+            return false;
+        }
         // -------------------- MODIFIERS --------------------
         virtual void AddEdge(int v, int w) override;
         virtual void RemoveEdge(int v, int w) override;

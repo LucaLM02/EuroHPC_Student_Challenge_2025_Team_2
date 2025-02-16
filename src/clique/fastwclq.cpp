@@ -13,6 +13,7 @@ int FastCliqueStrategy::FindClique(const Graph &graph) const
 {
 
     _solver = std::make_unique<FastWClq>(graph, _k);
+   // std::cout << _k << std::endl;
     return _solver->FindMaxWeightClique().size();
 }
 
@@ -28,14 +29,15 @@ FastWClq::FastWClq(const Graph& graph, int k) : graph_(graph), max_weight_(0), k
 std::vector<int> FastWClq::FindMaxWeightClique() {
     std::vector<int> best_clique;
     int iteration = 0;
-
+    
+    //std::cout << "Graph Size: " << graph_.GetNumVertices() << std::endl;
     while (true) {
+        std::cout << "Iteration: " << iteration << std::endl;
         iteration++;
-
         // Construct a clique using heuristic methods
         std::vector<int> clique = CliqueConstruction();
         //std::cout << "Clique Size Found: " << clique.size() << std::endl;
-
+        std::cout << "post cliqueConstr" << std::endl;
         // Update the best found clique if the new one is larger
         if (clique.size() > best_clique.size()) {
             best_clique = clique;
@@ -44,7 +46,7 @@ std::vector<int> FastWClq::FindMaxWeightClique() {
         // Reduce the graph based on the best clique found so far
         std::vector<int> reduced_graph = GraphReduction(best_clique);
         //std::cout << "Reduced Graph Size: " << reduced_graph.size() << std::endl;
-
+        std::cout << "post graph reduction" << std::endl;
         // Check if the reduced graph is empty
         if (reduced_graph.empty() || reduced_graph.size() == 1) {
             //std::cout << "Terminating: Final Max Clique Size = " << best_clique.size() << std::endl;
@@ -52,7 +54,7 @@ std::vector<int> FastWClq::FindMaxWeightClique() {
             return best_clique;
         }
 
-
+        std::cout << "post if size" << std::endl;
 
         // Prevent infinite loops (temporary safeguard)
         if (iteration > 100) {

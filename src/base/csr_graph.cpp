@@ -18,6 +18,70 @@ CSRGraph::CSRGraph()
       _nEdges(0),
       _max_vertex(0) {}
 
+	  bool CSRGraph::isEqual(const Graph &ot) const
+	  {
+		  CSRGraph other = dynamic_cast<const CSRGraph&>(ot);
+		  if ( this->_vertices.size() != other._vertices.size() ) {
+			  std::cout << "Different number of vertices: " << _vertices.size() << " vs "
+						<< other._vertices.size() << std::endl;
+	  
+			  for ( int vertex : _vertices ) {
+				  if ( std::find(other._vertices.begin(), other._vertices.end(), vertex) 
+						  == other._vertices.end() ) {
+					  std::cout << "Vertex: " << vertex << " is not contained in other graph" << std::endl;
+					  continue;
+				  }
+				  if ( _edges[vertex].size() != other._edges[vertex].size() ) {
+					  std::cout << "Edge lists do not have same size: " << _edges[vertex].size() << " vs "
+								<< other._edges[vertex].size() << std::endl;
+				  }
+				  for ( int edge : _edges[vertex] ) {
+					  if ( std::find(other._edges[vertex].begin(), other._edges[vertex].end(), edge) 
+							  == other._edges[vertex].end() ) {
+						  std::cout << "Edge : " << edge << " is not contained in other graph" << std::endl;
+					  }
+				  }
+			  }
+	  
+		  }
+		  for ( int vertex : _vertices ) {
+			if ( std::find(other._vertices.begin(), other._vertices.end(), vertex) 
+					== other._vertices.end() ) {
+				std::cout << "Vertex: " << vertex << " is not contained in other graph" << std::endl;
+				continue;
+			}
+			if ( _edges[vertex].size() != other._edges[vertex].size() ) {
+				std::cout << "Edge lists do not have same size: " << _edges[vertex].size() << " vs "
+						  << other._edges[vertex].size() << std::endl;
+			}
+			for ( int edge : _edges[vertex] ) {
+				if ( std::find(other._edges[vertex].begin(), other._edges[vertex].end(), edge) 
+						== other._edges[vertex].end() ) {
+					std::cout << "Edge : " << edge << " is not contained in other graph" << std::endl;
+				}
+			}
+			if(_degrees.size() != other._degrees.size()){
+				std::cout << "Degrees size is different" << _degrees.size() << " " << other._degrees.size() << std::endl;
+			}
+			for(int i = 0; i < _degrees.size(); i++){
+				if(_degrees[i] != other._degrees[i]){
+					std::cout << "Degrees are different" << std::endl;
+				}
+			}
+		}
+		/*
+		if(_coloring.size() != other._coloring.size()){
+			std::cout << "Coloring size is different " << _coloring.size() << " " << other._coloring.size() << std::endl;
+		}
+		for(int i = 0; i < _coloring.size(); i++){
+			if(_coloring[i] != other._coloring[i]){
+				std::cout << "Coloring is different" << _coloring[i] << " " << other._coloring[i] <<  std::endl;
+			}
+		}
+			*/
+		  return true;
+	  } 
+
 std::string CSRGraph::Serialize() const {
 	std::ostringstream oss;
 	oss << _vertices.size() << " " << _nEdges << " " << _max_vertex << "\n";
@@ -30,11 +94,12 @@ std::string CSRGraph::Serialize() const {
 	}
 	oss << "\n";
 	for (const auto& edges : _edges) {
+		oss << edges.size() << " ";
 		for (int edge : edges) {
 			oss << edge << " ";
 		}
-		oss << "\n";
 	}
+	oss << "\n";
 	for (unsigned short color : _coloring) {
 		oss << color << " ";
 	}
@@ -59,12 +124,12 @@ void CSRGraph::Deserialize(const std::string& data) {
 
 	_edges.resize(numVertices + 1);
 	for (size_t i = 0; i <= numVertices; ++i) {
-		int edge;
-		while (iss >> edge) {
+		int edgeSize;
+		iss >> edgeSize;
+		for(int j = 0; j < edgeSize; ++j) {
+			int edge;
+			iss >> edge;
 			_edges[i].push_back(edge);
-			if (iss.peek() == '\n') {
-				break;
-			}
 		}
 	}
 
