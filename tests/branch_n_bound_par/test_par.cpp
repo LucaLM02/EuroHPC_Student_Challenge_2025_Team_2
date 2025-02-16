@@ -30,7 +30,7 @@ int main(int argc, char** argv) {
 
 	RandomBranchingStrategy branching_strategy(graph->GetNumVertices());
 	FastCliqueStrategy clique_strategy;
-	DSaturColorStrategy color_strategy;
+	GreedyColorStrategy color_strategy;
 
 	BranchNBoundPar solver(branching_strategy, clique_strategy,
 			       color_strategy, "log.txt");

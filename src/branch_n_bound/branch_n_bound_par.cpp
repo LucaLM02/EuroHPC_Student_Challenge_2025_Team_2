@@ -634,7 +634,7 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 					int lb_og_pre = _clique_strat.FindClique(*current_G);
 					unsigned short ub_og_pre;
 					_color_strat.Color(*current_G, ub_og_pre);
-					std::cout << "lb_og_pre " << lb_og_pre << " ub_og_pre " << ub_og_pre << std::endl;
+					//std::cout << "lb_og_pre " << lb_og_pre << " ub_og_pre " << ub_og_pre << std::endl;
 
 					std::shared_ptr<Graph> local_g = std::move(current_G->Clone());
 
@@ -649,12 +649,12 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 
 						std::vector<Branch> new_branches(2);
 
-						std::cout << " ub_og " << std::endl;
+						//std::cout << " ub_og " << std::endl;
 						int lb_og = _clique_strat.FindClique(*local_g);
 						unsigned short ub_og;
-						std::cout << "lb_og " << lb_og << " ub_og " << ub_og << std::endl;
+						//std::cout << "lb_og " << lb_og << " ub_og " << ub_og << std::endl;
 						_color_strat.Color(*local_g, ub_og);
-						std::cout << "lb_og " << lb_og << " ub_og " << ub_og << std::endl;
+						//std::cout << "lb_og (again)" << lb_og << " ub_og (again)" << ub_og << std::endl;
 						Log_par("[Branch 0] Original "
 						    "lb = " + std::to_string(lb_og) +
 							", ub = " + std::to_string(ub_og),
