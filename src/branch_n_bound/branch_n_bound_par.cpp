@@ -154,7 +154,7 @@ Branch recvBranch(int source, int tag, MPI_Comm comm) {
 
 // CHANGE: all_best_ub is now a vector of unsigned short, best_ub is now an
 // atomic variable(helps to avoid cuncurrent access)
-void thread_0_solution_gatherer(int p, std::atomic<unsigned short>& best_ub, int& my_rank) {
+void thread_1_solution_gatherer(int p, std::atomic<unsigned short>& best_ub, int& my_rank) {
 	std::vector<unsigned short> all_best_ub(p);
 
 	while (!terminate_flag.load(std::memory_order_relaxed)) {  // TODO: use flag to avoid infinite loop
@@ -194,7 +194,7 @@ void thread_0_solution_gatherer(int p, std::atomic<unsigned short>& best_ub, int
  * for timeouts. timeout_seconds (int)   : The timeout duration (in seconds)
  * after which the timeout signal is sent.
  */
-void thread_1_terminator(int my_rank, int p, int global_start_time, int timeout_seconds) {
+void thread_0_terminator(int my_rank, int p, int global_start_time, int timeout_seconds) {
 	int solution_found = 0;
 	int timeout_signal = 0;
 
@@ -471,7 +471,7 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds,
 	omp_tasks(method create_task) and add new branches to the queue -others
 	to compute the omp_tasks
 	*/
-#pragma omp parallel shared(best_ub, queue, queue_mutex, active_tasks, max_tasks)
+	#pragma omp parallel shared(best_ub, queue, queue_mutex, active_tasks, max_tasks)
 	{
 		int tid = omp_get_thread_num();
 
@@ -479,12 +479,12 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds,
 		if (tid == 0) {
 			//it must be thread 0 otherwise it will not work
 			// Checks if solution has been found or timeout. 
-			thread_1_terminator(my_rank, p, global_start_time, timeout_seconds);
+			thread_0_terminator(my_rank, p, global_start_time, timeout_seconds);
 		}
 		// Both master's and worker's thread 1 goes in here.
 		if (tid == 1) {
 			// Updates (gathers) best_ub from time to time.
-			thread_0_solution_gatherer(p, best_ub, my_rank);
+			thread_1_solution_gatherer(p, best_ub, my_rank);
 		}
 		// Only worker processes go in here.
 		if (my_rank != 0) {
@@ -580,13 +580,14 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds,
 					std::cout << "Worker: " << my_rank << " starting branching" << std::endl;
 
 					auto type = _branching_strat.PairType::DontCare;
-					std::pair<unsigned int, unsigned int>
-					vertices = _branching_strat.ChooseVertices(*current_G, type);
+					std::pair<unsigned int, unsigned int> vertices = _branching_strat.ChooseVertices(*current_G, type);
 					u = vertices.first;
 					v = vertices.second;
 					Log_par("Branching on vertices: u = " + std::to_string(u) +
 							", v = " + std::to_string(v),
 					    	current.depth, true);
+
+					std::cout << "Worker: " << my_rank << " choose " << u << " " << v << std::endl;
 
 					if (u == -1 || v == -1) {
 						int chromatic_number = current_G->GetNumVertices();
@@ -605,7 +606,7 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds,
 					// tasks
 
 					std::cout << "Worker: " << my_rank << " checking # tasks" << std::endl;
-					while (active_tasks.load() > max_tasks) {
+					if (active_tasks.load() > max_tasks) {
 						#pragma omp taskwait
 					}
 
