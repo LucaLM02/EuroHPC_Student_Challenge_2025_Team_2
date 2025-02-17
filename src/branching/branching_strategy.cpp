@@ -45,14 +45,14 @@ DegreeBranchingStrategy::ChooseVertices(Graph &graph) {
     std::pair<int, int> vertex_pair;
     const std::set<int>& deleted_vertices = graph.GetDeletedVertices();
 
-    std::vector<int> degrees; 
+    std::vector<int> degrees;
     graph.GetDegrees(degrees);
 
     std::sort(degrees.rbegin(), degrees.rend());
 
-    do 
+    do
     {
-        
+
     } while (graph.HasEdge(vertex_pair.first, vertex_pair.second));
     return vertex_pair;
 }
@@ -89,9 +89,35 @@ void IndependentSetBranchingStrategy::
     // TODO: to implement this, maybe a Partition method on graph might be useful
     for (int counter = 0; counter < number; counter++) {
         selected_v = copy.GetVertexWithMaxDegree();
-        
+
     }
 }
+/* void IndependentSetBranchingStrategy::FindIndependentSets(Graph &graph, unsigned int number)
+{
+    _independent_sets.clear();
+    std::unordered_set<int> remaining_vertices(graph.GetVertices().begin(), graph.GetVertices().end());
+
+    while (!remaining_vertices.empty()) {
+        std::vector<int> independent_set;
+        for (auto it = remaining_vertices.begin(); it != remaining_vertices.end(); ) {
+            bool is_independent = true;
+            for (int v : independent_set) {
+                if (graph.HasEdge(v, *it)) {
+                    is_independent = false;
+                    break;
+                }
+            }
+            if (is_independent) {
+                independent_set.push_back(*it);
+                it = remaining_vertices.erase(it);
+            } else {
+                ++it;
+            }
+        }
+        _independent_sets.push_back(independent_set);
+    }
+}
+*/
 
 std::pair<int, int> 
 IndependentSetBranchingStrategy::ChooseVertices(Graph &graph)
@@ -157,7 +183,7 @@ IndependentSetBranchingStrategy::ChooseVertices(Graph &graph)
 
                 // getting element from second chosen set
                 vertex_pair.second = _independent_sets[second_set][j];
-                
+
                 // quitting if a valid edge is found
                 if ( !graph.HasEdge(vertex_pair.first, vertex_pair.second) ) {
                     edge_found = true;
@@ -180,6 +206,56 @@ IndependentSetBranchingStrategy::ChooseVertices(Graph &graph)
     _iteration_counter++;
     return vertex_pair;
 }
+
+/* std::pair<int, int> IndependentSetBranchingStrategy::ChooseVertices(Graph &graph)
+{
+    if (_iteration_counter == _update_frequency || _independent_sets.empty()) {
+        this->FindIndependentSets(graph, _independent_sets.size());
+        _iteration_counter = 0;
+        _chosen_indep_set = 0;
+    }
+
+    if (_chosen_indep_set >= _independent_sets.size()) {
+        _chosen_indep_set = 0;
+    }
+
+    std::pair<int, int> vertex_pair;
+    _current_length++;
+    if (_is_equal_sequence) {
+        if (_independent_sets[_chosen_indep_set].size() < 2) {
+            _chosen_indep_set++;
+            return ChooseVertices(graph);
+        }
+        vertex_pair.second = _independent_sets[_chosen_indep_set].back();
+        _independent_sets[_chosen_indep_set].pop_back();
+        vertex_pair.first = _independent_sets[_chosen_indep_set].back();
+        _chosen_indep_set++;
+
+        if (_current_length == _length_equal) {
+            _current_length = 0;
+            _is_equal_sequence = false;
+        }
+    } else {
+        for (size_t i = 0; i < _independent_sets.size(); i++) {
+            for (size_t j = i + 1; j < _independent_sets.size(); j++) {
+                for (int v1 : _independent_sets[i]) {
+                    for (int v2 : _independent_sets[j]) {
+                        if (!graph.HasEdge(v1, v2)) {
+                            vertex_pair = {v1, v2};
+                            _chosen_indep_set++;
+                            _iteration_counter++;
+                            return vertex_pair;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    _iteration_counter++;
+    return vertex_pair;
+}
+*/
 
 std::pair<int, int> NeighboursBranchingStrategy::ChooseVertices(Graph &graph)
 {
@@ -218,9 +294,32 @@ std::pair<int, int> NeighboursBranchingStrategy::ChooseVertices(Graph &graph)
                 vertex_y = vertex_z;
             }
         }
-
     }
     
 
     return {vertex_x, vertex_y};
 }
+
+/* std::pair<int, int> NeighboursBranchingStrategy::ChooseVertices(Graph &graph)
+{
+    std::vector<int> vertices = graph.GetVertices();
+    int vertex_x = -1, vertex_y = -1;
+    int max_common_neighbours = -1;
+
+    for (size_t i = 0; i < vertices.size(); i++) {
+        for (size_t j = i + 1; j < vertices.size(); j++) {
+            if (graph.HasEdge(vertices[i], vertices[j])) continue;
+
+            int common_neighbours = graph.CountCommonNeighbours(vertices[i], vertices[j]); // consider implementing CountCommonNeighbours
+            if (common_neighbours > max_common_neighbours) {
+                max_common_neighbours = common_neighbours;
+                vertex_x = vertices[i];
+                vertex_y = vertices[j];
+            }
+        }
+    }
+
+    return {vertex_x, vertex_y};
+}
+*/
+
