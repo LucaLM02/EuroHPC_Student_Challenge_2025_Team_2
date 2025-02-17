@@ -9,7 +9,6 @@ void DSaturColorStrategy::Color(Graph &graph, unsigned short &max_k) const
     unsigned short selected_color;
 
     std::vector<int> neighbours;
-
     max_k = 0;
     while ( !list.IsEmpty() ) {
         // retrieves the element with highest degree among the ones with highest 
@@ -51,7 +50,7 @@ DSaturList::DSaturList(const Graph& graph)
     std::vector<int> vertices = graph.GetVertices();
     std::vector<int> degrees = graph.GetFullDegrees();
 
-    static auto ascendingCompare = 
+    auto ascendingCompare = 
     [&](int v, int w) -> bool {
         return degrees[v] < degrees[w];
     };
@@ -79,6 +78,17 @@ DSaturList::DSaturList(const Graph& graph)
     _last_item = item;
     _last_degree = item->sat_degree;
     
+}
+
+DSaturList::~DSaturList()
+{
+    /*
+    for ( int i=0; i< _vertex_to_item.size(); i++ ) {
+        if ( _vertex_to_item[i] != nullptr ) {
+            free(_vertex_to_item[i]);
+        }
+    }
+    */
 }
 
 void DSaturList::AddNeighbourColor(int vertex, unsigned short color)
@@ -194,6 +204,8 @@ int DSaturList::PopHighestVertex()
             _last_item = _last_item->next;
         }
     }
+
+    _vertex_to_item[removed_item->vertex] = nullptr;
 
     free(removed_item);
     return removed_vertex;

@@ -59,6 +59,7 @@ struct _DSaturItem {
 class DSaturList {
     public:
         DSaturList(const Graph& graph);
+        virtual ~DSaturList();
         /**
          * @brief adds a color to the neighbour color set of that particular vertex.
          *        If it's saturation degree increases, then the underlying data structure
