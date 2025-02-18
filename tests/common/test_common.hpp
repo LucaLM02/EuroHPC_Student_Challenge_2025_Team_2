@@ -30,6 +30,16 @@ namespace TestFunctions {
         return ss.str();
     }
 
+    std::string VecToString(const std::vector<int>& vector) {
+        std::stringstream ss;
+
+        for ( const int& element : vector ) {
+            ss << element << " ";
+        }
+
+        return ss.str();
+    }
+
     bool CheckColoring(const Graph& graph) {
         unsigned short current_color;
         std::vector<int> neighbours;

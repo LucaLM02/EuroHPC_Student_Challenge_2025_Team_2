@@ -204,145 +204,159 @@ void CSRGraph::RemoveVertex(int v) {
 }
 
 void CSRGraph::MergeVertices(int v, int w) {
-	// O(2*#neighbours*log(#neighbours))
-	std::sort(_edges[v].begin(), _edges[v].end());
-	std::sort(_edges[w].begin(), _edges[w].end());
+    // O(2*#neighbours*log(#neighbours))
+    std::sort(_edges[v].begin(), _edges[v].end());
+    std::sort(_edges[w].begin(), _edges[w].end());
 
-	std::vector<int> deleted_edges;
-	std::vector<int> modified_edges;
-	deleted_edges.reserve(_edges[w].size());
-	modified_edges.reserve(_edges[w].size());
 
-	_edges[v].reserve(_edges[v].size() + _edges[w].size());
+    std::vector<int> deleted_edges;
+    std::vector<int> modified_edges;
+    deleted_edges.reserve(_edges[w].size());
+    modified_edges.reserve(_edges[w].size());
 
-	// merging neighbours of w into v, avoiding duplicates
-	// O(#neighbours*log(#neighbours))
-	for (const int nw : _edges[w]) {
-		if (!std::binary_search(_edges[v].begin(), _edges[v].end(),
-					nw)) {
-			_edges[v].push_back(nw);
-			modified_edges.push_back(nw);
-			_degrees[v]++;
-		} else {
-			deleted_edges.push_back(nw);
-		}
-	}
+    _edges[v].reserve(_edges[v].size() + _edges[w].size());
 
-	_edges[w].clear();
-	_vertices.erase(std::find(_vertices.begin(), _vertices.end(), w));
-	_removed_vertices.insert(w);
-	_degrees[w] = 0;
+    // merging neighbours of w into v, avoiding duplicates
+    // O(#neighbours*log(#neighbours))
+    for ( const int nw : _edges[w] ) {
+        if ( !std::binary_search(_edges[v].begin(), _edges[v].end(), nw) && nw != v ) {
+            _edges[v].push_back(nw);
+            modified_edges.push_back(nw);
+            _degrees[v]++;
+        } else {
+            deleted_edges.push_back(nw);
+        }
+    }
 
-	// deleting `w` from the neighbour lists of common neighbours between
-	// `v` and `w`
-	for (const int deleted_edge : deleted_edges) {
-		// O(#neighbours) but I rarely iterate over the full vector
-		auto it = std::find(_edges[deleted_edge].begin(),
-				    _edges[deleted_edge].end(), w);
-		if (it != _edges[deleted_edge].end()) {
-			std::swap(*it, _edges[deleted_edge].back());
-			_edges[deleted_edge].pop_back();
-			_degrees[deleted_edge]--;
-			_nEdges--;
-		}
-	}
+    _edges[w].clear();
+    _vertices.erase(std::find(_vertices.begin(), _vertices.end(), w));
+    _removed_vertices.insert(w);
+    _degrees[w] = 0;
 
-	// modifying `w` into `v` in the neighbour lists of all the other
-	// neighbours of `w`
-	for (const int modified_edge : modified_edges) {
-		// O(#neighbours) but I rarely iterate over the full vector
-		for (int i = 0; i < _edges[modified_edge].size(); i++) {
-			if (_edges[modified_edge][i] == w) {
-				_edges[modified_edge][i] = v;
-				break;
-			}
-		}
-	}
+    // deleting `w` from the neighbour lists of common neighbours between `v` and `w`
+    for ( const int deleted_edge : deleted_edges ) {
+
+        // O(#neighbours) but I rarely iterate over the full vector
+        auto it = std::find(_edges[deleted_edge].begin(), _edges[deleted_edge].end(), w);
+        if (it != _edges[deleted_edge].end()) {
+            std::swap(*it, _edges[deleted_edge].back()); 
+            _edges[deleted_edge].pop_back(); 
+            _degrees[deleted_edge]--;
+            _nEdges--;
+        }
+    }
+
+    // modifying `w` into `v` in the neighbour lists of all the other neighbours of `w`
+    for ( const int modified_edge : modified_edges ) {
+
+        // O(#neighbours) but I rarely iterate over the full vector
+        for (int i = 0; i < _edges[modified_edge].size(); i++) {
+            if ( _edges[modified_edge][i] == w ) {
+                _edges[modified_edge][i] = v;
+                break;
+            }
+        }
+    }
+
 }
 
-void CSRGraph::SetColoring(const std::vector<unsigned short>& colors) {
-	_coloring;
-	for (int i = 0; i < _vertices.size(); i++) {
-		_coloring[_vertices[i]] = colors[i];
-	}
+void CSRGraph::SetColoring(const std::vector<unsigned short>& colors)
+{
+    _coloring;
+    for (int i = 0; i < _vertices.size(); i++ ) {
+        _coloring[_vertices[i]] = colors[i];
+    }
 }
 
-void CSRGraph::SetColoring(int vertex, unsigned short color) {
-	_coloring[vertex] = color;
+void CSRGraph::SetColoring(int vertex, unsigned short color)
+{
+    _coloring[vertex] = color;
 }
 
-void CSRGraph::SetFullColoring(const std::vector<unsigned short>& colors) {
-	_coloring = colors;
+void CSRGraph::SetFullColoring(const std::vector<unsigned short> &colors)
+{
+    _coloring = colors;
 }
 
-void CSRGraph::ClearColoring() {
-	for (int vertex : _vertices) {
-		_coloring[vertex] = 0;
-	}
+void CSRGraph::ClearColoring()
+{
+    for (int vertex : _vertices ) {
+        _coloring[vertex] = 0;
+    }
 }
 
-void CSRGraph::SortByDegree(bool ascending) {
-	static auto ascendingCompare = [&](int v, int w) -> bool {
-		return _degrees[v] < _degrees[w];
-	};
-	static auto descendingCompare = [&](int v, int w) -> bool {
-		return _degrees[v] > _degrees[w];
-	};
+void CSRGraph::SortByDegree(bool ascending)
+{
+    auto ascendingCompare = 
+    [&](int v, int w) -> bool {
+        return _degrees[v] < _degrees[w];
+    };
+    auto descendingCompare = 
+    [&](int v, int w) -> bool {
+        return _degrees[v] > _degrees[w];
+    };
 
-	if (ascending) {
-		std::sort(_vertices.begin(), _vertices.end(), ascendingCompare);
-	} else {
-		std::sort(_vertices.begin(), _vertices.end(),
-			  descendingCompare);
-	}
+    if ( ascending ) {
+        std::sort(_vertices.begin(), _vertices.end(), ascendingCompare);
+    } else {
+        std::sort(_vertices.begin(), _vertices.end(), descendingCompare);
+    }
 }
 
-void CSRGraph::SortByExDegree(bool ascending) {
-	std::vector<int> ex_degrees(_degrees.size());
-	std::vector<int> neighbours;
-	for (int vertex : _vertices) {
-		ex_degrees[vertex] = GetExDegree(vertex);
-	}
+void CSRGraph::SortByExDegree(bool ascending)
+{
+    std::vector<int> ex_degrees(_degrees.size());
+    std::vector<int> neighbours;
+    for ( int vertex : _vertices ) {
+        ex_degrees[vertex] = GetExDegree(vertex);
+    }
 
-	auto ascendingCompare = [&](int v, int w) -> bool {
-		return ex_degrees[v] < ex_degrees[w];
-	};
-	auto descendingCompare = [&](int v, int w) -> bool {
-		return ex_degrees[v] > ex_degrees[w];
-	};
 
-	if (ascending) {
-		std::sort(_vertices.begin(), _vertices.end(), ascendingCompare);
-	} else {
-		std::sort(_vertices.begin(), _vertices.end(),
-			  descendingCompare);
-	}
+    auto ascendingCompare = 
+    [&](int v, int w) -> bool {
+        return ex_degrees[v] < ex_degrees[w];
+    };
+    auto descendingCompare = 
+    [&](int v, int w) -> bool {
+        return ex_degrees[v] > ex_degrees[w];
+    };
+
+    if ( ascending ) {
+        std::sort(_vertices.begin(), _vertices.end(), ascendingCompare);
+    } else {
+        std::sort(_vertices.begin(), _vertices.end(), descendingCompare);
+    }
+
 }
 
-void CSRGraph::SortByColor(bool ascending) {
-	static auto ascendingCompare = [&](int v, int w) -> bool {
-		return _coloring[v] < _coloring[w];
-	};
-	static auto descendingCompare = [&](int v, int w) -> bool {
-		return _coloring[v] > _coloring[w];
-	};
+void CSRGraph::SortByColor(bool ascending)
+{
+    static auto ascendingCompare = 
+    [&](int v, int w) -> bool {
+        return _coloring[v] < _coloring[w];
+    };
+    static auto descendingCompare = 
+    [&](int v, int w) -> bool {
+        return _coloring[v] > _coloring[w];
+    };
 
-	if (ascending) {
-		std::sort(_vertices.begin(), _vertices.end(), ascendingCompare);
-	} else {
-		std::sort(_vertices.begin(), _vertices.end(),
-			  descendingCompare);
-	}
+    if ( ascending ) {
+        std::sort(_vertices.begin(), _vertices.end(), ascendingCompare);
+    } else {
+        std::sort(_vertices.begin(), _vertices.end(), descendingCompare);
+    }
 }
 
-void CSRGraph::GetNeighbours(int vertex, std::vector<int>& result) const {
-	result.assign(_edges[vertex].begin(), _edges[vertex].end());
+void CSRGraph::GetNeighbours(int vertex, std::vector<int> &result) const {
+    result.assign(_edges[vertex].begin(), _edges[vertex].end());
 }
 
-void CSRGraph::GetNeighbours(int vertex, std::set<int>& result) const {
-	for (int w : _edges[vertex]) {
-		result.insert(w);
-	}
+void CSRGraph::GetNeighbours(int vertex, std::set<int> &result) const {
+    result.clear();
+    for ( int w : _edges[vertex] ) {
+        result.insert(w);
+    }
+    
 }
 
 bool CSRGraph::HasEdge(int v, int w) const {
@@ -387,7 +401,7 @@ size_t CSRGraph::GetNumVertices() const { return _vertices.size(); }
 size_t CSRGraph::GetNumEdges() const { return _nEdges; }
 
 unsigned int CSRGraph::GetDegree(int vertex) const {
-	return _edges.at(vertex).size();
+    return _degrees[vertex];
 }
 
 std::vector<int> CSRGraph::GetDegrees() const {
@@ -457,6 +471,7 @@ std::unique_ptr<Graph> CSRGraph::Clone() const {
 }
 
 // ------------------------ PROTECTED --------------------------
+<<<<<<< HEAD
 CSRGraph::CSRGraph(const Dimacs& dimacs_graph)
     : _vertices(static_cast<int>(dimacs_graph.numVertices)),
       _nEdges{dimacs_graph.getNumEdges()},
@@ -480,3 +495,41 @@ CSRGraph::CSRGraph(const Dimacs& dimacs_graph)
 		_degrees[_vertices[i]] = _edges[_vertices[i]].size();
 	}
 }
+=======
+CSRGraph::CSRGraph(const Dimacs& dimacs_graph) 
+: _vertices(static_cast<int>(dimacs_graph.numVertices)), 
+  _nEdges{dimacs_graph.getNumEdges()},
+  _edges(dimacs_graph.numVertices + 1u),
+  _coloring(dimacs_graph.numVertices + 1u),
+  _max_vertex(dimacs_graph.numVertices)
+{
+
+    int size = _vertices.size();
+    for ( int vertex = 1; vertex <= size; vertex++ ) {
+        _vertices[vertex-1] = vertex;
+        _edges[vertex].reserve(dimacs_graph.degrees[vertex]);
+    }
+
+    for ( const std::pair<int, int>& edge : dimacs_graph.edges ) {
+        // skipping already inserted edges
+        if ( std::find(_edges[edge.first].begin(), 
+                       _edges[edge.first].end(), 
+                        edge.second) != _edges[edge.first].end() ) {
+            continue;
+        }
+        if ( edge.first != edge.second ) {
+            _edges[edge.first].push_back(edge.second);
+            _edges[edge.second].push_back(edge.first);
+        } else if ( edge.first == edge.second ) {
+            _edges[edge.first].push_back(edge.second);
+        } 
+    }
+
+    _degrees.clear();
+    _degrees.resize(_vertices.size()+1);
+    for (int i = 0; i < _vertices.size(); i++) {
+        _degrees[_vertices[i]] = _edges[_vertices[i]].size();
+    }
+
+}
+>>>>>>> dev

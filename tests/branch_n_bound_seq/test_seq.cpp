@@ -24,14 +24,14 @@ int main() {
 
 	CSRGraph* graph = CSRGraph::LoadFromDimacs(file_name);
 
-	RandomBranchingStrategy branching_strategy(graph->GetNumVertices());
+	NeighboursBranchingStrategy branching_strategy;
 	FastCliqueStrategy clique_strategy;
 	DSaturColorStrategy color_strategy;
 
 	BranchNBoundSeq solver(branching_strategy, clique_strategy,
 			       color_strategy, "log.txt");
 
-	int chromatic_number = solver.Solve(*graph, 10000, 100000);
+	int chromatic_number = solver.Solve(*graph, 60, 100000);
 
 	std::cout << "Chromatic number: " << chromatic_number << std::endl;
 

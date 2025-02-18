@@ -125,14 +125,6 @@ void test_csr_graph(const std::string& file_name) {
               << graph.GetNumEdges() << " edges: " << std::scientific << elapsed_time/std::pow(10, 9) << std::endl;
 
     test_graph(graph);
-
-    int vertex = graph.GetVertices()[0];
-    std::vector<int> neighbours;
-    graph.GetNeighbours(vertex, neighbours);
-    std::cout << "Now looking at its " << graph.GetDegree(vertex) << " neighbours" << std::endl;
-    for ( int n : neighbours ) {
-        std::cout << "Neighbour " << n << " with color " << graph.GetColor(n) << std::endl;
-    }
 }
 
 

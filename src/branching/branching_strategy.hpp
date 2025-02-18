@@ -7,27 +7,29 @@
 #include <random>
 #include <memory>
 
+/**
+ * @brief abstact strategy with which, at each step of the branch and bound, a new 
+ *        pair of vertices to merge (contract) or to set as neighbours is chosen.
+ *        It is a wrapper of method ChooseVertices.
+ *        It is an abstract class, concrete strategies must inherit from this
+ * 
+ */
 class BranchingStrategy {
     public:
-        enum PairType {
-            Equal,
-            Diff,
-            DontCare
-        };
         
         BranchingStrategy() 
         {}
 
-        virtual std::pair<unsigned int, unsigned int> 
-        ChooseVertices(const Graph& graph, PairType& type) = 0;
+        virtual std::pair<int, int> 
+        ChooseVertices(Graph& graph) = 0;
 };
 
 class RandomBranchingStrategy : public BranchingStrategy {
     public:
         RandomBranchingStrategy(int num_vertices);
 
-        virtual std::pair<unsigned int, unsigned int> 
-        ChooseVertices(const Graph& graph, PairType& type) override;
+        virtual std::pair<int, int> 
+        ChooseVertices(Graph& graph) override;
 
     protected:
         std::pair<unsigned int, unsigned int> _vertex_pair;
@@ -40,8 +42,8 @@ class DegreeBranchingStrategy : public BranchingStrategy {
     public:
         DegreeBranchingStrategy();
 
-        virtual std::pair<unsigned int, unsigned int> 
-        ChooseVertices(const Graph& graph, PairType& type) override;
+        virtual std::pair<int, int> 
+        ChooseVertices(Graph& graph) override;
 
 };
 
@@ -87,8 +89,8 @@ class IndependentSetBranchingStrategy : public BranchingStrategy {
          * @param number number of sets to search
          */
         void FindIndependentSets(const Graph& graph, unsigned int number);
-        virtual std::pair<unsigned int, unsigned int> 
-        ChooseVertices(const Graph& graph, PairType& type) override;
+        virtual std::pair<int, int> 
+        ChooseVertices(Graph& graph) override;
     
     protected:
 
@@ -114,8 +116,23 @@ class CliqueBranchingStrategy : public BranchingStrategy {
     public:
         CliqueBranchingStrategy(/*const CliqueStrategy& clique*/);
 
-        virtual std::pair<unsigned int, unsigned int> 
-        ChooseVertices(const Graph& graph, PairType& type) override;
+        virtual std::pair<int, int> 
+        ChooseVertices(Graph& graph) override;
+};
+
+/**
+ * @brief strategy with which, at each step of the branch and bound, a new 
+ *        pair of vertices to merge (contract) or to set as neighbours is chosen.
+ *        In particular, vertices x and y are choosen such that they are the pair
+ *        of non-adjacent vertices with the highest number of common neighbours
+ * 
+ */
+class NeighboursBranchingStrategy : public BranchingStrategy {
+    public:
+        NeighboursBranchingStrategy() = default;
+
+        virtual std::pair<int, int> 
+        ChooseVertices(Graph& graph) override;
 };
 
 #endif // BRANCHING_STRATEGY_HPP

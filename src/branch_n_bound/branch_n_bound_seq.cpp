@@ -97,8 +97,7 @@ int BranchNBoundSeq::Solve(Graph& g, int timeout_seconds,
 		}
 
 		// Find two non-adjacent vertices u and v according to strategy
-		auto type = _branching_strat.PairType::DontCare;
-		auto [u, v] = _branching_strat.ChooseVertices(*current_G, type);
+		auto [u, v] = _branching_strat.ChooseVertices(*current_G);
 		Log("Branching on vertices: u = " + std::to_string(u) +
 			", v = " + std::to_string(v),
 		    current.depth, true);

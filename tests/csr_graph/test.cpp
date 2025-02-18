@@ -17,7 +17,8 @@ void test_neighbors(const Graph& graph, int neighbors_of, int indentation=0) {
         indentation_string.append("  ");
     }
 
-    std::cout << indentation_string << "Neighbors of " << neighbors_of << ": " << TestFunctions::VecToString(vertices) << std::endl;
+    std::cout << indentation_string << "Neighbors of " << neighbors_of << ": " << TestFunctions::VecToString(vertices) <<
+              " - degree: " << graph.GetDegree(neighbors_of) << std::endl;
 
 }
 
@@ -112,6 +113,13 @@ int main() {
 
     CSRGraph& graph = *CSRGraph::LoadFromDimacs(file_name);
 
+    int num_edges = 0;
+    for ( int vertex : graph.GetVertices() ) {
+        num_edges += graph.GetDegree(vertex);
+    }
+
+    std::cout << "Effective n° edges" << num_edges / 2 << std::endl;
+
     std::cout << "Graph creation" << std::endl;
     full_basics_test(graph, 1);
     
@@ -137,6 +145,12 @@ int main() {
 
     auto begin = std::chrono::steady_clock::now();
 
+    num_edges = 0;
+    for ( int vertex : heavier_graph.GetVertices() ) {
+        num_edges += heavier_graph.GetDegree(vertex);
+    }
+
+    std::cout << "Effective n° edges " << num_edges / 2 << std::endl;
 
     heavier_graph.MergeVertices(v, vertices[0]);
 
@@ -157,4 +171,5 @@ int main() {
     std::cout << "Time to add an edge to a graph with " << heavier_graph.GetNumVertices() 
               << " vertices and " << heavier_graph.GetNumEdges() << " edges: " 
               << std::scientific << elapsed_time/std::pow(10, 9) << std::endl;
+
 }
