@@ -636,9 +636,7 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 
 					//std::cout << "Rank: " << my_rank << " starting branching" << std::endl;
 
-					std::pair<unsigned int, unsigned int> vertices = _branching_strat.ChooseVertices(*current_G);
-					u = vertices.first;
-					v = vertices.second;
+					auto [u, v] = _branching_strat.ChooseVertices(*current_G);
 					Log_par("Branching on vertices: u = " + std::to_string(u) +
 							", v = " + std::to_string(v),
 					    	current.depth, true);
@@ -670,16 +668,18 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 					// generate tasks and update queue
 					int current_depth = current.depth;
 
+					/*
 					int lb_og_pre = _clique_strat.FindClique(*current_G);
 					unsigned short ub_og_pre;
 					_color_strat.Color(*current_G, ub_og_pre);
 					//std::cout << "lb_og_pre " << lb_og_pre << " ub_og_pre " << ub_og_pre << std::endl;
 
 					auto local_g = current_G->Clone();
+					*/
 
 					#pragma omp task default(shared) firstprivate(u, v) 	
 					{
-						create_task(std::move(local_g), u, v, _clique_strat, _color_strat, best_ub, current_depth, my_rank);
+						create_task(std::move(current_G), u, v, _clique_strat, _color_strat, best_ub, current_depth, my_rank);
 					}
 
 				}
