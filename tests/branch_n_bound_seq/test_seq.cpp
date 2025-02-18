@@ -15,7 +15,7 @@
 
 int main() {
 	Dimacs dimacs;
-	std::string file_name = "queen10_10.col";
+	std::string file_name = "10_vertices_graph.col";
 
 	if (!dimacs.load(file_name.c_str())) {
 		std::cout << dimacs.getError() << std::endl;

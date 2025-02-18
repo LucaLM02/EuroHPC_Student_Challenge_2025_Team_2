@@ -30,10 +30,10 @@ int main(int argc, char** argv) {
 
 	RandomBranchingStrategy branching_strategy(graph->GetNumVertices());
 	FastCliqueStrategy clique_strategy;
-	GreedyColorStrategy color_strategy;
+	DSaturColorStrategy color_strategy;
 
 	BranchNBoundPar solver(branching_strategy, clique_strategy,
-			       color_strategy, "log.txt");
+			       color_strategy, "log_master.txt", "log_branches.txt");
 
 	int provided;
 	MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
@@ -43,7 +43,7 @@ int main(int argc, char** argv) {
 		MPI_Abort(MPI_COMM_WORLD, 1);
 	}
 	
-	int chromatic_number = solver.Solve(*graph, 30, 100000);
+	int chromatic_number = solver.Solve(*graph, 60, 100000);
 
 	int my_rank;
 	MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);

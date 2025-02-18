@@ -110,7 +110,7 @@ int BranchNBoundSeq::Solve(Graph& g, int timeout_seconds,
 				std::to_string(current_G->GetNumVertices()),
 			    current.depth);
 			Log("========== END ==========", 0);
-			return current_G->GetNumVertices();
+			return std::min<size_t>(current_G->GetNumVertices(),best_ub); //check this
 		}
 
 		// Branch 1 - Merge u and v (assign same color)

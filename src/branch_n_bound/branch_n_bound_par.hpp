@@ -28,8 +28,13 @@ class BranchNBoundPar {
 	BranchingStrategy& _branching_strat;
 	CliqueStrategy& _clique_strat;
 	ColorStrategy& _color_strat;
-	std::ofstream _log_file;
+	std::ofstream _log_file_master;
+	std::ofstream _log_file_branches;
 
+	void create_task(
+		std::unique_ptr<Graph> current_G, int u, int v,
+		CliqueStrategy& _clique_strat, ColorStrategy& _color_strat,
+		std::atomic<unsigned short> & best_ub, int const& depth, int my_rank);
 	/**
 	 * @brief Logs a message to the log file.
 	 *
@@ -78,14 +83,20 @@ class BranchNBoundPar {
 	BranchNBoundPar(BranchingStrategy& branching_strat,
 			CliqueStrategy& clique_strat,
 			ColorStrategy& color_strat,
-			const std::string& log_file_path)
+			const std::string& log_file_path_master,
+			const std::string& log_file_path_branches)
 	    : _branching_strat(branching_strat),
 	      _clique_strat(clique_strat),
 	      _color_strat(color_strat) {
-		_log_file.open(log_file_path);
-		if (!_log_file.is_open()) {
+		_log_file_master.open(log_file_path_master);
+		if (!_log_file_master.is_open()) {
 			throw std::runtime_error("Failed to open log file: " +
-						 log_file_path);
+				log_file_path_master);
+		}
+		_log_file_branches.open(log_file_path_branches);
+		if (!_log_file_branches.is_open()) {
+			throw std::runtime_error("Failed to open log file: " +
+				log_file_path_branches);
 		}
 	}
 
