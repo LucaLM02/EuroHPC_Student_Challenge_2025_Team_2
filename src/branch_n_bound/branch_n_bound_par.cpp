@@ -677,9 +677,13 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 					auto local_g = current_G->Clone();
 					*/
 
-					#pragma omp task default(shared) firstprivate(u, v) 	
+					Graph* local_g = current_G->Clone().release();
+
+					#pragma omp task default(shared) firstprivate(u, v, local_g) 	
 					{
-						create_task(std::move(current_G), u, v, _clique_strat, _color_strat, best_ub, current_depth, my_rank);
+						std::unique_ptr<Graph> ptr;
+						ptr.reset(local_g);
+						create_task(std::move(ptr), u, v, _clique_strat, _color_strat, best_ub, current_depth, my_rank);
 					}
 
 				}
