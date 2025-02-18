@@ -26,12 +26,12 @@ int main() {
 
 	NeighboursBranchingStrategy branching_strategy;
 	FastCliqueStrategy clique_strategy;
-	DSaturColorStrategy color_strategy;
+	GreedyColorStrategy color_strategy;
 
 	BranchNBoundSeq solver(branching_strategy, clique_strategy,
 			       color_strategy, "log.txt");
 
-	int chromatic_number = solver.Solve(*graph, 60, 100000);
+	int chromatic_number = solver.Solve(*graph, 180, 100000);
 
 	std::cout << "Chromatic number: " << chromatic_number << std::endl;
 

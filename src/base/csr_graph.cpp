@@ -471,31 +471,6 @@ std::unique_ptr<Graph> CSRGraph::Clone() const {
 }
 
 // ------------------------ PROTECTED --------------------------
-<<<<<<< HEAD
-CSRGraph::CSRGraph(const Dimacs& dimacs_graph)
-    : _vertices(static_cast<int>(dimacs_graph.numVertices)),
-      _nEdges{dimacs_graph.getNumEdges()},
-      _edges(dimacs_graph.numVertices + 1u),
-      _coloring(dimacs_graph.numVertices + 1u),
-      _max_vertex(dimacs_graph.numVertices) {
-	int size = _vertices.size();
-	for (int vertex = 1; vertex <= size; vertex++) {
-		_vertices[vertex - 1] = vertex;
-		_edges[vertex].reserve(dimacs_graph.degrees[vertex]);
-	}
-
-	for (const std::pair<int, int>& edge : dimacs_graph.edges) {
-		_edges[edge.first].push_back(edge.second);
-		_edges[edge.second].push_back(edge.first);
-	}
-
-	_degrees.clear();
-	_degrees.resize(_vertices.size() + 1);
-	for (int i = 0; i < _vertices.size(); i++) {
-		_degrees[_vertices[i]] = _edges[_vertices[i]].size();
-	}
-}
-=======
 CSRGraph::CSRGraph(const Dimacs& dimacs_graph) 
 : _vertices(static_cast<int>(dimacs_graph.numVertices)), 
   _nEdges{dimacs_graph.getNumEdges()},
@@ -532,4 +507,3 @@ CSRGraph::CSRGraph(const Dimacs& dimacs_graph)
     }
 
 }
->>>>>>> dev
