@@ -70,7 +70,7 @@ int BranchNBoundSeq::Solve(Graph& g, int timeout_seconds,
 		queue.pop();
 		auto current_G = std::move(current.g);
 		int current_lb = current.lb;
-		int current_ub = current.ub;
+		unsigned short current_ub = current.ub;
 
 		// Log current node
 		Log("Processing node: lb = " + std::to_string(current_lb) +
@@ -79,11 +79,14 @@ int BranchNBoundSeq::Solve(Graph& g, int timeout_seconds,
 
 		// If current_lb == current_ub, chromatic number found
 		if (current_lb == current_ub) {
+			/*
 			Log("[FOUND] Chromatic number found: " +
 				std::to_string(current_lb),
 			    current.depth);
 			Log("========== END ==========", 0);
-			return current_lb;
+			*/
+			best_ub = std::min(current_ub, best_ub);
+			continue;
 		}
 
 		// Prune if current_lb >= best_ub
@@ -105,11 +108,14 @@ int BranchNBoundSeq::Solve(Graph& g, int timeout_seconds,
 		// If no such pair exists, the graph is complete (we are at a
 		// leaf branch)
 		if (u == -1 || v == -1) {
+			/*
 			Log("Graph is complete. Chromatic number = " +
 				std::to_string(current_G->GetNumVertices()),
 			    current.depth);
 			Log("========== END ==========", 0);
-			return std::min<size_t>(current_G->GetNumVertices(),best_ub); //check this
+			*/
+			best_ub = std::min<unsigned short>(current_G->GetNumVertices(),best_ub); //check this
+			continue;
 		}
 
 		// Branch 1 - Merge u and v (assign same color)
