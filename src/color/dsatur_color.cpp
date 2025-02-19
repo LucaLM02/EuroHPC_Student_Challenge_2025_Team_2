@@ -43,9 +43,9 @@ void DSaturColorStrategy::Color(Graph &graph, unsigned short &max_k) const
 
 
 DSaturList::DSaturList(const Graph& graph)
-: _vertex_to_item(graph.GetHighestVertex()+1),   // + 1 because highest vertex must be included
+: _vertex_to_item(graph.GetHighestVertex()+1, nullptr),   // + 1 because highest vertex must be included
   _vertex_to_neighbour_colors(graph.GetHighestVertex()+1),
-  _sat_degree_to_list(1, nullptr)
+  _sat_degree_to_list(graph.GetHighestVertex()+1, nullptr)
 {
     std::vector<int> vertices = graph.GetVertices();
     std::vector<int> degrees = graph.GetFullDegrees();
@@ -82,6 +82,12 @@ DSaturList::DSaturList(const Graph& graph)
 
 DSaturList::~DSaturList()
 {
+       
+    for (DSaturItem* item : _vertex_to_item) {
+        if (item) {
+            delete item;
+        }
+    }
     /*
     for ( int i=0; i< _vertex_to_item.size(); i++ ) {
         if ( _vertex_to_item[i] != nullptr ) {
@@ -164,6 +170,10 @@ int DSaturList::GetHighestVertex() const
 
 int DSaturList::PopHighestVertex()
 {
+    if (_last_item == nullptr) {
+        std::cerr << "Error: try to extract a vertex from an empty list." << std::endl;
+        return -1;
+    }
     int removed_vertex = _last_item->vertex;
     DSaturItem* removed_item = _last_item;
 
@@ -178,36 +188,49 @@ int DSaturList::PopHighestVertex()
 
         // scrolling all the lists
         int last_degree_counter = _last_degree;
+
+        /*
         for (last_degree_counter = _last_degree; 
             last_degree_counter >= 0 &&
             _sat_degree_to_list[last_degree_counter] == nullptr;
             last_degree_counter--) {}
+        */
+        while (last_degree_counter >= 0 && _sat_degree_to_list[last_degree_counter] == nullptr) {
+            last_degree_counter--;
+        }
+
         
         if ( last_degree_counter < 0 ) {
             // list has been cleared
             _last_item = nullptr;
             _last_degree = -1;
-            free(removed_item);
+            //free(removed_item);
+            delete removed_item;
             return removed_vertex;
         }
 
-        _last_degree = last_degree_counter;
+            _last_degree = last_degree_counter;
 
-        // finding the last element of the list
-        _last_item = _sat_degree_to_list[last_degree_counter];
+            // finding the last element of the list
+            _last_item = _sat_degree_to_list[last_degree_counter];
 
-        if ( _last_item == nullptr ) {
-            return true;
-        }
+            /* int function? return bool?
+            if ( _last_item == nullptr ) {
+                return true;
+            }
+            */
 
-        while ( _last_item->next != nullptr ) {
-            _last_item = _last_item->next;
-        }
+            while (_last_item->next != nullptr ) {
+                _last_item = _last_item->next;
+            }
+        delete removed_item;
+        //free(removed_item);
     }
 
     _vertex_to_item[removed_item->vertex] = nullptr;
 
-    free(removed_item);
+    delete removed_item;
+    //free(removed_item);
     return removed_vertex;
 }
 

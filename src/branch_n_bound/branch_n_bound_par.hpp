@@ -50,17 +50,6 @@ class BranchNBoundPar {
 	void Log_par(const std::string& message, int depth, bool is_branching);
 
 	/**
-	 * @brief Creates a task for the OpenMP parallel region to execute.
-	 *
-	 */
-	void create_task(std::atomic<int>& active_tasks, Graph* current_G,
-			 int u, int v, CliqueStrategy& _clique_strat,
-			 ColorStrategy& _color_strat,
-			 std::vector<Branch>& new_branches, int task_type,
-			 std::atomic<unsigned short> const& best_ub,
-			 int const& depth);
-
-	/**
 	 * @brief Checks if the solver has exceeded the timeout.
 	 *
 	 * @param start_time The start time of the solver.

@@ -112,6 +112,10 @@ std::vector<int> FastWClq::CliqueConstruction() {
         new_CandSet.reserve(CandSet.size());
         for (int u : CandSet) {
             //if (graph_.IsNeighbor(v, u)) {
+                if (v < 0 || u < 0) {
+                    std::cerr << "error invalid vertex" << v << " u=" << u << std::endl;
+                    continue;
+                }
             if (graph_.HasEdge(v, u)) {
                 new_CandSet.push_back(u);
             }
