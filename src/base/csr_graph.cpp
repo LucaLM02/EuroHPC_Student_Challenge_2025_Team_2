@@ -165,15 +165,20 @@ void CSRGraph::Deserialize(const std::string& data) {
 
     _merged_vertices.resize(mergedSize);
     for (size_t i = 0; i < mergedSize; ++i) {
-        int mergedCount;
-        iss >> mergedCount;
-        _merged_vertices[i].resize(mergedCount);
-        for (int j = 0; j < mergedCount; ++j) {
+		int mergedCount;
+		iss >> mergedCount;
+	
+		std::vector<int> mergedVec;  // Vettore temporaneo
+		mergedVec.reserve(mergedCount);  // Evita riallocazioni
+	
+		for (int j = 0; j < mergedCount; ++j) {
 			int merged;
 			iss >> merged;
-			_edges[i].push_back(merged);
-        }
-    }
+			mergedVec.push_back(merged);
+		}
+	
+		_merged_vertices.push_back(std::move(mergedVec));  // Evita copia inutile
+	}
 
 	/*
 	if (_edges.size() != numEdges) {
