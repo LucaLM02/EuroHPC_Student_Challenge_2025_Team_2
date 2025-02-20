@@ -1,6 +1,6 @@
 #include "branch_n_bound_par.hpp"
 
-#define ALLGATHER_WAIT_TIME 10	   // Sleep time for MPI_Allgather
+#define ALLGATHER_WAIT_TIME 5	   // Sleep time for MPI_Allgather
 #define TIMEOUT_CHECK_WAIT_TIME 5  // Sleep time for timeout checker
 
 // tags for MPI communication
@@ -12,7 +12,10 @@
 using BranchQueue = std::priority_queue<Branch, std::vector<Branch>>;
 std::atomic<bool> terminate_flag = false;
 std::mutex queue_mutex;	 // avoid concurrent access to the queue
-std::mutex log_mutex;	
+std::mutex log_mutex;
+
+std::mutex branching_mutex;
+std::mutex task_mutex;
 
 /**
  * @brief Checks if the timeout has been reached based on the start time and the
@@ -498,7 +501,6 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 				queue.push(Branch(std::move(G2), lb2, ub2,
 						  current.depth + 1));
 			}
-
 			// Update best_ub
 			best_ub = std::min({best_ub.load(), ub1, ub2});
 			Log("[UPDATE] Updated best_ub: " +
@@ -583,7 +585,7 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 			thread_1_solution_gatherer(p, best_ub, my_rank);
 			std::cout << "Rank: " << my_rank << " Exited thread_1_solution_gatherer func." << std::endl;
 		} else if (my_rank != 0) { // Only worker processes go in here.
-			std::cout << "Rank: " << my_rank << " Starting worker thread" << std::endl;
+			//std::cout << "Rank: " << my_rank << " Starting worker thread" << std::endl;
 			// worker thread used for listening for requests about
 			// work stealing
 			/*
@@ -599,7 +601,7 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 					//std::cout << "Rank: " << my_rank << " " << int(terminate_flag.load()) << std::endl;
 
 					{
-						std::cout << "Rank: " << my_rank << " checking queue" << std::endl;
+						//std::cout << "Rank: " << my_rank << " checking queue" << std::endl;
 						std::lock_guard<std::mutex> lock(queue_mutex);
 						if (!queue.empty()) { 
 							current = std::move(const_cast<Branch&>(queue.top()));
@@ -609,7 +611,7 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 					}
 
 					if(!has_work){
-						usleep(10000);
+						usleep(1000);
 						continue;
 					}
 
@@ -644,14 +646,16 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 						continue;
 					}
 
-					std::cout << "Rank: " << my_rank << " starting branching" << std::endl;
+					//std::cout << "Rank: " << my_rank << " starting branching" << std::endl;
 
+					std::unique_lock<std::mutex> lock_branching(branching_mutex);
 					auto [u, v] = _branching_strat.ChooseVertices(*current_G);
+					lock_branching.unlock();
 					Log_par("Branching on vertices: u = " + std::to_string(u) +
 							", v = " + std::to_string(v),
 					    	current.depth, true);
 
-					std::cout << "Rank: " << my_rank << " choose " << u << " " << v << std::endl;
+					//std::cout << "Rank: " << my_rank << " choose " << u << " " << v << std::endl;
 
 					if (u == -1 || v == -1) {
 						best_ub.store(std::min<unsigned short>(current_G->GetNumVertices(), best_ub.load()));
@@ -669,10 +673,11 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 					//std::cout << "Rank: " << my_rank << " generating tasks" << std::endl;
 					// generate tasks and update queue
 
+					std::unique_lock<std::mutex> lock_task(task_mutex);
 					auto G1 = current_G->Clone();
-					std::cout << "Rank: " << my_rank << " copy graph" << std::endl;
+					//std::cout << "Rank: " << my_rank << " copy graph" << std::endl;
 					G1->MergeVertices(u, v);
-					std::cout << "Rank: " << my_rank << " merge vertices" << std::endl;
+					//std::cout << "Rank: " << my_rank << " merge vertices" << std::endl;
 					int lb1 = _clique_strat.FindClique(*G1);
 					unsigned short ub1;
 					_color_strat.Color(*G1, ub1);
@@ -700,6 +705,7 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 						std::lock_guard<std::mutex> lock(queue_mutex);
 						queue.push(Branch(std::move(G2), lb2, ub2, current.depth + 1));
 					}
+					lock_task.unlock();
 
 					//active_tasks.fetch_sub(1);
 					//std::cout << "Rank: " << my_rank << " decrease tasks" << std::endl;
@@ -709,9 +715,9 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 					best_ub.store(std::min({previous_best_ub, ub1, ub2}));
 					Log_par("[UPDATE] Updated best_ub: " + std::to_string(best_ub.load()), current.depth);
 
-
 			//	}
 			}
+			//std::cout << "Rank: " << my_rank << " Exit while loop " << std::endl;
 		}
 		}
 		std::cout << "Rank: " << my_rank << " Finalizing" << std::endl;

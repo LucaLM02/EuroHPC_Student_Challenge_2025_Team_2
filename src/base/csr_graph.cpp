@@ -84,15 +84,23 @@ CSRGraph::CSRGraph()
 
 std::string CSRGraph::Serialize() const {
 	std::ostringstream oss;
-	oss << _vertices.size() << " " << _nEdges << " " << _max_vertex << "\n";
+	oss << _vertices.size() << " " << _nEdges << " " << _max_vertex << " " << _removed_vertices.size() << " " << _merged_vertices.size() << " " << _coloring.size() << "\n";
+
 	for (int vertex : _vertices) {
 		oss << vertex << " ";
 	}
 	oss << "\n";
+
+    for (int vertex : _removed_vertices) {
+        oss << vertex << " ";
+    }
+    oss << "\n";
+
 	for (int degree : _degrees) {
 		oss << degree << " ";
 	}
 	oss << "\n";
+
 	for (const auto& edges : _edges) {
 		oss << edges.size() << " ";
 		for (int edge : edges) {
@@ -100,30 +108,47 @@ std::string CSRGraph::Serialize() const {
 		}
 	}
 	oss << "\n";
+
 	for (unsigned short color : _coloring) {
 		oss << color << " ";
 	}
 	oss << "\n";
+
+    for (const auto& merged : _merged_vertices) {
+        oss << merged.size() << " ";
+        for (int vertex : merged) {
+            oss << vertex << " ";
+        }
+        oss << "\n";
+    }
+
 	return oss.str();
 }
 
 void CSRGraph::Deserialize(const std::string& data) {
 	std::istringstream iss(data);
-	size_t numVertices, numEdges;
-	iss >> numVertices >> numEdges >> _max_vertex;
+	size_t numVertices, numEdges, numRemovedVertices, mergedSize, coloringSize;
+
+	iss >> numVertices >> numEdges >> _max_vertex >> numRemovedVertices >> mergedSize >> coloringSize;
 
 	_vertices.resize(numVertices);
 	for (size_t i = 0; i < numVertices; ++i) {
 		iss >> _vertices[i];
 	}
 
-	_degrees.resize(numVertices + 1);
-	for (size_t i = 0; i <= numVertices; ++i) {
+    for (size_t i = 0; i < numRemovedVertices; ++i) {
+        int vertex;
+        iss >> vertex;
+        _removed_vertices.insert(vertex);
+    }
+
+	_degrees.resize(numVertices);
+	for (size_t i = 0; i < numVertices; ++i) {
 		iss >> _degrees[i];
 	}
 
-	_edges.resize(numVertices + 1);
-	for (size_t i = 0; i <= numVertices; ++i) {
+	_edges.resize(numEdges);
+	for (size_t i = 0; i < numVertices; ++i) {
 		int edgeSize;
 		iss >> edgeSize;
 		for(int j = 0; j < edgeSize; ++j) {
@@ -133,10 +158,31 @@ void CSRGraph::Deserialize(const std::string& data) {
 		}
 	}
 
-	_coloring.resize(numVertices + 1);
-	for (size_t i = 0; i <= numVertices; ++i) {
+	_coloring.resize(coloringSize);
+	for (size_t i = 0; i < coloringSize; ++i) {
 		iss >> _coloring[i];
 	}
+
+    _merged_vertices.resize(mergedSize);
+    for (size_t i = 0; i < mergedSize; ++i) {
+        int mergedCount;
+        iss >> mergedCount;
+        _merged_vertices[i].resize(mergedCount);
+        for (int j = 0; j < mergedCount; ++j) {
+			int merged;
+			iss >> merged;
+			_edges[i].push_back(merged);
+        }
+    }
+
+	/*
+	if (_edges.size() != numEdges) {
+		throw std::runtime_error("Error: _edges size mismatch after deserialization." + std::to_string(_edges.size()) + " vs " + std::to_string(numEdges));
+	}
+	for (size_t i = 0; i < numVertices; ++i) {
+		std::cout << "Vertex " << i << " has " << _edges[i].size() << " edges\n";
+	}
+		*/
 
 	_nEdges = numEdges;
 }
