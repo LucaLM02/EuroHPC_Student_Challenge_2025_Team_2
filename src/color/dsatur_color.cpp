@@ -43,9 +43,9 @@ void DSaturColorStrategy::Color(Graph &graph, unsigned short &max_k) const
 
 
 DSaturList::DSaturList(const Graph& graph)
-: _vertex_to_item(graph.GetHighestVertex()+1, nullptr),   // + 1 because highest vertex must be included
+: _vertex_to_item(graph.GetHighestVertex()+1),   // + 1 because highest vertex must be included
   _vertex_to_neighbour_colors(graph.GetHighestVertex()+1),
-  _sat_degree_to_list(graph.GetHighestVertex()+1, nullptr)
+  _sat_degree_to_list(1, nullptr)
 {
     std::vector<int> vertices = graph.GetVertices();
     std::vector<int> degrees = graph.GetFullDegrees();

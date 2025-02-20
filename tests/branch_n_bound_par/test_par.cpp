@@ -28,9 +28,9 @@ int main(int argc, char** argv) {
 	CSRGraph* graph = CSRGraph::LoadFromDimacs(file_name);
 
 
-	RandomBranchingStrategy branching_strategy(graph->GetNumVertices());
+	NeighboursBranchingStrategy branching_strategy;
 	FastCliqueStrategy clique_strategy;
-	DSaturColorStrategy color_strategy;
+	GreedyColorStrategy color_strategy;
 
 	BranchNBoundPar solver(branching_strategy, clique_strategy,
 			       color_strategy, "log_master.txt", "log_branches.txt");
@@ -43,7 +43,7 @@ int main(int argc, char** argv) {
 		MPI_Abort(MPI_COMM_WORLD, 1);
 	}
 	
-	int chromatic_number = solver.Solve(*graph, 60, 100000);
+	int chromatic_number = solver.Solve(*graph, 5, 100000);
 
 	int my_rank;
 	MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
