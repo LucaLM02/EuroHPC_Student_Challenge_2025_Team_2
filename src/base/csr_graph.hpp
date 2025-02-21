@@ -54,7 +54,6 @@ class CSRGraph : public Graph {
         virtual const std::vector<int>& GetVertices() const override;
         virtual int GetVertexByIndex(int index) const override;
         virtual int GetHighestVertex() const override;
-        virtual const std::set<int>& GetDeletedVertices() const override;
 
         virtual size_t GetNumVertices() const override;
         virtual size_t GetNumEdges() const override;
@@ -101,10 +100,6 @@ class CSRGraph : public Graph {
          * @brief vertex with the highest value which was ever added to this graph
          */
         mutable int _max_vertex;
-        /**
-         * @brief vertices removed throughout the living of this graph
-         */
-        std::set<int> _removed_vertices;
         /**
          * @brief edges contained in this graph. 
          *        _edges[v] contains w iff _edges[w] contains v

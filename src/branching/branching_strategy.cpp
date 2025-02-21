@@ -43,7 +43,6 @@ DegreeBranchingStrategy::DegreeBranchingStrategy() {}
 std::pair<int, int> 
 DegreeBranchingStrategy::ChooseVertices(Graph &graph) {
     std::pair<int, int> vertex_pair;
-    const std::set<int>& deleted_vertices = graph.GetDeletedVertices();
 
     std::vector<int> degrees;
     graph.GetDegrees(degrees);

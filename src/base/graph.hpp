@@ -208,17 +208,6 @@ class Graph {
          */
         virtual int GetHighestVertex() const = 0;
 
-        /**
-         * @brief returns the vertices deleted from the graph. When a vertex is deleted,
-         *        the result is "automatically" updated, since it is a reference to an
-         *        inner object
-         * @note when the graph vertices are renamed with values from 1 to GetNumVertices(), 
-         *       then this this function will return an empty set, until a new vertex is 
-         *       deleted
-         * @return std::set<int>
-         */
-        virtual const std::set<int>& GetDeletedVertices() const = 0;
-
         virtual size_t GetNumVertices() const = 0;
         virtual size_t GetNumEdges() const = 0;
         /**

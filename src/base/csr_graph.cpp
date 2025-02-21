@@ -85,17 +85,12 @@ CSRGraph::CSRGraph()
 
 std::string CSRGraph::Serialize() const {
 	std::ostringstream oss;
-	oss << _vertices.size() << " " << _nEdges << " " << _max_vertex << " " << _removed_vertices.size() << " " << _merged_vertices.size() << " " << _coloring.size() << "\n";
+	oss << _vertices.size() << " " << _nEdges << " " << _edges.size() << " " << _max_vertex << " " << " " << _merged_vertices.size() << " " << _coloring.size() << " " << _degrees.size() << "\n";
 
 	for (int vertex : _vertices) {
 		oss << vertex << " ";
 	}
 	oss << "\n";
-
-    for (int vertex : _removed_vertices) {
-        oss << vertex << " ";
-    }
-    oss << "\n";
 
 	for (int degree : _degrees) {
 		oss << degree << " ";
@@ -128,28 +123,22 @@ std::string CSRGraph::Serialize() const {
 
 void CSRGraph::Deserialize(const std::string& data) {
 	std::istringstream iss(data);
-	size_t numVertices, numEdges, numRemovedVertices, mergedSize, coloringSize;
+	size_t numVertices, numEdges, mergedSize, coloringSize, degreeSize;
 
-	iss >> numVertices >> numEdges >> _max_vertex >> numRemovedVertices >> mergedSize >> coloringSize;
+	iss >> numVertices >> _nEdges >> numEdges >> _max_vertex >> mergedSize >> coloringSize >> degreeSize;
 
 	_vertices.resize(numVertices);
 	for (size_t i = 0; i < numVertices; ++i) {
 		iss >> _vertices[i];
 	}
 
-    for (size_t i = 0; i < numRemovedVertices; ++i) {
-        int vertex;
-        iss >> vertex;
-        _removed_vertices.insert(vertex);
-    }
-
-	_degrees.resize(numVertices);
-	for (size_t i = 0; i < numVertices; ++i) {
+	_degrees.resize(degreeSize);
+	for (size_t i = 0; i < degreeSize; ++i) {
 		iss >> _degrees[i];
 	}
 
 	_edges.resize(numEdges);
-	for (size_t i = 0; i < numVertices; ++i) {
+	for (size_t i = 0; i < numEdges; ++i) {
 		int edgeSize;
 		iss >> edgeSize;
 		for(int j = 0; j < edgeSize; ++j) {
@@ -166,8 +155,10 @@ void CSRGraph::Deserialize(const std::string& data) {
 
     _merged_vertices.resize(mergedSize);
     for (size_t i = 0; i < mergedSize; ++i) {
-		int mergedCount;
-		iss >> mergedCount;
+		int mergedCount=1;
+		if(!iss >> mergedCount){
+			std::cerr << "Error: failed to read mergedCount" << std::endl;
+		}
 	
 		std::vector<int> mergedVec;  
 		mergedVec.reserve(mergedCount);  // avoid reallocations
@@ -237,7 +228,6 @@ int CSRGraph::AddVertex() {
 void CSRGraph::RemoveVertex(int v) {
 	// removing the vertex
 	_vertices.erase(std::find(_vertices.begin(), _vertices.end(), v));
-	_removed_vertices.insert(v);
 
 	// removing the vertices
 	_nEdges -= _edges[v].size();
@@ -282,7 +272,6 @@ void CSRGraph::MergeVertices(int v, int w) {
 
     _edges[w].clear();
     _vertices.erase(std::find(_vertices.begin(), _vertices.end(), w));
-    _removed_vertices.insert(w);
     _degrees[w] = 0;
 
 	for ( const int merged_w : _merged_vertices[w] ) {
@@ -450,10 +439,6 @@ int CSRGraph::GetHighestVertex() const {
 		}
 	}
 	return max_vertex;
-}
-
-const std::set<int>& CSRGraph::GetDeletedVertices() const {
-	return _removed_vertices;
 }
 
 void CSRGraph::SetVertices(std::vector<int>& vertices) { _vertices = vertices; }

@@ -135,11 +135,6 @@ int DimacsGraph::GetHighestVertex() const
     return max_vertex;
 }
 
-const std::set<int> &DimacsGraph::GetDeletedVertices() const
-{
-    return _deleted_vertices;
-}
-
 void DimacsGraph::SetVertices(std::vector<int> &vertices) {
     this->_vertices = vertices;
 }

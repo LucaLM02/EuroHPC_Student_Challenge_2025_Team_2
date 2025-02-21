@@ -17,6 +17,7 @@
 #include "dimacs.hpp"
 #include "test_common.hpp"
 #include "branch_n_bound_seq.hpp"
+#include "branch_n_bound_par.hpp"
 
 class FileTester {
 private:

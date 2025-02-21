@@ -118,11 +118,11 @@ void sendBranch(const Branch& b, int dest, int tag, MPI_Comm comm) {
  */
 Branch recvBranch(int source, int tag, MPI_Comm comm) {
 	MPI_Status status;
-	int size;
+	int size = 0;
 
 	MPI_Recv(&size, 1, MPI_INT, source, tag, comm, &status);
 
-	std::vector<char> buffer(size);
+	std::vector<char> buffer(size, 0);
 	MPI_Recv(buffer.data(), size, MPI_BYTE, source, tag, comm, &status);
 	//std::cout << "Sucessfully received serialized branch with size " << size << " bytes."
 	//	  		<< std::endl;
@@ -546,8 +546,7 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 		else{
 			std::cout << "Graphs are not equal" << std::endl;
 		}
-
-		*/
+			*/
 
 		std::atomic<unsigned short> best_ub = branch_recv.ub;
 
@@ -569,7 +568,7 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 	omp_tasks(method create_task) and add new branches to the queue -others
 	to compute the omp_tasks
 	*/
-	omp_set_num_threads(3);
+	omp_set_num_threads(4);
 	#pragma omp parallel default(shared)
 	{
 		int tid = omp_get_thread_num();
@@ -595,8 +594,12 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 			}else{
 			*/
 			Branch current;
+			NeighboursBranchingStrategy* branching_strategy_local = dynamic_cast<NeighboursBranchingStrategy*>(&_branching_strat);
+			FastCliqueStrategy* clique_strategy_local = dynamic_cast<FastCliqueStrategy*>(&_clique_strat);
+			GreedyColorStrategy* color_strategy_local = dynamic_cast<GreedyColorStrategy*>(&_color_strat);
 
-				while (!terminate_flag.load(std::memory_order_relaxed)) {
+
+				while (!terminate_flag.load()) {
 					bool has_work = false;
 					//std::cout << "Rank: " << my_rank << " " << int(terminate_flag.load()) << std::endl;
 
@@ -611,8 +614,9 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 					}
 
 					if(!has_work){
-						usleep(1000);
-						continue;
+						//usleep(1000);
+						//continue;
+						break;
 					}
 
 					auto current_G = std::move(current.g);
@@ -673,14 +677,17 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 					//std::cout << "Rank: " << my_rank << " generating tasks" << std::endl;
 					// generate tasks and update queue
 
+					//std::cout << "Rank: " << my_rank << " task lock" << std::endl;
 					std::unique_lock<std::mutex> lock_task(task_mutex);
 					auto G1 = current_G->Clone();
 					//std::cout << "Rank: " << my_rank << " copy graph" << std::endl;
 					G1->MergeVertices(u, v);
 					//std::cout << "Rank: " << my_rank << " merge vertices" << std::endl;
 					int lb1 = _clique_strat.FindClique(*G1);
+					//std::cout << "Rank: " << my_rank << " compute clique" << std::endl;
 					unsigned short ub1;
 					_color_strat.Color(*G1, ub1);
+					//std::cout << "Rank: " << my_rank << " compute color" << std::endl;
 					Log_par("[Branch 1] (Merge u, v) "
 							"lb = " + std::to_string(lb1) +
 							", ub = " + std::to_string(ub1),
@@ -689,13 +696,18 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 					if (lb1 < best_ub.load()) { // check to avoid cuncurrent access
 						std::lock_guard<std::mutex> lock(queue_mutex);
 						queue.push(Branch(std::move(G1), lb1, ub1, current.depth + 1));
+						//std::cout << "Rank: " << my_rank << " update queue" << std::endl;
 					}
 					// AddEdge
 					auto G2 = current_G->Clone();
+					//std::cout << "Rank: " << my_rank << " copy graph" << std::endl;
 					G2->AddEdge(u, v);
+					//std::cout << "Rank: " << my_rank << " add edge" << std::endl;
 					int lb2 = _clique_strat.FindClique(*G2);
+					//std::cout << "Rank: " << my_rank << " compute clique" << std::endl;
 					unsigned short ub2;
 					_color_strat.Color(*G2, ub2);
+					//std::cout << "Rank: " << my_rank << " compute color" << std::endl;
 					Log_par("[Branch 2] (Add edge u-v) "
 							"lb = " + std::to_string(lb2) +
 							", ub = " + std::to_string(ub2),
@@ -704,8 +716,10 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 					if (lb2 < best_ub.load() && (lb2 < ub1)) { 
 						std::lock_guard<std::mutex> lock(queue_mutex);
 						queue.push(Branch(std::move(G2), lb2, ub2, current.depth + 1));
+						//std::cout << "Rank: " << my_rank << " update queue" << std::endl;
 					}
 					lock_task.unlock();
+					//std::cout << "Rank: " << my_rank << " task unlock" << std::endl;
 
 					//active_tasks.fetch_sub(1);
 					//std::cout << "Rank: " << my_rank << " decrease tasks" << std::endl;

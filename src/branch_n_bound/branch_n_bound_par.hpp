@@ -19,6 +19,7 @@
 
 #include "branching_strategy.hpp"
 #include "clique_strategy.hpp"
+#include "fastwclq.hpp"
 #include "color.hpp"
 #include "common.hpp"
 #include "graph.hpp"

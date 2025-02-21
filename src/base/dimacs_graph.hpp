@@ -47,7 +47,6 @@ class DimacsGraph : public Graph {
         virtual const std::vector<int>& GetVertices() const override;
         virtual int GetVertexByIndex(int index) const override;
         virtual int GetHighestVertex() const override;
-        virtual const std::set<int>& GetDeletedVertices() const override;
 
         virtual size_t GetNumVertices() const override;
         virtual size_t GetNumEdges() const override;
