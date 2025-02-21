@@ -36,12 +36,6 @@ class BranchNBoundPar {
 		std::unique_ptr<Graph> current_G, int u, int v,
 		CliqueStrategy& _clique_strat, ColorStrategy& _color_strat,
 		std::atomic<unsigned short> & best_ub, int const& depth, int my_rank);
-	/**
-	 * @brief Logs a message to the log file.
-	 *
-	 * @param message The message to log.
-	 */
-	void Log(const std::string& message, int depth, bool is_branching);
 
 	/**
 	 * @brief Logs a message to the log file in a openmp parallel section.

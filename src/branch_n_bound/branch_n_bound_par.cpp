@@ -39,21 +39,6 @@ bool BranchNBoundPar::CheckTimeout(
 	return elapsed_seconds >= timeout_seconds;
 }
 
-void BranchNBoundPar::Log(const std::string& message, int depth = 0,
-			  bool is_branching = false) {
-	if (_log_file_master.is_open()) {
-		// Indentation based on depth
-		std::string indentation(depth * 2, ' ');
-
-		if (is_branching) {
-			_log_file_master << indentation << "[Depth " << depth
-				  << "] Branching on u = " << message
-				  << std::endl;
-		} else {
-			_log_file_master << indentation << message << std::endl;
-		}
-	}
-}
 
 void BranchNBoundPar::Log_par(const std::string& message, int depth = 0, bool is_branching = false) {
 	std::lock_guard<std::mutex> lock(log_mutex);
@@ -94,11 +79,8 @@ void BranchNBoundPar::Log_par(const std::string& message, int depth = 0, bool is
  * @param comm The MPI communicator used for communication.
  */
 void sendBranch(const Branch& b, int dest, int tag, MPI_Comm comm) {
-	//std::cout << "Before serializing branch" << std::endl;
 	std::vector<char> buffer = b.serialize();
 	int size = buffer.size();
-	//std::cout << "Sucessfully serialized branch with size " << size << " bytes."
-	//		  << std::endl;
 
 	MPI_Send(&size, 1, MPI_INT, dest, tag, comm);
 	MPI_Send(buffer.data(), size, MPI_BYTE, dest, tag, comm);
@@ -124,8 +106,6 @@ Branch recvBranch(int source, int tag, MPI_Comm comm) {
 
 	std::vector<char> buffer(size, 0);
 	MPI_Recv(buffer.data(), size, MPI_BYTE, source, tag, comm, &status);
-	//std::cout << "Sucessfully received serialized branch with size " << size << " bytes."
-	//	  		<< std::endl;
 	return Branch::deserialize(buffer);
 }
 
@@ -163,13 +143,9 @@ void thread_0_terminator(int my_rank, int p, int global_start_time, int timeout_
 				unsigned short solution = 0;
 				MPI_Recv(&solution, 1, MPI_UNSIGNED_SHORT, status.MPI_SOURCE, status.MPI_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 				solution_found = 1;
-				//std::cout << "Solution found by worker: " << status.MPI_SOURCE << std::endl;
-				//std::cout << "Solution: " << solution << std::endl;
 			}
 			// Check if timeout is reached, broadcast timeout signal
-			// TODO: Do we really care if workers exit forcefully with MPI finalize? If we dont, we dont need all this broadcasting stuff
 			if (MPI_Wtime() - global_start_time >= timeout_seconds) {
-				//std::cout << "Rank: " << " Timeout!" << std::endl;
 				timeout_signal = 1;
 			}
 		}
@@ -201,9 +177,6 @@ void thread_0_terminator(int my_rank, int p, int global_start_time, int timeout_
  *   p (int)           : The number of processes in the MPI communicator.
  *   best_ub (int*)    : Pointer to the variable holding the best upper bound.
  */
-
-// CHANGE: all_best_ub is now a vector of unsigned short, best_ub is now an
-// atomic variable(helps to avoid cuncurrent access)
 void thread_1_solution_gatherer(int p, std::atomic<unsigned short>& best_ub, int& my_rank) { 
     std::vector<unsigned short> all_best_ub(p);
     auto last_gather_time = MPI_Wtime();
@@ -246,7 +219,24 @@ void thread_1_solution_gatherer(int p, std::atomic<unsigned short>& best_ub, int
 }
 
 
-// Function to listen for requests from other workers.
+/**
+ * thread_2_employer - Listens for work requests from other worker processes and
+ * distributes available work from the local queue. This function is called by
+ * the third thread of the worker processes.
+ *
+ * This function is responsible for handling work requests from other worker
+ * processes. It listens for incoming work requests using non-blocking MPI
+ * communication. If a work request is received and there is work available in
+ * the local queue, it sends a branch to the requesting process. If no work is
+ * available, it sends a response indicating that no work is available.
+ *
+ * Parameters:
+ *   queue_mutex (std::mutex&) : Mutex to protect concurrent access to the work
+ * queue.
+ *   queue (BranchQueue&)      : The local work queue containing branches to be
+ * processed.
+ *   my_rank (int&)            : The rank of the current process.
+ */
 void thread_2_employer(std::mutex& queue_mutex, BranchQueue& queue, int& my_rank) {
     MPI_Status status;
     int request_signal = 0;
@@ -273,6 +263,24 @@ void thread_2_employer(std::mutex& queue_mutex, BranchQueue& queue, int& my_rank
     }
 }
 
+/**
+ * request_work - Requests work from other worker processes when the local queue is empty.
+ *
+ * This function is responsible for requesting work from other worker processes
+ * when the local queue is empty. It uses non-blocking MPI communication to send
+ * a work request to a randomly selected worker and waits for a response. If work
+ * is available, it receives the branch and adds it to the local queue.
+ *
+ * Parameters:
+ *   my_rank (int)            : The rank of the current process.
+ *   p (int)                  : The total number of processes in the MPI communicator.
+ *   queue (BranchQueue&)     : The local work queue containing branches to be processed.
+ *   queue_mutex (std::mutex&): Mutex to protect concurrent access to the work queue.
+ *   current (Branch&)        : The branch object to store the received work.
+ *
+ * Returns:
+ *   bool : True if work was successfully received and added to the queue, false otherwise.
+ */
 bool request_work(int my_rank, int p, BranchQueue& queue, std::mutex& queue_mutex, Branch& current) {
     int target_worker = (rand() % (p - 1)) + 1; // Randomly select a worker to request work from
     MPI_Status status;
@@ -367,11 +375,6 @@ void BranchNBoundPar::create_task(
 
 		//active_tasks.fetch_sub(1);
 }
-		*/
-
-/*CHANGE:   now ub and best_ub are atomic variables(avoids concurrent access)
-			added mutex to avoid concurrent access to the queue
-			implemented system to send work to workers(line 421)
 */
 
 int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshold) {
@@ -382,21 +385,17 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 	MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &p);
 
-	// Start the timeout timer
+	// Start the timeout timer.
 	auto global_start_time = MPI_Wtime();
 	// Initialize big enough best_ub for all processes.
 	std::atomic<unsigned short> best_ub = USHRT_MAX;
 
-
 	MPI_Status status_recv;
 	Branch branch_recv;
 
-	// recv work from previous worker if not rank 0 (starting rank).
+	// Receive work from previous worker if not rank 0 (starting rank), to start working.
 	if (my_rank>0) {
 		branch_recv = recvBranch(my_rank-1, TAG_WORK, MPI_COMM_WORLD);
-
-	//std::cout << "Rank: " << my_rank << " Received work num vertices" << branch_recv.g->GetNumVertices() << std::endl;
-
 	/*
 	Dimacs dimacs;
 	std::string file_name = "10_vertices_graph.col";
@@ -418,13 +417,8 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 
 	std::atomic<unsigned short> best_ub = branch_recv.ub;
 
-	//std::cout << "ub_recv: " << _clique_strat.FindClique(*branch_recv.g) << std::endl;
-
-	//std::cout << "Worker: " << my_rank << std::endl;
-
 	queue.push(std::move(branch_recv));
 
-	//std::cout << "Pushed to queue" << std::endl;
 	}
 
 	// OpenMP Parallel Region
@@ -441,28 +435,15 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 	{
 		int tid = omp_get_thread_num();
 
-		// Both master's and worker's thread 0 goes in here.
-		if (tid == 0) {
-			//it must be thread 0 otherwise it will not work
-			// Checks if solution has been found or timeout. 
+		if (tid == 0) { // Checks if solution has been found or timeout. 
 			thread_0_terminator(my_rank, p, global_start_time, timeout_seconds);
 			std::cout << "Rank: " << my_rank << " Exited thread_0_terminator func." << std::endl;
-		}else if (tid == 1) { // Both master's and worker's thread 1 goes in here.
-			// Updates (gathers) best_ub from time to time.
+		}else if (tid == 1) { // Updates (gathers) best_ub from time to time.
 			thread_1_solution_gatherer(p, best_ub, my_rank);
 			std::cout << "Rank: " << my_rank << " Exited thread_1_solution_gatherer func." << std::endl;
 		}else if (tid == 2) { // Employer thread employs workers by answering their work requests
 			thread_2_employer(queue_mutex, queue, my_rank);
 		}else if (tid == 3) { // TODO: Let more threads do these computations in parallel
-			//std::cout << "Rank: " << my_rank << " Starting worker thread" << std::endl;
-			// worker thread used for listening for requests about
-			// work stealing
-			/*
-			if (tid == 2) {
-				thread_2_listen_for_requests(queue_mutex, queue, my_rank);
-				std::cout << "Rank: " << my_rank << " Exited thread_2_listen_for_requests func." << std::endl;
-			}else{
-			*/
 			Branch current;
 			NeighboursBranchingStrategy* branching_strategy_local = dynamic_cast<NeighboursBranchingStrategy*>(&_branching_strat);
 			FastCliqueStrategy* clique_strategy_local = dynamic_cast<FastCliqueStrategy*>(&_clique_strat);
@@ -490,10 +471,7 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 
 				while (!terminate_flag.load()) {
 					bool has_work = false;
-					//std::cout << "Rank: " << my_rank << " " << int(terminate_flag.load()) << std::endl;
-
 					{
-						//std::cout << "Rank: " << my_rank << " checking queue" << std::endl;
 						std::lock_guard<std::mutex> lock(queue_mutex);
 						if (!queue.empty()) { 
 							current = std::move(const_cast<Branch&>(queue.top()));
@@ -501,6 +479,7 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 							has_work = true;
 						}
 					}
+
 					// If no work and already passed the initial distributing phase, request work.
 					if (!has_work && distributed_work) {
 						std::cout << "Rank: " << my_rank << " requesting work..." << std::endl;
@@ -518,7 +497,7 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 					Log_par("Processing node: lb = " + std::to_string(current_lb) +
 							", ub = " + std::to_string(current_ub), current.depth);
 
-					// find solution
+					// found solution
 					if (current_lb == current_ub) {
 						/*
 						MPI_Send(&current_ub, 1, MPI_UNSIGNED_SHORT, 0, TAG_SOLUTION_FOUND, MPI_COMM_WORLD);  // check if it is correct
@@ -542,16 +521,13 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 						continue;
 					}
 
-					//std::cout << "Rank: " << my_rank << " starting branching" << std::endl;
-
+					// Start branching 
 					std::unique_lock<std::mutex> lock_branching(branching_mutex);
 					auto [u, v] = _branching_strat.ChooseVertices(*current_G);
 					lock_branching.unlock();
 					Log_par("Branching on vertices: u = " + std::to_string(u) +
 							", v = " + std::to_string(v),
 							current.depth, true);
-
-					//std::cout << "Rank: " << my_rank << " choose " << u << " " << v << std::endl;
 
 					if (u == -1 || v == -1) {
 						best_ub.store(std::min<unsigned short>(current_G->GetNumVertices(), best_ub.load()));
@@ -564,22 +540,13 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 						*/
 						continue;
 					}
-
-					//std::cout << "Rank: " << my_rank << " checking # tasks" << std::endl;
-					//std::cout << "Rank: " << my_rank << " generating tasks" << std::endl;
 					// generate tasks and update queue
-
-					//std::cout << "Rank: " << my_rank << " task lock" << std::endl;
 					std::unique_lock<std::mutex> lock_task(task_mutex);
 					auto G1 = current_G->Clone();
-					//std::cout << "Rank: " << my_rank << " copy graph" << std::endl;
 					G1->MergeVertices(u, v);
-					//std::cout << "Rank: " << my_rank << " merge vertices" << std::endl;
 					int lb1 = _clique_strat.FindClique(*G1);
-					//std::cout << "Rank: " << my_rank << " compute clique" << std::endl;
 					unsigned short ub1;
 					_color_strat.Color(*G1, ub1);
-					//std::cout << "Rank: " << my_rank << " compute color" << std::endl;
 					Log_par("[Branch 1] (Merge u, v) "
 							"lb = " + std::to_string(lb1) +
 							", ub = " + std::to_string(ub1),
@@ -588,18 +555,13 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 					if (lb1 < best_ub.load()) { // check to avoid cuncurrent access
 						std::lock_guard<std::mutex> lock(queue_mutex);
 						queue.push(Branch(std::move(G1), lb1, ub1, current.depth + 1));
-						//std::cout << "Rank: " << my_rank << " update queue" << std::endl;
 					}
 					// AddEdge
 					auto G2 = current_G->Clone();
-					//std::cout << "Rank: " << my_rank << " copy graph" << std::endl;
 					G2->AddEdge(u, v);
-					//std::cout << "Rank: " << my_rank << " add edge" << std::endl;
 					int lb2 = _clique_strat.FindClique(*G2);
-					//std::cout << "Rank: " << my_rank << " compute clique" << std::endl;
 					unsigned short ub2;
 					_color_strat.Color(*G2, ub2);
-					//std::cout << "Rank: " << my_rank << " compute color" << std::endl;
 					Log_par("[Branch 2] (Add edge u-v) "
 							"lb = " + std::to_string(lb2) +
 							", ub = " + std::to_string(ub2),
@@ -608,7 +570,6 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 					if (lb2 < best_ub.load() && (lb2 < ub1)) { 
 						std::lock_guard<std::mutex> lock(queue_mutex);
 						queue.push(Branch(std::move(G2), lb2, ub2, current.depth + 1));
-						//std::cout << "Rank: " << my_rank << " update queue" << std::endl;
 					}
 					if (!distributed_work && my_rank<p-1)
 					{
@@ -620,21 +581,13 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 						distributed_work = true;
 					}
 					lock_task.unlock();
-					//std::cout << "Rank: " << my_rank << " task unlock" << std::endl;
-
-					//active_tasks.fetch_sub(1);
-					//std::cout << "Rank: " << my_rank << " decrease tasks" << std::endl;
-
 					// Update local sbest_ub
 					unsigned short previous_best_ub = best_ub.load();
 					best_ub.store(std::min({previous_best_ub, ub1, ub2}));
 					Log_par("[UPDATE] Updated best_ub: " + std::to_string(best_ub.load()), current.depth);
-
-			//	}
 			}
-			//std::cout << "Rank: " << my_rank << " Exit while loop " << std::endl;
 		}
-		}
+	}
 		std::cout << "Rank: " << my_rank << " Finalizing" << std::endl;
 		// End execution
 		return best_ub;
