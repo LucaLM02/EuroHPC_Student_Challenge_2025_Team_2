@@ -16,7 +16,8 @@ CSRGraph::CSRGraph()
       _coloring(1),
       _edges(1),
       _nEdges(0),
-      _max_vertex(0) {}
+      _max_vertex(0),
+	  _merged_vertices(0) {}
 
 	  bool CSRGraph::isEqual(const Graph &ot) const
 	  {
@@ -168,8 +169,8 @@ void CSRGraph::Deserialize(const std::string& data) {
 		int mergedCount;
 		iss >> mergedCount;
 	
-		std::vector<int> mergedVec;  // Vettore temporaneo
-		mergedVec.reserve(mergedCount);  // Evita riallocazioni
+		std::vector<int> mergedVec;  
+		mergedVec.reserve(mergedCount);  // avoid reallocations
 	
 		for (int j = 0; j < mergedCount; ++j) {
 			int merged;
@@ -177,7 +178,7 @@ void CSRGraph::Deserialize(const std::string& data) {
 			mergedVec.push_back(merged);
 		}
 	
-		_merged_vertices.push_back(std::move(mergedVec));  // Evita copia inutile
+		_merged_vertices.push_back(std::move(mergedVec));  // avoid useless copy
 	}
 
 	/*
@@ -283,6 +284,16 @@ void CSRGraph::MergeVertices(int v, int w) {
     _vertices.erase(std::find(_vertices.begin(), _vertices.end(), w));
     _removed_vertices.insert(w);
     _degrees[w] = 0;
+
+	for ( const int merged_w : _merged_vertices[w] ) {
+		if ( std::find(_merged_vertices[v].begin(), 
+					   _merged_vertices[v].end(), 
+					   merged_w) == _merged_vertices[v].end() ) {
+			_merged_vertices[v].push_back(merged_w);
+		}
+	}
+	_merged_vertices[v].push_back(w);
+	_merged_vertices[w].clear();
 
     // deleting `w` from the neighbour lists of common neighbours between `v` and `w`
     for ( const int deleted_edge : deleted_edges ) {
@@ -495,7 +506,9 @@ int CSRGraph::GetExDegree(int vertex) const {
 	return ex_degree;
 }
 
-std::vector<int> CSRGraph::GetMergedVertices(int vertex) const { return {}; }
+std::vector<int> CSRGraph::GetMergedVertices(int vertex) const { 
+	return _merged_vertices[vertex]; 
+}
 
 std::vector<unsigned short> CSRGraph::GetColoring() const {
 	std::vector<unsigned short> colors(_vertices.size());
@@ -523,11 +536,12 @@ std::unique_ptr<Graph> CSRGraph::Clone() const {
 
 // ------------------------ PROTECTED --------------------------
 CSRGraph::CSRGraph(const Dimacs& dimacs_graph) 
-: _vertices(static_cast<int>(dimacs_graph.numVertices)), 
+: _vertices(dimacs_graph.numVertices), 
   _nEdges{dimacs_graph.getNumEdges()},
   _edges(dimacs_graph.numVertices + 1u),
   _coloring(dimacs_graph.numVertices + 1u),
-  _max_vertex(dimacs_graph.numVertices)
+  _max_vertex(dimacs_graph.numVertices),
+  _merged_vertices(dimacs_graph.numVertices + 1u)
 {
 
     int size = _vertices.size();

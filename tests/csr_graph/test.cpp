@@ -154,6 +154,10 @@ int main() {
 
     heavier_graph.MergeVertices(v, vertices[0]);
 
+    std::cout << "Merged vertices onto " << v << " are: " 
+              << TestFunctions::VecToString(heavier_graph.GetMergedVertices(v)) 
+              << std::endl;
+
     auto end = std::chrono::steady_clock::now();
     long elapsed_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end-begin).count();
     std::cout << "Time to merge 2 vertices of a graph with " << heavier_graph.GetNumVertices() 

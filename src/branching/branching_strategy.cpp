@@ -260,7 +260,7 @@ IndependentSetBranchingStrategy::ChooseVertices(Graph &graph)
 std::pair<int, int> NeighboursBranchingStrategy::ChooseVertices(Graph &graph)
 {
     std::vector<int> vertices = graph.GetVertices();
-    int vertex_x, vertex_y, vertex_w, vertex_z;
+    int vertex_x = -1, vertex_y = -1, vertex_w, vertex_z;
     std::set<int> w_neighbours;
     std::set<int> z_neighbours;
 
