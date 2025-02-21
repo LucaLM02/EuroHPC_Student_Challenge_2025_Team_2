@@ -24,6 +24,7 @@ int main(int argc, char** argv) {
 		std::cout << dimacs.getError() << std::endl;
 		return 1;
 	}
+	std::cout << "Succesfully read Graph." << std::endl;
 
 	CSRGraph* graph = CSRGraph::LoadFromDimacs(file_name);
 

@@ -373,10 +373,8 @@ void BranchNBoundPar::create_task(
 			added mutex to avoid concurrent access to the queue
 			implemented system to send work to workers(line 421)
 */
-// TODO: Add a flag to terminate the loop and avoid infinite loop
+
 int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshold) {
-	// Intitialize MPI
-	//MPI_Init(NULL, NULL);
 
 	BranchQueue queue;
 	int my_rank;
@@ -389,177 +387,44 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 	// Initialize big enough best_ub for all processes.
 	std::atomic<unsigned short> best_ub = USHRT_MAX;
 
-	// TODO: possibility to reduce initial time by distributing
-	// work(generate 2 branches, keep one send the other, i think this one
-	// is more scalable) to workers or using openMP
-	if (my_rank == 0) {
-		// Initialize bounds
-		int lb = _clique_strat.FindClique(g);
-		unsigned short ub;
-		_color_strat.Color(g, ub);
-		best_ub = ub;
 
-		// Log initial bounds
-		Log("[INIT] Initial bounds: lb = " + std::to_string(lb) +
-		    ", ub = " + std::to_string(ub));
+	MPI_Status status_recv;
+	Branch branch_recv;
 
-		queue.push(Branch(g.Clone(), lb, ub, 1));	// Initial branch with depth 1
+	// recv work from previous worker if not rank 0 (starting rank).
+	if (my_rank>0) {
+		branch_recv = recvBranch(my_rank-1, TAG_WORK, MPI_COMM_WORLD);
 
-		// Start computation tree
-		Log("========== START ==========", 0);
-		Log("Root: (lb = " + std::to_string(lb) +
-			", ub = " + std::to_string(ub) + ")",
-		    0);
+	//std::cout << "Rank: " << my_rank << " Received work num vertices" << branch_recv.g->GetNumVertices() << std::endl;
 
-		// Get enough branches to distribute amongst workers
-		while (queue.size() < p - 1) {
-			// Dequeue the next branch
-			Branch current = std::move(const_cast<Branch&>(queue.top()));
-			queue.pop();
-			auto current_G = std::move(current.g);
-			int current_lb = current.lb;
-			int current_ub = current.ub;
+	/*
+	Dimacs dimacs;
+	std::string file_name = "10_vertices_graph.col";
 
-			// Log current node
-			Log("Processing node: lb = " +
-				std::to_string(current_lb) +
-				", ub = " + std::to_string(current_ub),
-			    current.depth);
+	if (!dimacs.load(file_name.c_str())) {
+		std::cout << dimacs.getError() << std::endl;
+		return 1;
+	}
 
-			// If current_lb == current_ub,
-			// chromatic number found
-			if (current_lb == current_ub) {
-				/*
-				Log("[FOUND] Chromatic number "
-				    "found: " +
-					std::to_string(current_lb),
-				    current.depth);
-					Log("========== END ==========", 0);
-					*/
-				best_ub = current_ub;
-				continue;
-			}
+	CSRGraph* graph = CSRGraph::LoadFromDimacs(file_name);
 
-			// Prune if current_lb >= best_ub
-			if (current_lb >= best_ub) {
-				Log("[PRUNE] Branch pruned at "
-				    "depth " +
-					std::to_string(current.depth) +
-					": lb = " + std::to_string(current_lb) +
-					" >= best_ub = " +
-					std::to_string(best_ub),
-				    current.depth);
-				continue;
-			}
+	if(graph->isEqual(*branch_recv.g)){
+		std::cout << "Graphs are equal" << std::endl;
+	}
+	else{
+		std::cout << "Graphs are not equal" << std::endl;
+	}
+		*/
 
-			// Find two non-adjacent vertices u and
-			// v according to strategy
-			auto [u, v] = _branching_strat.ChooseVertices(*current_G);
-			Log("Branching on vertices: u = " + std::to_string(u) +
-				", v = " + std::to_string(v),
-			    current.depth, true);
+	std::atomic<unsigned short> best_ub = branch_recv.ub;
 
-			// If no such pair exists, the graph is
-			// complete (we are at a leaf branch)
-			if (u == -1 || v == -1) {
-				best_ub = std::min<unsigned short>(current_G->GetNumVertices(), best_ub);
-				/*
-				Log("Graph is complete. "
-				    "Chromatic number = " +
-					std::to_string(best_ub),
-				    current.depth);
-					Log("========== END ==========", 0);
-					*/
-				continue;
-			}
+	//std::cout << "ub_recv: " << _clique_strat.FindClique(*branch_recv.g) << std::endl;
 
-			// Branch 1 - Merge u and v (assign same
-			// color)
-			auto G1 = current_G->Clone();  // Copy Graph
-			G1->MergeVertices(u, v);
-			int lb1 = _clique_strat.FindClique(*G1);
-			unsigned short ub1;
-			_color_strat.Color(*G1, ub1);
-			Log("[Branch 1] (Merge u, v) lb = " +
-				std::to_string(lb1) +
-				", ub = " + std::to_string(ub1),
-			    current.depth);
-			if (lb1 < best_ub) {
-				queue.push(Branch(std::move(G1), lb1, ub1,
-						  current.depth + 1));
-			}
+	//std::cout << "Worker: " << my_rank << std::endl;
 
-			// Branch 2 - Add edge between u and v
-			// (assign different colors)
-			auto G2 = current_G->Clone();  // Copy Graph
-			G2->AddEdge(u, v);
-			int lb2 = _clique_strat.FindClique(*G2);
-			unsigned short ub2;
-			_color_strat.Color(*G2, ub2);
-			Log("[Branch 2] (Add edge u-v) lb = " +
-				std::to_string(lb2) +
-				", ub = " + std::to_string(ub2),
-			    current.depth);
-			if ((lb2 < best_ub) && (lb2 < ub1)) {
-				queue.push(Branch(std::move(G2), lb2, ub2,
-						  current.depth + 1));
-			}
-			// Update best_ub
-			best_ub = std::min({best_ub.load(), ub1, ub2});
-			Log("[UPDATE] Updated best_ub: " +
-				std::to_string(best_ub),
-			    current.depth);
-		}
-		// assume we know the number of workers (p) and we have p-1
-		// branches, we send to each worker a branch
+	queue.push(std::move(branch_recv));
 
-		// std::cout << "Queue size" << queue.size() << std::endl;
-		for (int i = 1; i <= p - 1; i++) {
-			Branch branch_to_send = std::move(const_cast<Branch&>(queue.top()));
-			queue.pop();
-			// send branch to worker i
-			sendBranch(branch_to_send, i, TAG_WORK, MPI_COMM_WORLD);
-		}
-		// std::cout << "Queue size" << queue.size() << std::endl;
-
-		Log("[PARALLELISATION START]");
-	} else {
-		MPI_Status status_recv;
-		Branch branch_recv;
-
-		// recv work
-		branch_recv = recvBranch(0, TAG_WORK, MPI_COMM_WORLD);
-
-		//std::cout << "Rank: " << my_rank << " Received work num vertices" << branch_recv.g->GetNumVertices() << std::endl;
-
-		/*
-		Dimacs dimacs;
-		std::string file_name = "10_vertices_graph.col";
-
-		if (!dimacs.load(file_name.c_str())) {
-			std::cout << dimacs.getError() << std::endl;
-			return 1;
-		}
-
-		CSRGraph* graph = CSRGraph::LoadFromDimacs(file_name);
-
-		if(graph->isEqual(*branch_recv.g)){
-			std::cout << "Graphs are equal" << std::endl;
-		}
-		else{
-			std::cout << "Graphs are not equal" << std::endl;
-		}
-			*/
-
-		std::atomic<unsigned short> best_ub = branch_recv.ub;
-
-		//std::cout << "ub_recv: " << _clique_strat.FindClique(*branch_recv.g) << std::endl;
-
-		//std::cout << "Worker: " << my_rank << std::endl;
-
-		queue.push(std::move(branch_recv));
-
-		//std::cout << "Pushed to queue" << std::endl;
+	//std::cout << "Pushed to queue" << std::endl;
 	}
 
 	// OpenMP Parallel Region
@@ -586,9 +451,9 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 			// Updates (gathers) best_ub from time to time.
 			thread_1_solution_gatherer(p, best_ub, my_rank);
 			std::cout << "Rank: " << my_rank << " Exited thread_1_solution_gatherer func." << std::endl;
-		}else if (tid == 2 && my_rank != 0) {
-        	thread_2_employer(queue_mutex, queue, my_rank);
-		}else if (my_rank != 0) { // Only worker processes go in here.
+		}else if (tid == 2) { // Employer thread employs workers by answering their work requests
+			thread_2_employer(queue_mutex, queue, my_rank);
+		}else if (tid == 3) { // TODO: Let more threads do these computations in parallel
 			//std::cout << "Rank: " << my_rank << " Starting worker thread" << std::endl;
 			// worker thread used for listening for requests about
 			// work stealing
@@ -603,7 +468,25 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 			FastCliqueStrategy* clique_strategy_local = dynamic_cast<FastCliqueStrategy*>(&_clique_strat);
 			GreedyColorStrategy* color_strategy_local = dynamic_cast<GreedyColorStrategy*>(&_color_strat);
 
-				bool distributed_work = false;
+				std::cout << "Rank: " << my_rank << " Starting... " << std::endl;
+
+				// If rank 0, initialize first branch.
+				if (my_rank == 0) {
+					// Initialize bounds
+					int lb = _clique_strat.FindClique(g);
+					unsigned short ub;
+					_color_strat.Color(g, ub);
+					best_ub = ub;
+			
+					// Log initial bounds
+					Log_par("[INIT] Initial bounds: lb = " + std::to_string(lb) +
+						", ub = " + std::to_string(ub));
+
+					std::lock_guard<std::mutex> lock(queue_mutex);
+					queue.push(Branch(g.Clone(), lb, ub, 1));	// Initial branch with depth 1
+				}
+
+				bool distributed_work = false; // Signals when work distribution phase ends.
 
 				while (!terminate_flag.load()) {
 					bool has_work = false;
@@ -618,8 +501,8 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 							has_work = true;
 						}
 					}
-
-					if (!has_work) {
+					// If no work and already passed the initial distributing phase, request work.
+					if (!has_work && distributed_work) {
 						std::cout << "Rank: " << my_rank << " requesting work..." << std::endl;
 						while (!request_work(my_rank, p, queue, queue_mutex, current)) {
 							if (terminate_flag.load()) break;
@@ -633,15 +516,15 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 					unsigned short current_ub = current.ub;
 
 					Log_par("Processing node: lb = " + std::to_string(current_lb) +
-						    ", ub = " + std::to_string(current_ub), current.depth);
+							", ub = " + std::to_string(current_ub), current.depth);
 
 					// find solution
 					if (current_lb == current_ub) {
 						/*
 						MPI_Send(&current_ub, 1, MPI_UNSIGNED_SHORT, 0, TAG_SOLUTION_FOUND, MPI_COMM_WORLD);  // check if it is correct
 						Log_par(
-						    "[FOUND] Chromatic number "
-						    "found: " + std::to_string(current_lb),current.depth);
+							"[FOUND] Chromatic number "
+							"found: " + std::to_string(current_lb),current.depth);
 						Log_par("========== END ==========", 0);
 						*/
 						best_ub.store(current_ub);
@@ -651,11 +534,11 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 					// Prune
 					if (current_lb >= best_ub.load()) {
 						Log_par(
-						    "[PRUNE] Branch pruned at "
-						    "depth " + std::to_string(current.depth) +
+							"[PRUNE] Branch pruned at "
+							"depth " + std::to_string(current.depth) +
 							": lb = " + std::to_string(current_lb) +
 							" >= best_ub = " + std::to_string(best_ub.load()),
-						    current.depth);
+							current.depth);
 						continue;
 					}
 
@@ -666,7 +549,7 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 					lock_branching.unlock();
 					Log_par("Branching on vertices: u = " + std::to_string(u) +
 							", v = " + std::to_string(v),
-					    	current.depth, true);
+							current.depth, true);
 
 					//std::cout << "Rank: " << my_rank << " choose " << u << " " << v << std::endl;
 
@@ -675,8 +558,8 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 						/*
 						MPI_Send(&chromatic_number, 1, MPI_UNSIGNED_SHORT, 0, TAG_SOLUTION_FOUND, MPI_COMM_WORLD);  // check if it is correct
 						Log_par("Graph is complete. "
-						    	"Chromatic number = " + std::to_string(chromatic_number),
-						    	current.depth);
+								"Chromatic number = " + std::to_string(chromatic_number),
+								current.depth);
 						Log_par("========== END ==========", 0);
 						*/
 						continue;
@@ -727,6 +610,15 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 						queue.push(Branch(std::move(G2), lb2, ub2, current.depth + 1));
 						//std::cout << "Rank: " << my_rank << " update queue" << std::endl;
 					}
+					if (!distributed_work && my_rank<p-1)
+					{
+						std::cout << "Rank: " << my_rank << " Distributing work" << std::endl;
+						std::lock_guard<std::mutex> lock(queue_mutex);{
+						current = std::move(const_cast<Branch&>(queue.top()));
+						queue.pop();}
+						sendBranch(current, my_rank+1, TAG_WORK, MPI_COMM_WORLD);
+						distributed_work = true;
+					}
 					lock_task.unlock();
 					//std::cout << "Rank: " << my_rank << " task unlock" << std::endl;
 
@@ -747,7 +639,7 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 		// End execution
 		return best_ub;
 	}
-	
+		
 
 
 
