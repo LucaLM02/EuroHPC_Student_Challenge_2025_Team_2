@@ -247,59 +247,62 @@ void thread_1_solution_gatherer(int p, std::atomic<unsigned short>& best_ub, int
 
 
 // Function to listen for requests from other workers.
-// TODO: evaluate using iprobe instead of recv to reduce comunication overhead
-// CHANGE: added mutex to avoid concurrent access to the queue, added response
-// to avoid sending work to workers if there is no work available(avoid also
-// deadlock in workers)
-void thread_2_listen_for_requests(std::mutex& queue_mutex, BranchQueue& queue, int& my_rank) {
-	MPI_Status status;
-	int request_signal=0;
-	while (!terminate_flag.load(std::memory_order_relaxed)) {
-
-		// Listen for a request for work from other workers.
-		MPI_Iprobe(MPI_ANY_SOURCE, TAG_WORK_REQUEST, MPI_COMM_WORLD, &request_signal, &status);
-		//std::cout << "Rank: " << my_rank << " Looping in thread_2_listen_for_requests" << std::endl;
-		int destination_rank = status.MPI_SOURCE;
-		int response = 0;
-		// Check if a solution is being communicated
-		if (request_signal) {
-			//std::cout << "Rank: " << my_rank << " Received work request from rank " << destination_rank << std::endl;
-			std::unique_lock<std::mutex> lock(queue_mutex);
-			if (!queue.empty()) {
-				response = 1;
-				MPI_Send(&response, 1, MPI_INT, destination_rank, TAG_WORK_REQUEST, MPI_COMM_WORLD);
-					//std::cout << "Rank: " << my_rank << " Responding positively to rank " << destination_rank << std::endl;
-				Branch branch = std::move(const_cast<Branch&>(queue.top()));
-				queue.pop();
-				lock.unlock();
-
-				sendBranch(branch, destination_rank, TAG_WORK, MPI_COMM_WORLD);
-				//std::cout << "Rank: " << my_rank << " Sent work to rank " << destination_rank << std::endl;
-			} else {
-				lock.unlock();
-				//std::cout << "Rank: " << my_rank << " Responding negatively to rank " << destination_rank << std::endl;
-				MPI_Send(&response, 1, MPI_INT, destination_rank, TAG_WORK_REQUEST, MPI_COMM_WORLD);
-			}
-		}	
-	}
+void thread_2_employer(std::mutex& queue_mutex, BranchQueue& queue, int& my_rank) {
+    MPI_Status status;
+    int request_signal = 0;
+    while (!terminate_flag.load(std::memory_order_relaxed)) {
+        // Listen for a request for work from other workers.
+        MPI_Iprobe(MPI_ANY_SOURCE, TAG_WORK_REQUEST, MPI_COMM_WORLD, &request_signal, &status);
+        int destination_rank = status.MPI_SOURCE;
+        int response = 0;
+        // Check if a solution is being communicated
+        if (request_signal) {
+            std::unique_lock<std::mutex> lock(queue_mutex);
+            if (!queue.empty()) {
+                response = 1;
+                MPI_Send(&response, 1, MPI_INT, destination_rank, TAG_WORK_RESPONSE, MPI_COMM_WORLD);
+                Branch branch = std::move(const_cast<Branch&>(queue.top()));
+                queue.pop();
+                lock.unlock();
+                sendBranch(branch, destination_rank, TAG_WORK, MPI_COMM_WORLD);
+            } else {
+                lock.unlock();
+                MPI_Send(&response, 1, MPI_INT, destination_rank, TAG_WORK_RESPONSE, MPI_COMM_WORLD);
+            }
+        }
+    }
 }
 
-int work_stealing(int my_rank, int p, BranchQueue& queue, std::mutex& queue_mutex, Branch& current) {
-	int target_worker = (rand() % (p - 1)) + 1;	// check if it is correct
-	MPI_Status status;
-	// ask for work
-	int response = 0;
-	MPI_Send(nullptr, 0, MPI_INT, target_worker, TAG_WORK_REQUEST, MPI_COMM_WORLD);
-	
-	MPI_Iprobe(target_worker, TAG_WORK_RESPONSE, MPI_COMM_WORLD, &response, &status);
-	if (response == 1) {  // there is work
-		//std::cout << "Rank: " << my_rank << " positive work stealing response from " << target_worker <<std::endl;
-		current = recvBranch(status.MPI_SOURCE, TAG_WORK, MPI_COMM_WORLD);
-		//std::cout << "Rank: " << my_rank << " received work from " << target_worker <<std::endl;
-		std::lock_guard<std::mutex> lock(queue_mutex);
-		queue.push(std::move(current));	
-	}
-	return response;
+bool request_work(int my_rank, int p, BranchQueue& queue, std::mutex& queue_mutex, Branch& current) {
+    int target_worker = (rand() % (p - 1)) + 1; // Randomly select a worker to request work from
+    MPI_Status status;
+    int response = 0;
+    MPI_Request request;
+
+    MPI_Isend(nullptr, 0, MPI_INT, target_worker, TAG_WORK_REQUEST, MPI_COMM_WORLD, &request);
+    MPI_Irecv(&response, 1, MPI_INT, target_worker, TAG_WORK_RESPONSE, MPI_COMM_WORLD, &request);
+
+    while (true) {
+        int flag = 0;
+        MPI_Test(&request, &flag, &status);
+        if (flag) break;  // The operation is completed
+
+        // If termination flag is set, cancel the request to avoid deadlock
+        if (terminate_flag.load(std::memory_order_relaxed)) {
+            MPI_Cancel(&request);
+            return false;
+        }
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+
+    if (response == 1) { // Work is available
+        current = recvBranch(target_worker, TAG_WORK, MPI_COMM_WORLD);
+        std::lock_guard<std::mutex> lock(queue_mutex);
+        queue.push(std::move(current));
+        return true;
+    }
+    return false;
 }
 
 /**
@@ -583,7 +586,9 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 			// Updates (gathers) best_ub from time to time.
 			thread_1_solution_gatherer(p, best_ub, my_rank);
 			std::cout << "Rank: " << my_rank << " Exited thread_1_solution_gatherer func." << std::endl;
-		} else if (my_rank != 0) { // Only worker processes go in here.
+		}else if (tid == 2 && my_rank != 0) {
+        	thread_2_employer(queue_mutex, queue, my_rank);
+		}else if (my_rank != 0) { // Only worker processes go in here.
 			//std::cout << "Rank: " << my_rank << " Starting worker thread" << std::endl;
 			// worker thread used for listening for requests about
 			// work stealing
@@ -598,6 +603,7 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 			FastCliqueStrategy* clique_strategy_local = dynamic_cast<FastCliqueStrategy*>(&_clique_strat);
 			GreedyColorStrategy* color_strategy_local = dynamic_cast<GreedyColorStrategy*>(&_color_strat);
 
+				bool distributed_work = false;
 
 				while (!terminate_flag.load()) {
 					bool has_work = false;
@@ -613,10 +619,13 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 						}
 					}
 
-					if(!has_work){
-						//usleep(1000);
-						//continue;
-						break;
+					if (!has_work) {
+						std::cout << "Rank: " << my_rank << " requesting work..." << std::endl;
+						while (!request_work(my_rank, p, queue, queue_mutex, current)) {
+							if (terminate_flag.load()) break;
+							std::this_thread::sleep_for(std::chrono::milliseconds(10));
+						}
+						continue;
 					}
 
 					auto current_G = std::move(current.g);

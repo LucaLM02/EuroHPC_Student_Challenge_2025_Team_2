@@ -43,7 +43,7 @@ int main(int argc, char** argv) {
 		MPI_Abort(MPI_COMM_WORLD, 1);
 	}
 	
-	int chromatic_number = solver.Solve(*graph, 60, 100000);
+	int chromatic_number = solver.Solve(*graph, 10, 100000);
 
 	int my_rank;
 	MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
