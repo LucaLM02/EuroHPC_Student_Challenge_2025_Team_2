@@ -71,7 +71,7 @@ void FileTester::loadFiles() {
 void FileTester::runTests() {
     NeighboursBranchingStrategy branching_strategy;
     FastCliqueStrategy clique_strategy;
-    GreedyColorStrategy color_strategy;
+    DSaturColorStrategy color_strategy;
     int chromatic_number;
     int expected;
     CSRGraph* graph;
@@ -82,7 +82,7 @@ void FileTester::runTests() {
 
         BranchNBoundSeq solver(branching_strategy, clique_strategy, color_strategy, "log.txt");
 
-        chromatic_number = solver.Solve(*graph, 1800, 100000);
+        chromatic_number = solver.Solve(*graph, 10, 100000);
 
         std::string fileName = std::filesystem::path(file).filename().string();
         expected = expectedResults[fileName];
