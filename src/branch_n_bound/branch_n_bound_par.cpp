@@ -8,6 +8,7 @@
 #define TAG_WORK_RESPONSE 2
 #define TAG_WORK 3
 #define TAG_SOLUTION_FOUND 4
+#define TAG_IDLE 5
 
 using BranchQueue = std::priority_queue<Branch, std::vector<Branch>>;
 std::atomic<bool> terminate_flag = false;
@@ -128,10 +129,11 @@ Branch recvBranch(int source, int tag, MPI_Comm comm) {
  * for timeouts. timeout_seconds (int)   : The timeout duration (in seconds)
  * after which the timeout signal is sent.
  */
-void thread_0_terminator(int my_rank, int p, int global_start_time, int timeout_seconds) {
+void thread_0_terminator(int my_rank, int p, int global_start_time, int timeout_seconds, double &optimum_time) {
 	int solution_found = 0;
 	int timeout_signal = 0;
 
+	std::vector<int> idle_status(p, 0); // Array to keep track of idle status of workers
 	while (true) {
 		if (my_rank == 0) {
 			// Master listens for solution found (Non-blocking)
@@ -148,6 +150,21 @@ void thread_0_terminator(int my_rank, int p, int global_start_time, int timeout_
 			if (MPI_Wtime() - global_start_time >= timeout_seconds) {
 				timeout_signal = 1;
 			}
+
+			// Listen for idle status updates from workers
+            MPI_Iprobe(MPI_ANY_SOURCE, TAG_IDLE, MPI_COMM_WORLD, &flag, &status);
+            if (flag) {
+                int worker_idle_status = 0;
+                MPI_Recv(&worker_idle_status, 1, MPI_INT, status.MPI_SOURCE, TAG_WORK_REQUEST, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                idle_status[status.MPI_SOURCE] = worker_idle_status;
+            }
+
+            // Check if all workers are idle
+            if (std::all_of(idle_status.begin(), idle_status.end(), [](int status) { return status == 1; })) {
+                solution_found = 1;
+				optimum_time = MPI_Wtime() - global_start_time;
+            }
+
 		}
 		// Worker nodes listen for termination signals (solution or timeout)
 		MPI_Bcast(&solution_found, 1, MPI_INT, 0, MPI_COMM_WORLD);
@@ -377,7 +394,8 @@ void BranchNBoundPar::create_task(
 }
 */
 
-int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshold) {
+int BranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_seconds) {
+	optimum_time  = -1.0;
 
 	BranchQueue queue;
 	int my_rank;
@@ -436,7 +454,7 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 		int tid = omp_get_thread_num();
 
 		if (tid == 0) { // Checks if solution has been found or timeout. 
-			thread_0_terminator(my_rank, p, global_start_time, timeout_seconds);
+			thread_0_terminator(my_rank, p, global_start_time, timeout_seconds, optimum_time);
 			std::cout << "Rank: " << my_rank << " Exited thread_0_terminator func." << std::endl;
 		}else if (tid == 1) { // Updates (gathers) best_ub from time to time.
 			thread_1_solution_gatherer(p, best_ub, my_rank);
@@ -482,10 +500,20 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 
 					// If no work and already passed the initial distributing phase, request work.
 					if (!has_work && distributed_work) {
+						#pragma omp single // Only a single thread asks for work.
+						{
+						// Notify the root process that this worker is idle
+						int idle_status = 1;
+						MPI_Send(&idle_status, 1, MPI_INT, 0, TAG_IDLE, MPI_COMM_WORLD);
+						// Start requesting work.
 						std::cout << "Rank: " << my_rank << " requesting work..." << std::endl;
 						while (!request_work(my_rank, p, queue, queue_mutex, current)) {
 							if (terminate_flag.load()) break;
 							std::this_thread::sleep_for(std::chrono::milliseconds(10));
+						}
+						// Work received. Notify the root process that this worker is not idle anymore.
+						idle_status = 0;
+						MPI_Send(&idle_status, 1, MPI_INT, 0, TAG_IDLE, MPI_COMM_WORLD);				
 						}
 						continue;
 					}
@@ -588,7 +616,7 @@ int BranchNBoundPar::Solve(Graph& g, int timeout_seconds, int iteration_threshol
 			}
 		}
 	}
-		std::cout << "Rank: " << my_rank << " Finalizing" << std::endl;
+		std::cout << "Rank: " << my_rank << " Finalizing. " << std::endl;
 		// End execution
 		return best_ub;
 	}

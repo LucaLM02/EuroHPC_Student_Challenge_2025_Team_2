@@ -15,7 +15,6 @@
 
 #include <mpi.h>
 
-//TODO: case p=1 cause problems
 int main(int argc, char** argv) {
 	Dimacs dimacs;
 	std::string file_name = "10_vertices_graph.col";
@@ -43,14 +42,19 @@ int main(int argc, char** argv) {
 		std::cerr << "MPI does not support full multithreading!" << std::endl;
 		MPI_Abort(MPI_COMM_WORLD, 1);
 	}
-	
-	int chromatic_number = solver.Solve(*graph, 10, 100000);
+
+	double optimum_time;
+	int chromatic_number = solver.Solve(*graph, optimum_time, 10);
 
 	int my_rank;
 	MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
-	if (my_rank == 0)
+	if (my_rank == 0) {
+		if (optimum_time == -1)
+			std::cout << "Rank 0: Finalizing with timeout" << std::endl;
+		else 
+			std::cout << "Rank 0: Finalizing with time " << optimum_time << std::endl;
 		std::cout << "Chromatic number: " << chromatic_number << std::endl;
-
+	}
 	MPI_Finalize();
 	return 0;
 }

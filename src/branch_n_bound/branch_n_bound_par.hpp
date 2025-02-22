@@ -84,10 +84,7 @@ class BranchNBoundPar {
 		}
 	}
 
-	// TODO: Either input vector of Graphs to solve or one at a time popped
-	// from a Graph queue?
-	int Solve(Graph& g, int timeout_seconds = 60,
-		  int iteration_threshold = 1000);
+	int Solve(Graph& g, double &optimum_time, int timeout_seconds = 60);
 };
 
 #endif	// BRANCH_N_BOUND_PAR_HPP
