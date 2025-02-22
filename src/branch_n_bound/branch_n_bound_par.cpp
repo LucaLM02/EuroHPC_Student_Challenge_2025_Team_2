@@ -137,13 +137,15 @@ void thread_0_terminator(int my_rank, int p, int global_start_time, int timeout_
 	while (true) {
 		if (my_rank == 0) {
 			// Master listens for solution found (Non-blocking)
-			MPI_Status status;
-			int flag = 0;
-			MPI_Iprobe(MPI_ANY_SOURCE, TAG_SOLUTION_FOUND, MPI_COMM_WORLD, &flag, &status);
+			MPI_Status status_solution;
+			MPI_Status status_idle;
+			int flag_solution = 0;
+			int flag_idle = 0;
+			MPI_Iprobe(MPI_ANY_SOURCE, TAG_SOLUTION_FOUND, MPI_COMM_WORLD, &flag_solution, &status_solution);
 			// Check if a solution is being communicated
-			if (flag) {
+			if (flag_solution) {
 				unsigned short solution = 0;
-				MPI_Recv(&solution, 1, MPI_UNSIGNED_SHORT, status.MPI_SOURCE, status.MPI_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+				MPI_Recv(&solution, 1, MPI_UNSIGNED_SHORT, status_solution.MPI_SOURCE, TAG_SOLUTION_FOUND, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 				solution_found = 1;
 			}
 			// Check if timeout is reached, broadcast timeout signal
@@ -152,11 +154,12 @@ void thread_0_terminator(int my_rank, int p, int global_start_time, int timeout_
 			}
 
 			// Listen for idle status updates from workers
-            MPI_Iprobe(MPI_ANY_SOURCE, TAG_IDLE, MPI_COMM_WORLD, &flag, &status);
-            if (flag) {
+            MPI_Iprobe(MPI_ANY_SOURCE, TAG_IDLE, MPI_COMM_WORLD, &flag_idle, &status_idle);
+            if (flag_idle) {
+				std::cout << "Master received idle status" << std::endl;
                 int worker_idle_status = 0;
-                MPI_Recv(&worker_idle_status, 1, MPI_INT, status.MPI_SOURCE, TAG_WORK_REQUEST, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                idle_status[status.MPI_SOURCE] = worker_idle_status;
+                MPI_Recv(&worker_idle_status, 1, MPI_INT, status_idle.MPI_SOURCE, TAG_IDLE, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                idle_status[status_idle.MPI_SOURCE] = worker_idle_status;
             }
 
             // Check if all workers are idle
@@ -396,6 +399,7 @@ void BranchNBoundPar::create_task(
 
 int BranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_seconds) {
 	optimum_time  = -1.0;
+	terminate_flag.store(false);
 
 	BranchQueue queue;
 	int my_rank;
@@ -455,19 +459,17 @@ int BranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_seconds) 
 
 		if (tid == 0) { // Checks if solution has been found or timeout. 
 			thread_0_terminator(my_rank, p, global_start_time, timeout_seconds, optimum_time);
-			//std::cout << "Rank: " << my_rank << " Exited thread_0_terminator func." << std::endl;
+			std::cout << "Rank: " << my_rank << " Exited thread_0_terminator func." << std::endl;
 		}else if (tid == 1) { // Updates (gathers) best_ub from time to time.
 			thread_1_solution_gatherer(p, best_ub, my_rank);
-			//std::cout << "Rank: " << my_rank << " Exited thread_1_solution_gatherer func." << std::endl;
+			std::cout << "Rank: " << my_rank << " Exited thread_1_solution_gatherer func." << std::endl;
 		}else if (tid == 2) { // Employer thread employs workers by answering their work requests
 			thread_2_employer(queue_mutex, queue, my_rank);
+			std::cout << "Rank: " << my_rank << " Exited thread_2_employer func." << std::endl;
 		}else if (tid == 3) { // TODO: Let more threads do these computations in parallel
 			Branch current;
-			NeighboursBranchingStrategy* branching_strategy_local = dynamic_cast<NeighboursBranchingStrategy*>(&_branching_strat);
-			FastCliqueStrategy* clique_strategy_local = dynamic_cast<FastCliqueStrategy*>(&_clique_strat);
-			GreedyColorStrategy* color_strategy_local = dynamic_cast<GreedyColorStrategy*>(&_color_strat);
 
-				//std::cout << "Rank: " << my_rank << " Starting... " << std::endl;
+				std::cout << "Rank: " << my_rank << " Starting... " << std::endl;
 
 				// If rank 0, initialize first branch.
 				if (my_rank == 0) {
@@ -500,13 +502,13 @@ int BranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_seconds) 
 
 					// If no work and already passed the initial distributing phase, request work.
 					if (!has_work && distributed_work) {
-						#pragma omp single // Only a single thread asks for work.
-						{
+						//#pragma omp single // Only a single thread asks for work.
+						//{
 						// Notify the root process that this worker is idle
 						int idle_status = 1;
 						MPI_Send(&idle_status, 1, MPI_INT, 0, TAG_IDLE, MPI_COMM_WORLD);
 						// Start requesting work.
-						//std::cout << "Rank: " << my_rank << " requesting work..." << std::endl;
+						std::cout << "Rank: " << my_rank << " requesting work..." << std::endl;
 						while (!request_work(my_rank, p, queue, queue_mutex, current)) {
 							if (terminate_flag.load()) break;
 							std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -514,7 +516,7 @@ int BranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_seconds) 
 						// Work received. Notify the root process that this worker is not idle anymore.
 						idle_status = 0;
 						MPI_Send(&idle_status, 1, MPI_INT, 0, TAG_IDLE, MPI_COMM_WORLD);				
-						}
+						//}
 						continue;
 					}
 
@@ -601,7 +603,7 @@ int BranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_seconds) 
 					}
 					if (!distributed_work && my_rank<p-1)
 					{
-						//std::cout << "Rank: " << my_rank << " Distributing work" << std::endl;
+						std::cout << "Rank: " << my_rank << " Distributing work" << std::endl;
 						std::lock_guard<std::mutex> lock(queue_mutex);{
 						current = std::move(const_cast<Branch&>(queue.top()));
 						queue.pop();}
@@ -616,7 +618,8 @@ int BranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_seconds) 
 			}
 		}
 	}
-		//std::cout << "Rank: " << my_rank << " Finalizing. " << std::endl;
+		std::cout << "Rank: " << my_rank << " Finalizing. " << std::endl;
+		//MPI_Barrier(MPI_COMM_WORLD);
 		// End execution
 		return best_ub;
 	}

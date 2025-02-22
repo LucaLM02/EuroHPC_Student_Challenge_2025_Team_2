@@ -88,10 +88,10 @@ void FileTester::runTests() {
         if (my_rank == 0){
             
             std::cout << "Testing file: " << file << std::endl;
-            graph = CSRGraph::LoadFromDimacs(file);
         }
 
-        chromatic_number = solver.Solve(*graph, optimum_time, 60);
+        graph = CSRGraph::LoadFromDimacs(file);
+        chromatic_number = solver.Solve(*graph, optimum_time, 10);
 
 	    if (my_rank == 0){
 
@@ -104,6 +104,7 @@ void FileTester::runTests() {
 		        else std::cout << "Test passed with time: " << optimum_time << std::endl;
             }
         }
+        MPI_Barrier(MPI_COMM_WORLD);
     }
     MPI_Finalize();
 }
