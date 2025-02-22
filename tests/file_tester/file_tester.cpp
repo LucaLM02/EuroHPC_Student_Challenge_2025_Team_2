@@ -69,32 +69,61 @@ void FileTester::loadFiles() {
 }
 
 void FileTester::runTests() {
+
+    int my_rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+
     NeighboursBranchingStrategy branching_strategy;
     FastCliqueStrategy clique_strategy;
     DSaturColorStrategy color_strategy;
-    int chromatic_number;
-    int expected;
     CSRGraph* graph;
+
+    int expected;
+    int chromatic_number;
+    double optimum_time;
+
+    BranchNBoundPar solver(branching_strategy, clique_strategy, color_strategy, "log_master.txt", "log_branches.txt");
+
     for (const auto& file : fileList) {
-        std::cout << "Testing file: " << file << std::endl;
+        if (my_rank == 0){
+            
+            std::cout << "Testing file: " << file << std::endl;
+            graph = CSRGraph::LoadFromDimacs(file);
+        }
 
-        graph = CSRGraph::LoadFromDimacs(file);
+        chromatic_number = solver.Solve(*graph, optimum_time, 60);
 
-        BranchNBoundSeq solver(branching_strategy, clique_strategy, color_strategy, "log.txt");
+	    if (my_rank == 0){
 
-        chromatic_number = solver.Solve(*graph, 10, 100000);
+            std::string fileName = std::filesystem::path(file).filename().string();
+            expected = expectedResults[fileName];
 
-        std::string fileName = std::filesystem::path(file).filename().string();
-        expected = expectedResults[fileName];
-
-        if(chromatic_number != expected) std::cout << "Test failed: expected " << expected << " but got " << chromatic_number << std::endl;
-        else std::cout << "Test passed" << std::endl;
+            if(chromatic_number != expected) std::cout << "Test failed: expected " << expected << " but got " << chromatic_number << std::endl;
+            else {
+                if(optimum_time == -1) std::cout << "Test passed with timeout" << std::endl;
+		        else std::cout << "Test passed with time: " << optimum_time << std::endl;
+            }
+        }
     }
+    MPI_Finalize();
 }
 
-int main() {
+int main(int argc, char** argv) {
     FileTester tester("graphs_instances");
+    int provided;
+
+	MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
+
+    if (provided < MPI_THREAD_MULTIPLE) {
+        std::cerr << "MPI does not support full multithreading!" << std::endl;
+        MPI_Abort(MPI_COMM_WORLD, 1);
+    }
+    
+    int my_rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+
     tester.runTests();
+
     return 0;
 }
 

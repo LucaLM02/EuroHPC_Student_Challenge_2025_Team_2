@@ -455,10 +455,10 @@ int BranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_seconds) 
 
 		if (tid == 0) { // Checks if solution has been found or timeout. 
 			thread_0_terminator(my_rank, p, global_start_time, timeout_seconds, optimum_time);
-			std::cout << "Rank: " << my_rank << " Exited thread_0_terminator func." << std::endl;
+			//std::cout << "Rank: " << my_rank << " Exited thread_0_terminator func." << std::endl;
 		}else if (tid == 1) { // Updates (gathers) best_ub from time to time.
 			thread_1_solution_gatherer(p, best_ub, my_rank);
-			std::cout << "Rank: " << my_rank << " Exited thread_1_solution_gatherer func." << std::endl;
+			//std::cout << "Rank: " << my_rank << " Exited thread_1_solution_gatherer func." << std::endl;
 		}else if (tid == 2) { // Employer thread employs workers by answering their work requests
 			thread_2_employer(queue_mutex, queue, my_rank);
 		}else if (tid == 3) { // TODO: Let more threads do these computations in parallel
@@ -467,7 +467,7 @@ int BranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_seconds) 
 			FastCliqueStrategy* clique_strategy_local = dynamic_cast<FastCliqueStrategy*>(&_clique_strat);
 			GreedyColorStrategy* color_strategy_local = dynamic_cast<GreedyColorStrategy*>(&_color_strat);
 
-				std::cout << "Rank: " << my_rank << " Starting... " << std::endl;
+				//std::cout << "Rank: " << my_rank << " Starting... " << std::endl;
 
 				// If rank 0, initialize first branch.
 				if (my_rank == 0) {
@@ -506,7 +506,7 @@ int BranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_seconds) 
 						int idle_status = 1;
 						MPI_Send(&idle_status, 1, MPI_INT, 0, TAG_IDLE, MPI_COMM_WORLD);
 						// Start requesting work.
-						std::cout << "Rank: " << my_rank << " requesting work..." << std::endl;
+						//std::cout << "Rank: " << my_rank << " requesting work..." << std::endl;
 						while (!request_work(my_rank, p, queue, queue_mutex, current)) {
 							if (terminate_flag.load()) break;
 							std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -601,7 +601,7 @@ int BranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_seconds) 
 					}
 					if (!distributed_work && my_rank<p-1)
 					{
-						std::cout << "Rank: " << my_rank << " Distributing work" << std::endl;
+						//std::cout << "Rank: " << my_rank << " Distributing work" << std::endl;
 						std::lock_guard<std::mutex> lock(queue_mutex);{
 						current = std::move(const_cast<Branch&>(queue.top()));
 						queue.pop();}
@@ -616,7 +616,7 @@ int BranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_seconds) 
 			}
 		}
 	}
-		std::cout << "Rank: " << my_rank << " Finalizing. " << std::endl;
+		//std::cout << "Rank: " << my_rank << " Finalizing. " << std::endl;
 		// End execution
 		return best_ub;
 	}

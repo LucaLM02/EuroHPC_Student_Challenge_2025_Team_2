@@ -7,6 +7,7 @@
 #include <fstream>
 #include <unordered_map>
 #include <string>
+#include <mpi.h>
 
 #include "branching_strategy.hpp"
 #include "clique_strategy.hpp"
