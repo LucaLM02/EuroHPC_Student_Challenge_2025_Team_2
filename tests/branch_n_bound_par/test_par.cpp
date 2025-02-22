@@ -18,42 +18,51 @@
 int main(int argc, char** argv) {
 	Dimacs dimacs;
 	std::string file_name = "10_vertices_graph.col";
-
-	if (!dimacs.load(file_name.c_str())) {
-		std::cout << dimacs.getError() << std::endl;
-		return 1;
-	}
-	std::cout << "Succesfully read Graph." << std::endl;
-
-	CSRGraph* graph = CSRGraph::LoadFromDimacs(file_name);
-
-
+	CSRGraph* graph;
 	NeighboursBranchingStrategy branching_strategy;
 	FastCliqueStrategy clique_strategy;
-	GreedyColorStrategy color_strategy;
+	DSaturColorStrategy color_strategy;
 
-	BranchNBoundPar solver(branching_strategy, clique_strategy,
-			       color_strategy, "log_master.txt", "log_branches.txt");
-
+	// Initialize MPI with multithreading enabled
 	int provided;
 	MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
-
 	if (provided < MPI_THREAD_MULTIPLE) {
 		std::cerr << "MPI does not support full multithreading!" << std::endl;
 		MPI_Abort(MPI_COMM_WORLD, 1);
 	}
-
-	double optimum_time;
-	int chromatic_number = solver.Solve(*graph, optimum_time, 10);
-
 	int my_rank;
 	MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
-	if (my_rank == 0) {
-		if (optimum_time == -1)
-			std::cout << "Rank 0: Finalizing with timeout" << std::endl;
-		else 
-			std::cout << "Rank 0: Finalizing with time " << optimum_time << std::endl;
-		std::cout << "Chromatic number: " << chromatic_number << std::endl;
+
+	double optimum_time;
+	// Test the solver multiple times on the same graph (since its not deterministic)
+	int N_trials = 20;
+	for (int i=0; i<N_trials; i++) {
+		// Root process reads the graph
+		if (my_rank == 0) {
+			
+			if (!dimacs.load(file_name.c_str())) {
+				std::cout << dimacs.getError() << std::endl;
+				return 1;
+			}
+			
+			std::cout << "Succesfully read Graph." << std::endl;
+
+			graph = CSRGraph::LoadFromDimacs(file_name);
+
+		}
+	
+		BranchNBoundPar solver(branching_strategy, clique_strategy,
+			color_strategy, "log_par");
+		if (my_rank == 0) 
+			std::cout << "Starting trial " << i << "..." << std::endl;
+		int chromatic_number = solver.Solve(*graph, optimum_time, 15);
+		if (my_rank == 0) {
+			if (optimum_time == -1)
+				std::cout << "Rank 0: Finalizing with timeout" << std::endl;
+			else 
+				std::cout << "Rank 0: Finalizing with time " << optimum_time << std::endl;
+			std::cout << "Chromatic number: " << chromatic_number << std::endl;
+		}
 	}
 	MPI_Finalize();
 	return 0;

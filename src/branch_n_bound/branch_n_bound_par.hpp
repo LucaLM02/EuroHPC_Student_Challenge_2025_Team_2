@@ -29,8 +29,7 @@ class BranchNBoundPar {
 	BranchingStrategy& _branching_strat;
 	CliqueStrategy& _clique_strat;
 	ColorStrategy& _color_strat;
-	std::ofstream _log_file_master;
-	std::ofstream _log_file_branches;
+	std::ofstream _log_file;
 
 	void create_task(
 		std::unique_ptr<Graph> current_G, int u, int v,
@@ -42,7 +41,7 @@ class BranchNBoundPar {
 	 *
 	 * @param message The message to log.
 	 */
-	void Log_par(const std::string& message, int depth, bool is_branching);
+	void Log_par(const std::string& message, int depth, bool is_branching, int rank, int thread_id);
 
 	/**
 	 * @brief Checks if the solver has exceeded the timeout.
@@ -67,20 +66,16 @@ class BranchNBoundPar {
 	BranchNBoundPar(BranchingStrategy& branching_strat,
 			CliqueStrategy& clique_strat,
 			ColorStrategy& color_strat,
-			const std::string& log_file_path_master,
-			const std::string& log_file_path_branches)
+			const std::string& log_file_path_prefix)
 	    : _branching_strat(branching_strat),
 	      _clique_strat(clique_strat),
 	      _color_strat(color_strat) {
-		_log_file_master.open(log_file_path_master);
-		if (!_log_file_master.is_open()) {
+		int my_rank;
+		MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+		_log_file.open(log_file_path_prefix + std::to_string(my_rank) + ".log");
+		if (!_log_file.is_open()) {
 			throw std::runtime_error("Failed to open log file: " +
-				log_file_path_master);
-		}
-		_log_file_branches.open(log_file_path_branches);
-		if (!_log_file_branches.is_open()) {
-			throw std::runtime_error("Failed to open log file: " +
-				log_file_path_branches);
+				log_file_path_prefix + std::to_string(my_rank) + ".log");
 		}
 	}
 
