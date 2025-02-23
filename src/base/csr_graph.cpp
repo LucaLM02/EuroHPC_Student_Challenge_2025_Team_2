@@ -85,7 +85,7 @@ CSRGraph::CSRGraph()
 
 std::string CSRGraph::Serialize() const {
 	std::ostringstream oss;
-	oss << _vertices.size() << " " << _nEdges << " " << _edges.size() << " " << _max_vertex << " " << " " << _merged_vertices.size() << " " << _coloring.size() << " " << _degrees.size() << "\n";
+	oss << _vertices.size() << " " << _nEdges << " " << _edges.size() << " " << _max_vertex << " " << _merged_vertices.size() << " " << _coloring.size() << " " << _degrees.size() << "\n";
 
 	for (int vertex : _vertices) {
 		oss << vertex << " ";

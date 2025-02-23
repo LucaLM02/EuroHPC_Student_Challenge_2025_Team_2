@@ -27,13 +27,9 @@ int main(int argc, char** argv) {
 
 	CSRGraph* graph = CSRGraph::LoadFromDimacs(file_name);
 
-
 	NeighboursBranchingStrategy branching_strategy;
 	FastCliqueStrategy clique_strategy;
 	GreedyColorStrategy color_strategy;
-
-	BranchNBoundPar solver(branching_strategy, clique_strategy,
-			       color_strategy, "log_master.txt", "log_branches.txt");
 
 	int provided;
 	MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
@@ -48,6 +44,8 @@ int main(int argc, char** argv) {
 
 	int my_rank;
 	MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+	BranchNBoundPar solver(branching_strategy, clique_strategy, color_strategy, "log_" + std::to_string(my_rank) + ".txt");
+	
 	if (my_rank == 0) {
 		if (optimum_time == -1)
 			std::cout << "Rank 0: Finalizing with timeout" << std::endl;

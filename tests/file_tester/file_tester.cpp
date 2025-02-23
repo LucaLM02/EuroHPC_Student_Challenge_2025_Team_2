@@ -82,7 +82,7 @@ void FileTester::runTests() {
     int chromatic_number;
     double optimum_time;
 
-    BranchNBoundPar solver(branching_strategy, clique_strategy, color_strategy, "log_master.txt", "log_branches.txt");
+    BranchNBoundPar solver(branching_strategy, clique_strategy, color_strategy, "log_" + std::to_string(my_rank) + ".txt");
 
     for (const auto& file : fileList) {
         if (my_rank == 0){
