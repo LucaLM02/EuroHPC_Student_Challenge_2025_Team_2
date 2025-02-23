@@ -44,17 +44,13 @@ bool BranchNBoundPar::CheckTimeout(
 }
 
 
-void BranchNBoundPar::Log_par(const std::string& message, int depth = 0, bool is_branching = false) {
+void BranchNBoundPar::Log_par(const std::string& message, int depth = 0, bool is_branching = false, int rank = 0, int thread_id = 0) {
 	std::lock_guard<std::mutex> lock(log_mutex);
 	if (_log_file.is_open()) {
-		int rank = 0, thread_id = 0;
-
-		MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
-		thread_id = omp_get_thread_num();
 
 		// Indentation based on depth
-		std::string indentation(depth * 2, ' ');
+		//std::string indentation(depth * 2, ' ');
+		std::string indentation = "";
 		// TODO: Logging everything with this critical section is not efficient
 			if (is_branching) {
 				_log_file << indentation << "[Rank " << rank
@@ -181,7 +177,8 @@ void thread_0_terminator(int my_rank, int p, int global_start_time, int timeout_
 	int solution_found = 0;
 	int timeout_signal = 0;
 
-	std::vector<int> idle_status(p, 0); // Array to keep track of idle status of workers
+	std::vector<int> idle_status(p, 1); // Array to keep track of idle status of workers
+	idle_status[0] = 0; // Root process is not idle
 	while (true) {
 		if (my_rank == 0) {
 			// Master listens for solution found (Non-blocking)
@@ -311,7 +308,7 @@ void thread_1_solution_gatherer(int p, std::atomic<unsigned short>& best_ub, int
                     return;
                 }
 
-                std::this_thread::sleep_for(std::chrono::milliseconds(1));
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
             }
 			request_active = 0;
 
@@ -322,7 +319,7 @@ void thread_1_solution_gatherer(int p, std::atomic<unsigned short>& best_ub, int
             last_gather_time = current_time;
         }
         
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 	if (request_active) {
         MPI_Cancel(&request);
@@ -377,6 +374,7 @@ void thread_2_employer(std::mutex& queue_mutex, BranchQueue& queue, int& my_rank
 				MPI_Request_free(&request);
             }
         }
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
 }
 
@@ -436,70 +434,6 @@ bool request_work(int my_rank, int p, BranchQueue& queue, std::mutex& queue_mute
     }
     return false;
 }
-
-/**
- * Creates a task for the OpenMP parallel region to execute.
- *
- *
- * @param u The first vertex to merge or add an edge.
- * @param v The second vertex to merge or add an edge.
- * @param _clique_strat The clique strategy.
- * @param _color_strat The color strategy.
- * @param new_branches The new branches to add to the queue.
- * @param task_type The type of task to create (1 = MergeVertices, 2 = AddEdge).
- * @param best_ub The best upper bound.
- */
- /*
-void BranchNBoundPar::create_task(
-    std::unique_ptr<Graph> current_G, int u, int v,
-    CliqueStrategy& _clique_strat, ColorStrategy& _color_strat,
-	std::atomic<unsigned short> & best_ub, int const & depth, int my_rank) {
-
-		//active_tasks.fetch_add(1);
-		// MergeVertices
-		auto G1 = current_G->Clone();
-		//std::cout << "Rank: " << my_rank << " copy graph" << std::endl;
-		G1->MergeVertices(u, v);
-		//std::cout << "Rank: " << my_rank << " merge vertices" << std::endl;
-		int lb1 = _clique_strat.FindClique(*G1);
-		unsigned short ub1;
-		_color_strat.Color(*G1, ub1);
-		Log_par("[Branch 1] (Merge u, v) "
-			    "lb = " + std::to_string(lb1) +
-				", ub = " + std::to_string(ub1),
-				depth);
-
-				if (lb1 < best_ub.load()) { // check to avoid cuncurrent access
-					std::lock_guard<std::mutex> lock(queue_mutex);
-					queue.push(Branch(std::move(G1), lb1, ub1, depth + 1));
-				}
-				// AddEdge
-				auto G2 = current_G->Clone();
-				G2->AddEdge(u, v);
-				int lb2 = _clique_strat.FindClique(*G2);
-				unsigned short ub2;
-				_color_strat.Color(*G2, ub2);
-				Log_par("[Branch 2] (Add edge u-v) "
-						"lb = " + std::to_string(lb2) +
-						", ub = " + std::to_string(ub2),
-						depth);
-
-				if (lb2 < best_ub.load() && (lb2 < ub1)) { 
-					std::lock_guard<std::mutex> lock(queue_mutex);
-					queue.push(Branch(std::move(G2), lb2, ub2, depth + 1));
-				}
-
-				//active_tasks.fetch_sub(1);
-				//std::cout << "Rank: " << my_rank << " decrease tasks" << std::endl;
-
-				// Update local sbest_ub
-				unsigned short previous_best_ub = best_ub.load();
-				best_ub.store(std::min({previous_best_ub, ub1, ub2}));
-				Log_par("[UPDATE] Updated best_ub: " + std::to_string(best_ub.load()), depth);
-
-		//active_tasks.fetch_sub(1);
-}
-*/
 
 int BranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_seconds) {
 	optimum_time  = -1.0;
@@ -611,6 +545,7 @@ int BranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_seconds) 
 							queue.pop();
 							has_work = true;
 						}
+						std::this_thread::sleep_for(std::chrono::milliseconds(10));
 					}
 
 					// If no work and already passed the initial distributing phase, request work.
@@ -767,144 +702,160 @@ int BranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_seconds) 
 
 
 
+			// If rank 0, initialize first branch.
+			if (my_rank == 0) {
+				// Initialize bounds
+				int lb = _clique_strat.FindClique(g);
+				unsigned short ub;
+				_color_strat.Color(g, ub);
+				best_ub = ub;
+		
+				// Log initial bounds
+				Log_par("[INIT] Initial bounds: lb = " + std::to_string(lb) +
+					", ub = " + std::to_string(ub), false, my_rank, tid);
 
-				/*
-			#pragma omp single nowait
-			{
-
-				//std::cout << "Rank: " << my_rank << " Starting work" << std::endl;
-				Branch current;
-
-				while (!terminate_flag.load(std::memory_order_relaxed)) {
-					bool has_work = false;
-
-					{
-						//std::cout << "Rank: " << my_rank << " checking queue" << std::endl;
-						std::lock_guard<std::mutex> lock(queue_mutex);
-						if (!queue.empty()) { 
-							current = std::move(const_cast<Branch&>(queue.top()));
-							queue.pop();
-							has_work = true;
-						}
-					}
-
-					//std::cout << "Rank: " << my_rank << " queue checked" << std::endl;
-
-					if (!has_work) {
-						//std::cout << "Rank: " << my_rank << " no work in queue" << std::endl;
-						if(!work_stealing(my_rank, p, queue, queue_mutex, current)){
-							continue;
-						}
-					}
-
-					current_G = std::move(current.g);
-					current_lb = current.lb;
-					current_ub = current.ub;
-
-					Log_par("Processing node: lb = " + std::to_string(current_lb) +
-						    ", ub = " + std::to_string(current_ub), current.depth);
-
-					// find solution
-					if (current_lb == current_ub) {
-						/*
-						MPI_Send(&current_ub, 1, MPI_UNSIGNED_SHORT, 0, TAG_SOLUTION_FOUND, MPI_COMM_WORLD);  // check if it is correct
-						Log_par(
-						    "[FOUND] Chromatic number "
-						    "found: " + std::to_string(current_lb),current.depth);
-						Log_par("========== END ==========", 0);
-						*/
-						/*
-						best_ub.store(current_ub);
-						continue;
-					}
-
-					// Prune
-					if (current_lb >= best_ub.load()) {
-						Log_par(
-						    "[PRUNE] Branch pruned at "
-						    "depth " + std::to_string(current.depth) +
-							": lb = " + std::to_string(current_lb) +
-							" >= best_ub = " + std::to_string(best_ub.load()),
-						    current.depth);
-						continue;
-					}
-
-					//std::cout << "Rank: " << my_rank << " starting branching" << std::endl;
-
-					auto [u, v] = _branching_strat.ChooseVertices(*current_G);
-					Log_par("Branching on vertices: u = " + std::to_string(u) +
-							", v = " + std::to_string(v),
-					    	current.depth, true);
-
-					//std::cout << "Rank: " << my_rank << " choose " << u << " " << v << std::endl;
-
-					if (u == -1 || v == -1) {
-						best_ub.store(std::min<unsigned short>(current_G->GetNumVertices(), best_ub.load()));
-						/*
-						MPI_Send(&chromatic_number, 1, MPI_UNSIGNED_SHORT, 0, TAG_SOLUTION_FOUND, MPI_COMM_WORLD);  // check if it is correct
-						Log_par("Graph is complete. "
-						    	"Chromatic number = " + std::to_string(chromatic_number),
-						    	current.depth);
-						Log_par("========== END ==========", 0);
-						*/
-						//continue;
-					//}
-
-					// TODO: check for other approaches to
-					// avoid generating too much tasks(this
-					// will wait untill all child tasks are
-					// completed) avoid generating too much
-					// tasks
-
-					//std::cout << "Rank: " << my_rank << " checking # tasks" << std::endl;
-					/*
-					if (active_tasks.load() > max_tasks) {
-						#pragma omp taskwait
-					}
-
-					//std::cout << "Rank: " << my_rank << " generating tasks" << std::endl;
-					// generate tasks and update queue
-					int current_depth = current.depth;
-					*/
-					/*
-					int lb_og_pre = _clique_strat.FindClique(*current_G);
-					unsigned short ub_og_pre;
-					_color_strat.Color(*current_G, ub_og_pre);
-					//std::cout << "lb_og_pre " << lb_og_pre << " ub_og_pre " << ub_og_pre << std::endl;
-
-					auto local_g = current_G->Clone();
-					*/
-
-					//Graph* local_g = current_G->Clone().release();
-					/*
-					std::unique_lock<std::mutex> lock_current_G(current_G_mutex);
-					std::cout << "num vertices " << current_G->GetNumVertices() << " edges " <<  current_G->GetNumEdges() << " u " << u << " v " << v << std::endl;
-					graph_queue.emplace(std::move(current_G), u, v);
-					lock_current_G.unlock();
-
-					#pragma omp task default(shared)	
-					{
-						std::unique_lock<std::mutex> lock_current_G(current_G_mutex);
-						GraphEntry local = std::move(graph_queue.front());
-						std::unique_ptr<Graph> local_g = std::move(local.graph);
-						int u_local = local.u;
-						int v_local = local.v;
-						graph_queue.pop();
-						std::cout << "num vertices " << local_g->GetNumVertices() << " edges " <<  local_g->GetNumEdges() << " u " << u_local << " v " << v_local << std::endl;
-						lock_current_G.unlock();
-						//ptr.reset(local_g);
-						create_task(std::move(local_g), u_local, v_local, _clique_strat, _color_strat, best_ub, current_depth, my_rank);
-					}
-
-				}
+				std::lock_guard<std::mutex> lock(queue_mutex);
+				queue.push(Branch(g.Clone(), lb, ub, 1));	// Initial branch with depth 1
 			}
-				
-		}
 
-		//# pragma omp barrier
+			// Main loop
+			std::cout << "Rank: " << my_rank << " Starting... " << std::endl;
+			bool distributed_work = false; // Signals when work distribution phase ends.
+			if(my_rank == (p-1)) distributed_work = true; // Signals when work distribution phase ends.
+
+			Branch current;
+			while (!terminate_flag.load()) {
+				bool has_work = false;
+				{
+					std::lock_guard<std::mutex> lock(queue_mutex);
+					if (!queue.empty()) { 
+						current = std::move(const_cast<Branch&>(queue.top()));
+						queue.pop();
+						has_work = true;
+					}
+				}
+
+				// If no work and already passed the initial distributing phase, request work.
+				// if (!has_work && distributed_work) {
+				// 	//#pragma omp single // Only a single thread asks for work.
+				// 	//{
+				// 	// Notify the root process that this worker is idle
+				// 	int idle_status = 1;
+				// 	MPI_Send(&idle_status, 1, MPI_INT, 0, TAG_IDLE, MPI_COMM_WORLD);
+				// 	// Start requesting work.
+				// 	while (!request_work(my_rank, p, queue, queue_mutex, current)) {
+				// 		if (terminate_flag.load()) break;
+				// 		std::this_thread::sleep_for(std::chrono::milliseconds(10));
+				// 	}
+				// 	// Work received. Notify the root process that this worker is not idle anymore.
+				// 	idle_status = 0;
+				// 	MPI_Send(&idle_status, 1, MPI_INT, 0, TAG_IDLE, MPI_COMM_WORLD);				
+				// 	//}
+				// 	continue;
+				// }
+
+				auto current_G = std::move(current.g);
+				int current_lb = current.lb;
+				unsigned short current_ub = current.ub;
+
+				Log_par("Processing node: lb = " + std::to_string(current_lb) +
+						", ub = " + std::to_string(current_ub), current.depth, false, my_rank, tid);
+
+				// TODO: In this case, if no better lower bound is found he will just keep looping forever.
+				if (current_lb == current_ub) {
+					if(!distributed_work && my_rank==0){
+						best_ub.store(current_ub);
+						MPI_Send(&current_ub, 1, MPI_UNSIGNED_SHORT, 0, TAG_SOLUTION_FOUND, MPI_COMM_WORLD);
+						break; 
+					}
+					best_ub.store(current_ub);
+					continue;
+				}
+
+				// Prune
+				if (current_lb >= best_ub.load()) {
+					Log_par(
+						"[PRUNE] Branch pruned at "
+						"depth " + std::to_string(current.depth) +
+						": lb = " + std::to_string(current_lb) +
+						" >= best_ub = " + std::to_string(best_ub.load()),
+						current.depth, false, my_rank, tid);
+					continue;
+				}
+
+				// Start branching 
+				std::unique_lock<std::mutex> lock_branching(branching_mutex);
+				auto [u, v] = _branching_strat.ChooseVertices(*current_G);
+				lock_branching.unlock();
+				Log_par("Branching on vertices: u = " + std::to_string(u) +
+						", v = " + std::to_string(v),
+						current.depth, true, my_rank, tid);
+
+				if (u == -1 || v == -1) {
+					best_ub.store(std::min<unsigned short>(current_G->GetNumVertices(), best_ub.load()));
+					/*
+					MPI_Send(&chromatic_number, 1, MPI_UNSIGNED_SHORT, 0, TAG_SOLUTION_FOUND, MPI_COMM_WORLD);  // check if it is correct
+					Log_par("Graph is complete. "
+							"Chromatic number = " + std::to_string(chromatic_number),
+							current.depth);
+					Log_par("========== END ==========", 0);
+					*/
+					continue;
+				}
+				// generate tasks and update queue
+				std::unique_lock<std::mutex> lock_task(task_mutex);
+				auto G1 = current_G->Clone();
+				G1->MergeVertices(u, v);
+				int lb1 = _clique_strat.FindClique(*G1);
+				unsigned short ub1;
+				_color_strat.Color(*G1, ub1);
+				Log_par("[Branch 1] (Merge u, v) "
+						"lb = " + std::to_string(lb1) +
+						", ub = " + std::to_string(ub1),
+						current.depth, false, my_rank, tid);
+
+				if (lb1 < best_ub.load()) { // check to avoid cuncurrent access
+					std::lock_guard<std::mutex> lock(queue_mutex);
+					queue.push(Branch(std::move(G1), lb1, ub1, current.depth + 1));
+				}
+				// AddEdge
+				auto G2 = current_G->Clone();
+				G2->AddEdge(u, v);
+				int lb2 = _clique_strat.FindClique(*G2);
+				unsigned short ub2;
+				_color_strat.Color(*G2, ub2);
+				Log_par("[Branch 2] (Add edge u-v) "
+						"lb = " + std::to_string(lb2) +
+						", ub = " + std::to_string(ub2),
+						current.depth, false, my_rank, tid);
+
+				if (lb2 < best_ub.load() && (lb2 < ub1)) { 
+					std::lock_guard<std::mutex> lock(queue_mutex);
+					queue.push(Branch(std::move(G2), lb2, ub2, current.depth + 1));
+				}
+				if (!distributed_work && my_rank<p-1)
+				{
+					std::cout << "Rank: " << my_rank << " Distributing work" << std::endl;
+					std::lock_guard<std::mutex> lock(queue_mutex);
+					current = std::move(const_cast<Branch&>(queue.top()));
+					queue.pop();
+					sendBranch(current, my_rank+1, TAG_INITIAL_WORK, MPI_COMM_WORLD);
+					distributed_work = true;
+				}
+				lock_task.unlock();
+				// Update local sbest_ub
+				unsigned short previous_best_ub = best_ub.load();
+				best_ub.store(std::min({previous_best_ub, ub1, ub2}));
+				Log_par("[UPDATE] Updated best_ub: " + std::to_string(best_ub.load()), current.depth, false, my_rank, tid);
+
+				//std::cout << "Rank: " << my_rank << " Performed loop iteration. " << std::endl;
+			}
+		}
 	}
-	std::cout << "Rank: " << my_rank << " Finalizing" << std::endl;
-	// End execution
-	return best_ub;
-}
-			*/
+		std::cout << "Rank: " << my_rank << " Finalizing. " << std::endl;
+		// Wait that all processes terminate
+		MPI_Barrier(MPI_COMM_WORLD);
+		// End execution
+		return best_ub;
+	}
+		

@@ -41,7 +41,7 @@ class BranchNBoundPar {
 	 *
 	 * @param message The message to log.
 	 */
-	void Log_par(const std::string& message, int depth, bool is_branching);
+	void Log_par(const std::string& message, int depth, bool is_branching, int rank, int thread_id);
 
 	/**
 	 * @brief Checks if the solver has exceeded the timeout.
