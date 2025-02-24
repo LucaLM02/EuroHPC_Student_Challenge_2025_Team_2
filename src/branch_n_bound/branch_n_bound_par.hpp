@@ -93,21 +93,18 @@ class BranchNBoundPar {
 		 * @param iteration_threshold The maximum number of iterations without
 		 * improvement before stopping.
 		 */
-		BranchNBoundPar(BranchingStrategy& branching_strat,
-						CliqueStrategy& clique_strat,
-						ColorStrategy& color_strat,
-						const std::string& log_file_path_prefix)
+		 BranchNBoundPar(BranchingStrategy& branching_strat,
+			CliqueStrategy& clique_strat,
+			ColorStrategy& color_strat,
+			const std::string& log_file_path)
 			: _branching_strat(branching_strat),
-			  _clique_strat(clique_strat),
-			  _color_strat(color_strat) {
-				int my_rank;
-				MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
-				_log_file.open(log_file_path_prefix + std::to_string(my_rank) + ".log");
+			_clique_strat(clique_strat),
+			_color_strat(color_strat){
+				_log_file.open(log_file_path);
 				if (!_log_file.is_open()) {
-					throw std::runtime_error("Failed to open log file: " +
-					log_file_path_prefix + std::to_string(my_rank) + ".log");
+					throw std::runtime_error("Failed to open log file: " + log_file_path);
+				}
 			}
-		}
 	
 		int Solve(Graph& g, double &optimum_time, int timeout_seconds = 60);
 	};

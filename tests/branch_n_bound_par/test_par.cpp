@@ -97,8 +97,7 @@ int main(int argc, char** argv) {
 
 		}
 	
-		BranchNBoundPar solver(branching_strategy, clique_strategy,
-			color_strategy, "log_par");
+		BranchNBoundPar solver(branching_strategy, clique_strategy, color_strategy, "log_par.txt");
 
 		if (my_rank == 0) {
 		std::cout << "Starting trial " << i << "..." << std::endl;

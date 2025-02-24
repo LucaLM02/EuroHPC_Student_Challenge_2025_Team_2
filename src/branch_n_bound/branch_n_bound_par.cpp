@@ -50,7 +50,7 @@ void BranchNBoundPar::Log_par(const std::string& message, int depth) {
         double timestamp = MPI_Wtime();
 
         // Indentation based on depth
-        std::string indentation = "";
+        std::string indentation(depth * 2, ' ');
 
         int rank;
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -233,7 +233,7 @@ void BranchNBoundPar::thread_0_terminator(int my_rank, int p, int global_start_t
 					usleep(1000);
 				}
 				
-				idle_status[status_idle.MPI_SOURCE] = worker_idle_status;
+				if(completed) idle_status[status_idle.MPI_SOURCE] = worker_idle_status;
 			}
 
             // Check if all workers are idle
@@ -473,15 +473,15 @@ int BranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_seconds) 
 
 		if (tid == 0) { // Checks if solution has been found or timeout. 
 			thread_0_terminator(my_rank, p, global_start_time, timeout_seconds, optimum_time);
-			printMessage("Rank: " + std::to_string(my_rank) + " Exited thread_0_terminator func.");
+			//printMessage("Rank: " + std::to_string(my_rank) + " Exited thread_0_terminator func.");
 			//std::cout << "Rank: " << my_rank << " Exited thread_0_terminator func." << std::endl;
 		}else if (tid == 1) { // Updates (gathers) best_ub from time to time.
 			thread_1_solution_gatherer(p, best_ub);
-			printMessage("Rank: " + std::to_string(my_rank) + " Exited thread_1_solution_gatherer func.");
+			//printMessage("Rank: " + std::to_string(my_rank) + " Exited thread_1_solution_gatherer func.");
 			//std::cout << "Rank: " << my_rank << " Exited thread_1_solution_gatherer func." << std::endl;
 		}else if (tid == 2) { // Employer thread employs workers by answering their work requests
 			thread_2_employer(queue_mutex, queue);
-			printMessage("Rank: " + std::to_string(my_rank) + " Exited thread_2_employer func.");
+			//printMessage("Rank: " + std::to_string(my_rank) + " Exited thread_2_employer func.");
 			//std::cout << "Rank: " << my_rank << " Exited thread_2_employer func." << std::endl;
 		}else if (tid == 3) { // TODO: Let more threads do these computations in parallel
 			Branch current;
@@ -491,6 +491,8 @@ int BranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_seconds) 
 				//printMessage("Rank: " + std::to_string(my_rank) + " Waiting for work");
 				//std::cout << "Rank: " << my_rank << " Waiting for work" << std::endl;
 				branch_recv = recvBranch(my_rank-1, TAG_INITIAL_WORK, MPI_COMM_WORLD);
+				int idle_status = 0;
+				MPI_Send(&idle_status, 1, MPI_INT, 0, TAG_IDLE, MPI_COMM_WORLD);
 				Log_par("[INITIALIZATION] First branch received from previous worker.", 1);
 				//printMessage("Rank: " + std::to_string(my_rank) + " work received ");
 				//std::cout << "Rank: " << my_rank << " work received " << std::endl;
@@ -600,7 +602,7 @@ int BranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_seconds) 
 							break;
 						}
 						// Prune (DO WE WANT TO PRUNE THIS?)
-						best_ub.store(current_ub);
+						best_ub.store(std::min(current_ub, best_ub.load()));
 						Log_par(
 							"[PRUNE] Branch pruned at "
 							"depth " + std::to_string(current.depth) +
@@ -702,7 +704,7 @@ int BranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_seconds) 
 				}
 			}
 		}
-		printMessage("Rank: " + std::to_string(my_rank) + " Finalizing.");
+		//printMessage("Rank: " + std::to_string(my_rank) + " Finalizing.");
 		Log_par("[TERMINATION] Finalizing... ", 0);
 		MPI_Barrier(MPI_COMM_WORLD);
 		// End execution

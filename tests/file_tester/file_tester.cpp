@@ -76,35 +76,48 @@ void FileTester::runTests() {
     NeighboursBranchingStrategy branching_strategy;
     FastCliqueStrategy clique_strategy;
     DSaturColorStrategy color_strategy;
-    CSRGraph* graph;
 
     int expected;
     int chromatic_number;
     double optimum_time;
-
-    BranchNBoundPar solver(branching_strategy, clique_strategy, color_strategy, "log_" + std::to_string(my_rank) + ".txt");
 
     for (const auto& file : fileList) {
         if (my_rank == 0){
             
             std::cout << "Testing file: " << file << std::endl;
         }
+        for(int i=0;i<10;i++){
+            CSRGraph* graph = CSRGraph::LoadFromDimacs(file);
+            BranchNBoundPar* solver = new BranchNBoundPar(branching_strategy, clique_strategy, color_strategy, "log_" + std::to_string(my_rank) + "_" + std::to_string(i) + ".txt");
+            chromatic_number = solver->Solve(*graph, optimum_time, 10);
 
-        graph = CSRGraph::LoadFromDimacs(file);
-        chromatic_number = solver.Solve(*graph, optimum_time, 10);
+            if (my_rank == 0){
 
-	    if (my_rank == 0){
+                std::string fileName = std::filesystem::path(file).filename().string();
+                expected = expectedResults[fileName];
 
-            std::string fileName = std::filesystem::path(file).filename().string();
-            expected = expectedResults[fileName];
-
-            if(chromatic_number != expected) std::cout << "Test failed: expected " << expected << " but got " << chromatic_number << std::endl;
-            else {
-                if(optimum_time == -1) std::cout << "Test passed with timeout" << std::endl;
-		        else std::cout << "Test passed with time: " << optimum_time << std::endl;
+                if(chromatic_number != expected) std::cout << "Test failed: expected " << expected << " but got " << chromatic_number << std::endl;
+                else {
+                    if(optimum_time == -1) std::cout << "Test passed with timeout" << std::endl;
+                    else std::cout << "Test passed with time: " << optimum_time << std::endl;
+                }
             }
+            MPI_Status status;
+            int flag;
+            while (true) {
+                flag=0;
+                MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &flag, &status);
+                if (!flag) break;
+                int count;
+                MPI_Get_count(&status, MPI_BYTE, &count);
+                std::vector<char> buffer(count);
+                MPI_Recv(buffer.data(), count, MPI_BYTE, status.MPI_SOURCE, status.MPI_TAG, MPI_COMM_WORLD, &status);
+            }
+            MPI_Barrier(MPI_COMM_WORLD);
+            delete graph;
+            delete solver;
+            std::this_thread::sleep_for(std::chrono::seconds(2));
         }
-        MPI_Barrier(MPI_COMM_WORLD);
     }
     MPI_Finalize();
 }
