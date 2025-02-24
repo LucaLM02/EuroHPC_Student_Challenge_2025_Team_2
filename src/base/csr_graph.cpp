@@ -184,8 +184,22 @@ void CSRGraph::Deserialize(const std::string& data) {
 	_nEdges = numEdges;
 }
 
-void CSRGraph::AddEdge(int v, int w) {
-	_edges[v].push_back(w);
+void CSRGraph::AddHistory(GraphHistory graph_history)
+{
+	const std::vector<std::pair<int, int>>& vertices = graph_history.GetVertices();
+	const std::vector<bool>& actions 				 = graph_history.GetActions();
+	for ( int i = 0; i < vertices.size(); i++ ) {
+		if ( actions[i] == GraphHistory::MERGE ) {
+			this->MergeVertices(vertices[i].first, vertices[i].second);
+		} else {
+			this->AddEdge(vertices[i].first, vertices[i].second);
+		}
+	}
+}
+
+void CSRGraph::AddEdge(int v, int w)
+{
+    _edges[v].push_back(w);
 	_edges[w].push_back(v);
 	_nEdges++;
 

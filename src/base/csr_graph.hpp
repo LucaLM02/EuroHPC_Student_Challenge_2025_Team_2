@@ -25,6 +25,7 @@ class CSRGraph : public Graph {
         CSRGraph(const CSRGraph& other)=default;
 
         // -------------------- MODIFIERS --------------------
+        virtual void AddHistory(GraphHistory graph_history) override;
         virtual void AddEdge(int v, int w) override;
         virtual void RemoveEdge(int v, int w) override;
 
