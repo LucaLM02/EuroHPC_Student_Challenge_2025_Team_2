@@ -1,0 +1,35 @@
+slurmstepd: error: Detected 1 oom_kill event in StepId=52980088.0. Some of the step tasks have been OOM Killed.
+srun: error: cn0112: task 17: Out Of Memory
+slurmstepd: error: *** STEP 52980088.0 ON cn0037 CANCELLED AT 2025-02-24T10:44:56 ***
+srun: Job step aborted: Waiting up to 32 seconds for job step to finish.
+srun: error: cn0122: task 20: Killed
+srun: error: cn0050: task 2: Killed
+srun: error: cn0129: task 21: Killed
+srun: error: cn0056: task 6: Killed
+srun: error: cn0114: task 18: Killed
+srun: error: cn0053: task 4: Killed
+srun: error: cn0140: task 23: Killed
+srun: error: cn0163: task 25: Killed
+srun: error: cn0051: task 3: Killed
+srun: error: cn0037: task 0: Killed
+srun: error: cn0190: task 31: Killed
+srun: error: cn0117: task 19: Killed
+srun: error: cn0172: task 28: Killed
+srun: error: cn0143: task 24: Killed
+srun: error: cn0058: task 7: Killed
+srun: error: cn0168: task 27: Killed
+srun: error: cn0187: task 30: Killed
+srun: error: cn0167: task 26: Killed
+srun: error: cn0131: task 22: Killed
+srun: error: cn0043: task 1: Killed
+srun: error: cn0175: task 29: Killed
+srun: error: cn0054: task 5: Killed
+srun: error: cn0062: task 8: Killed
+srun: error: cn0065: task 9: Killed
+srun: error: cn0074: task 10: Killed
+srun: error: cn0086: task 12: Killed
+srun: error: cn0075: task 11: Killed
+srun: error: cn0093: task 13: Killed
+srun: error: cn0096: task 14: Killed
+srun: error: cn0108: task 16: Killed
+srun: error: cn0098: task 15: Killed
