@@ -26,7 +26,7 @@ class BranchingStrategy {
 
 class RandomBranchingStrategy : public BranchingStrategy {
     public:
-        RandomBranchingStrategy(int num_vertices);
+        RandomBranchingStrategy();
 
         virtual std::pair<int, int> 
         ChooseVertices(Graph& graph) override;

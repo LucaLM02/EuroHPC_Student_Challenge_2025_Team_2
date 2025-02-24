@@ -83,24 +83,20 @@ int main(int argc, char** argv) {
 	double optimum_time;
 	// Test the solver multiple times on the same graph (since its not deterministic)
 	for (int i=0; i<N_trials; i++) {
-		// Root process reads the graph
-		if (my_rank == 0) {
-			
-			if (!dimacs.load(file_name.c_str())) {
-				std::cout << dimacs.getError() << std::endl;
-				return 1;
-			}
-			
-			std::cout << "Succesfully read Graph." << std::endl;
+		// All processes read the graph, since they all start with it.
+        if (!dimacs.load(file_name.c_str())) {
+            std::cout << dimacs.getError() << std::endl;
+            return 1;
+        }
+        
+        std::cout << "Rank " << my_rank << ": Succesfully read Graph." << std::endl;
 
-			graph = CSRGraph::LoadFromDimacs(file_name);
-
-		}
+        graph = CSRGraph::LoadFromDimacs(file_name);
 	
-		BranchNBoundPar solver(branching_strategy, clique_strategy, color_strategy, "log_par.txt");
+		BranchNBoundPar solver(branching_strategy, clique_strategy, color_strategy, "log_" + std::to_string(my_rank) + "_" + ".txt");
 
 		if (my_rank == 0) {
-		std::cout << "Starting trial " << i << "..." << std::endl;
+		    std::cout << "Starting trial " << i << "..." << std::endl;
 		}
 		// Start the timer.
 		auto start_time = MPI_Wtime();

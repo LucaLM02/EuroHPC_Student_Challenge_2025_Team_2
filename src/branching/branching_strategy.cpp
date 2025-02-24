@@ -3,7 +3,7 @@
 
 // ----------------------------- RANDOM BRANCHING STRATEGY ------------------------------
 
-RandomBranchingStrategy::RandomBranchingStrategy(int num_vertices) 
+RandomBranchingStrategy::RandomBranchingStrategy() 
 : BranchingStrategy()
 {
     std::random_device dev;
