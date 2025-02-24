@@ -84,17 +84,16 @@ int main(int argc, char** argv) {
 	// Test the solver multiple times on the same graph (since its not deterministic)
 	for (int i=0; i<N_trials; i++) {
 		// Root process reads the graph
+        if (!dimacs.load(file_name.c_str())) {
+            std::cout << dimacs.getError() << std::endl;
+            return 1;
+        }
+
+        graph = CSRGraph::LoadFromDimacs(file_name);
+
 		if (my_rank == 0) {
 			
-			if (!dimacs.load(file_name.c_str())) {
-				std::cout << dimacs.getError() << std::endl;
-				return 1;
-			}
-			
-			std::cout << "Succesfully read Graph." << std::endl;
-
-			graph = CSRGraph::LoadFromDimacs(file_name);
-
+            std::cout << "Succesfully read Graph." << std::endl;
 		}
 	
 		BranchNBoundPar solver(branching_strategy, clique_strategy, color_strategy, "log_par.txt");

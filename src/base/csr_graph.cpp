@@ -189,16 +189,21 @@ void CSRGraph::AddHistory(GraphHistory graph_history)
 	const std::vector<std::pair<int, int>>& vertices = graph_history.GetVertices();
 	const std::vector<bool>& actions 				 = graph_history.GetActions();
 	for ( int i = 0; i < vertices.size(); i++ ) {
+		_history.AddAction(vertices[i].first, vertices[i].second, actions[i]);
 		if ( actions[i] == GraphHistory::MERGE ) {
 			this->MergeVertices(vertices[i].first, vertices[i].second);
 		} else {
 			this->AddEdge(vertices[i].first, vertices[i].second);
 		}
 	}
+
+	
 }
 
 void CSRGraph::AddEdge(int v, int w)
 {
+	_history.AddAction(v,w, Graph::GraphHistory::ADD_EDGE);
+	
     _edges[v].push_back(w);
 	_edges[w].push_back(v);
 	_nEdges++;
@@ -260,6 +265,8 @@ void CSRGraph::RemoveVertex(int v) {
 }
 
 void CSRGraph::MergeVertices(int v, int w) {
+	_history.AddAction(v,w, Graph::GraphHistory::MERGE);
+
     // O(2*#neighbours*log(#neighbours))
     std::sort(_edges[v].begin(), _edges[v].end());
     std::sort(_edges[w].begin(), _edges[w].end());

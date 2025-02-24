@@ -170,6 +170,7 @@ class Graph {
 
 
         // ================================== GETTERS ====================================
+        GraphHistory GetHistory() { return _history; };
         /**
          *  @brief gets the neighbours of `vertex` as a vector
          *  @details
@@ -332,6 +333,9 @@ class Graph {
         // ================================= SERIALIZATION ==============================
         virtual std::string Serialize() const = 0;
         virtual void Deserialize(const std::string& data) = 0;
+
+    protected:
+        GraphHistory _history;
 };
 
 
