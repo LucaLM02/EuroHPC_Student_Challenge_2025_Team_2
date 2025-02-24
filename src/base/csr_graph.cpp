@@ -169,7 +169,7 @@ void CSRGraph::Deserialize(const std::string& data) {
 			mergedVec.push_back(merged);
 		}
 	
-		_merged_vertices.push_back(std::move(mergedVec));  // avoid useless copy
+		_merged_vertices[i] = std::move(mergedVec);
 	}
 
 	/*

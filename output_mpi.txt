@@ -1,5 +1,5 @@
 Reading file: graphs_instances/le450_15a.col
-Using timeout: 300 seconds
+Using timeout: 120 seconds
 Number of trials: 1
 Succesfully read Graph.
 Starting trial 0...
