@@ -189,7 +189,6 @@ void CSRGraph::AddHistory(GraphHistory graph_history)
 	const std::vector<std::pair<int, int>>& vertices = graph_history.GetVertices();
 	const std::vector<bool>& actions 				 = graph_history.GetActions();
 	for ( int i = 0; i < vertices.size(); i++ ) {
-		_history.AddAction(vertices[i].first, vertices[i].second, actions[i]);
 		if ( actions[i] == GraphHistory::MERGE ) {
 			this->MergeVertices(vertices[i].first, vertices[i].second);
 		} else {

@@ -175,6 +175,7 @@ void sendInitialBranch(const Branch& b, int dest, int tag, MPI_Comm comm) {
 	MPI_Request request[2];	
 	int completed = 0;
 
+
 	MPI_Isend(&size, 1, MPI_INT, dest, tag, comm, &request[0]);
     
 	MPI_Isend(buffer.data(), size, MPI_BYTE, dest, tag, comm, &request[1]);
@@ -194,8 +195,7 @@ void sendInitialBranch(const Branch& b, int dest, int tag, MPI_Comm comm) {
 /**
  * TODO DOCS
  */
-Branch recvInitialBranch(int source, int tag, MPI_Comm comm, Graph* graph, 
-						 Graph::GraphHistory& history) {
+Branch recvInitialBranch(int source, int tag, MPI_Comm comm, Graph* graph) {
 	MPI_Status status[2];
     MPI_Request request[2];
     int size = 0;
@@ -237,7 +237,8 @@ Branch recvInitialBranch(int source, int tag, MPI_Comm comm, Graph* graph,
 	 */
 
 	
-	int lb, ub, depth;
+	int lb, depth;
+	unsigned short ub;
 	const char* ptr = buffer.data();
 
 	std::memcpy(&lb, ptr, sizeof(lb));
@@ -250,6 +251,7 @@ Branch recvInitialBranch(int source, int tag, MPI_Comm comm, Graph* graph,
 
 	std::string data(buffer.begin() + sizeof(lb) + sizeof(ub) + sizeof(depth), 
 					 buffer.end());
+	Graph::GraphHistory history;
 	history.Deserialize(data);
 
 	graph->AddHistory(history);
@@ -564,7 +566,6 @@ int BranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_seconds) 
 
 	MPI_Status status_recv;
 	Branch branch_recv;
-	Graph::GraphHistory history;
 
 	// OpenMP Parallel Region
 	/*
@@ -599,7 +600,7 @@ int BranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_seconds) 
 			if (my_rank>0) {
 				//printMessage("Rank: " + std::to_string(my_rank) + " Waiting for work");
 				//std::cout << "Rank: " << my_rank << " Waiting for work" << std::endl;
-				branch_recv = recvInitialBranch(my_rank-1, TAG_INITIAL_WORK, MPI_COMM_WORLD, &g, history);
+				branch_recv = recvInitialBranch(my_rank-1, TAG_INITIAL_WORK, MPI_COMM_WORLD, &g);
 				int idle_status = 0;
 				MPI_Send(&idle_status, 1, MPI_INT, 0, TAG_IDLE, MPI_COMM_WORLD);
 				Log_par("[INITIALIZATION] First branch received from previous worker.", 1);
