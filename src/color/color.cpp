@@ -47,6 +47,8 @@ void GreedyColorStrategy::Color(Graph& graph,
     // used for accessing neighbours colors
     std::vector<unsigned short> coloring(graph.GetHighestVertex() + 1, 0);
 
+    graph.SortByDegree();
+
     unsigned short assigned_color;
     const std::vector<int>& original_vertices = graph.GetVertices();
     max_k = 0;
