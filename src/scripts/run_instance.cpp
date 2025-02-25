@@ -14,6 +14,14 @@
 #include "csr_graph.hpp"
 #include "dimacs.hpp"
 
+/**
+ * @brief Main function to run the graph coloring solver using the branch and bound method.
+ *
+ * This function initializes MPI, reads the graph instance from a file, and runs the BranchNBoundPar solver.
+ * It handles command-line arguments for the input file, timeout, and solution gathering period.
+ * The function compares the computed chromatic number with the expected result and prints the outcome and
+ * computation time.
+ */
 int main(int argc, char** argv) {
     // Default values
     int timeout = 60;

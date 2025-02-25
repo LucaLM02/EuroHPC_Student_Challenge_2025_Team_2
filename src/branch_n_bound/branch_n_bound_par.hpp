@@ -32,14 +32,9 @@ class BranchNBoundPar {
 		CliqueStrategy& _clique_strat;
 		ColorStrategy& _color_strat;
 		std::ofstream _log_file;
-	
-		// void create_task(
-		// 	std::unique_ptr<Graph> current_G, int u, int v,
-		// 	CliqueStrategy& _clique_strat, ColorStrategy& _color_strat,
-		// 	std::atomic<unsigned short> & best_ub, int const& depth, int my_rank);
-	
+
 		/**
-		 * @brief Logs a message to the log file in a openmp parallel section.
+		 * @brief Logs a message to the log file in a MPI environment and OpenMP parallel section.
 		 *
 		 * @param message The message to log.
 		 */
@@ -57,42 +52,43 @@ class BranchNBoundPar {
 			int timeout_seconds);
 	
 		/**
-		 * @brief Listens for termination signals (solution found or timeout) and terminates the execution of the process accordingly.
-		 *
-		 * @param my_rank The rank of the current process.
-		 * @param p The total number of processes in the MPI communicator.
-		 * @param global_start_time The global start time, used to check for timeouts.
-		 * @param timeout_seconds The timeout duration (in seconds) after which the timeout signal is sent.
-		 * @param optimum_time The time at which the optimum solution was found.
-		 */
+         * @brief Listens for termination signals (solution found or timeout) and terminates the execution of the process accordingly.
+         *
+         * @param my_rank The rank of the current process.
+         * @param p The total number of processes in the MPI communicator.
+         * @param global_start_time The global start time, used to check for timeouts.
+         * @param timeout_seconds The timeout duration (in seconds) after which the timeout signal is sent.
+         * @param optimum_time The time at which the optimum solution was found.
+         */
 		void thread_0_terminator(int my_rank, int p, int global_start_time, int timeout_seconds, double &optimum_time);
 	
 		/**
-		 * @brief Updates (gathers) best_ub from time to time.
-		 *
-		 * @param p The total number of processes in the MPI communicator.
-		 * @param best_ub The best upper bound found so far.
-		 * @param my_rank The rank of the current process.
-		 */
+         * @brief Updates (gathers) best_ub from time to time.
+         *
+         * @param p The total number of processes in the MPI communicator.
+         * @param best_ub The best upper bound found so far.
+         * @param my_rank The rank of the current process.
+         * @param sol_gather_period The period (in seconds) at which the best upper bound is gathered.
+         */
 		void thread_1_solution_gatherer(int p, std::atomic<unsigned short> &best_ub, int sol_gather_period);
 	
 		/**
-		 * @brief Employer thread employs workers by answering their work requests.
-		 *
-		 * @param queue_mutex Mutex to protect concurrent access to the work queue.
-		 * @param queue The local work queue containing branches to be processed.
-		 */
+         * @brief Employer thread employs workers by answering their work requests.
+         *
+         * @param queue_mutex Mutex to protect concurrent access to the work queue.
+         * @param queue The local work queue containing branches to be processed.
+         */
 		void thread_2_employer(std::mutex& queue_mutex, BranchQueue& queue);
 	
 	public:
 		/**
-		 * @brief Constructs a BranchNBoundPar solver.
-		 *
-		 * @param timeout_seconds The maximum time (in seconds) the solver can
-		 * run before it times out.
-		 * @param iteration_threshold The maximum number of iterations without
-		 * improvement before stopping.
-		 */
+         * @brief Constructs a BranchNBoundPar solver.
+         *
+         * @param branching_strat The branching strategy to use.
+         * @param clique_strat The clique strategy to use.
+         * @param color_strat The color strategy to use.
+         * @param log_file_path The path to the log file.
+         */
 		 BranchNBoundPar(BranchingStrategy& branching_strat,
 			CliqueStrategy& clique_strat,
 			ColorStrategy& color_strat,
@@ -105,7 +101,16 @@ class BranchNBoundPar {
 					throw std::runtime_error("Failed to open log file: " + log_file_path);
 				}
 			}
-	
+
+		/**
+         * @brief Solves the graph coloring problem using the branch and bound method.
+         *
+         * @param g The graph to solve.
+         * @param optimum_time The time at which the optimum solution was found.
+         * @param timeout_seconds The maximum time (in seconds) the solver can run before it times out.
+         * @param sol_gather_period The period (in seconds) at which the best upper bound is gathered.
+         * @return int The number of colors used in the optimal solution.
+         */
 		int Solve(Graph& g, double &optimum_time, int timeout_seconds = 60, int sol_gather_period = 10);
 	};
 
