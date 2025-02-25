@@ -34,6 +34,7 @@ class BalancedBranchNBoundPar {
 		CliqueStrategy& _clique_strat;
 		ColorStrategy& _color_strat;
 		std::ofstream _log_file;
+		std::atomic<unsigned short> _best_ub = USHRT_MAX;
 	
 		// void create_task(
 		// 	std::unique_ptr<Graph> current_G, int u, int v,
@@ -73,10 +74,9 @@ class BalancedBranchNBoundPar {
 		 * @brief Updates (gathers) best_ub from time to time.
 		 *
 		 * @param p The total number of processes in the MPI communicator.
-		 * @param best_ub The best upper bound found so far.
 		 * @param my_rank The rank of the current process.
 		 */
-		void thread_1_solution_gatherer(int p, std::atomic<unsigned short> &best_ub);
+		void thread_1_solution_gatherer(int p);
 	
 		/**
 		 * @brief Employer thread employs workers by answering their work requests.
@@ -101,14 +101,16 @@ class BalancedBranchNBoundPar {
 			const std::string& log_file_path)
 			: _branching_strat(branching_strat),
 			_clique_strat(clique_strat),
-			_color_strat(color_strat){
+			_color_strat(color_strat) 
+			{
 				_log_file.open(log_file_path);
 				if (!_log_file.is_open()) {
 					throw std::runtime_error("Failed to open log file: " + log_file_path);
 				}
 			}
 	
-		int Solve(Graph& g, double &optimum_time, int timeout_seconds = 60);
+		int Solve(Graph& g, double &optimum_time, int timeout_seconds = 60, 
+				  unsigned short expected_chi = -1);
 	};
 
 #endif	// BRANCH_N_BOUND_PAR_HPP

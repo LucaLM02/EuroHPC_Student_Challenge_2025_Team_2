@@ -23,19 +23,21 @@ int main(int argc, char** argv) {
     int N_trials = 1;
     std::string folder_name = "graphs_instances/";
     std::string file_name;
+    int expected_chi;
 
     // Check for required arguments
-    if (argc < 2) {
-        std::cerr << "Usage: " << argv[0] << " <file_name> [timeout] [N_trials]\n";
+    if (argc < 3) {
+        std::cerr << "Usage: " << argv[0] << " <file_name> <expected_chi> [timeout] [N_trials]\n";
         return 1;
     }
 
     file_name = folder_name + argv[1]; // Prefix folder to filename
+    expected_chi = std::stoi(argv[2]);
 
     // Parse optional timeout argument
-    if (argc > 2) {
+    if (argc > 3) {
         try {
-            timeout = std::stoi(argv[2]); // Convert timeout to integer
+            timeout = std::stoi(argv[3]); // Convert timeout to integer
             if (timeout <= 0) {
                 std::cerr << "Error: Timeout must be a positive integer.\n";
                 return 1;
@@ -47,9 +49,9 @@ int main(int argc, char** argv) {
     }
 
     // Parse optional N_trials argument
-    if (argc > 3) {
+    if (argc > 4) {
         try {
-            N_trials = std::stoi(argv[3]); // Convert N_trials to integer
+            N_trials = std::stoi(argv[4]); // Convert N_trials to integer
             if (N_trials <= 0) {
                 std::cerr << "Error: N_trials must be a positive integer.\n";
                 return 1;
@@ -60,9 +62,6 @@ int main(int argc, char** argv) {
         }
     }
 
-	    std::cout << "Reading file: " << file_name << "\n";
-    std::cout << "Using timeout: " << timeout << " seconds\n";
-    std::cout << "Number of trials: " << N_trials << "\n";
 
     Dimacs dimacs;
     CSRGraph* graph;
@@ -79,6 +78,12 @@ int main(int argc, char** argv) {
 	}
 	int my_rank;
 	MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+
+    if ( my_rank == 0 ) {
+        std::cout << "Reading file: " << file_name << "\n";
+        std::cout << "Using timeout: " << timeout << " seconds\n";
+        std::cout << "Number of trials: " << N_trials << "\n";
+    }
 
 	double optimum_time;
 	// Test the solver multiple times on the same graph (since its not deterministic)
@@ -103,7 +108,7 @@ int main(int argc, char** argv) {
 		}
 		// Start the timer.
 		auto start_time = MPI_Wtime();
-		int chromatic_number = solver.Solve(*graph, optimum_time, timeout);
+		int chromatic_number = solver.Solve(*graph, optimum_time, timeout, expected_chi);
 		auto end_time = MPI_Wtime();
 		auto time = end_time - start_time;
 		if (my_rank == 0) {

@@ -305,6 +305,7 @@ void BalancedBranchNBoundPar::thread_0_terminator(int my_rank, int p, int global
 				unsigned short solution = 0;
 				MPI_Request recv_request;
 				MPI_Irecv(&solution, 1, MPI_UNSIGNED_SHORT, status_solution.MPI_SOURCE, TAG_SOLUTION_FOUND, MPI_COMM_WORLD, &recv_request);
+				_best_ub.store(solution);
 
 				int completed = 0;
 				MPI_Status status_sol_completed;
@@ -317,6 +318,7 @@ void BalancedBranchNBoundPar::thread_0_terminator(int my_rank, int p, int global
 				solution_found = 1;
 				Log_par("[TERMINATION]: Solution found communicated.", 0);
 				optimum_time = MPI_Wtime() - global_start_time;
+				
 			}
 
 			// Listen for idle status updates from workers
@@ -381,7 +383,7 @@ void BalancedBranchNBoundPar::thread_0_terminator(int my_rank, int p, int global
  *   p (int)           : The number of processes in the MPI communicator.
  *   best_ub (int*)    : Pointer to the variable holding the best upper bound.
  */
-void BalancedBranchNBoundPar::thread_1_solution_gatherer(int p, std::atomic<unsigned short>& best_ub) { 
+void BalancedBranchNBoundPar::thread_1_solution_gatherer(int p) { 
     std::vector<unsigned short> all_best_ub(p);
     auto last_gather_time = MPI_Wtime();
     MPI_Request request;
@@ -392,7 +394,7 @@ void BalancedBranchNBoundPar::thread_1_solution_gatherer(int p, std::atomic<unsi
         auto elapsed_time = current_time - last_gather_time;
 
         if (elapsed_time >= ALLGATHER_WAIT_TIME) {
-            unsigned short local_best_ub = best_ub.load(); // safe read
+            unsigned short local_best_ub = _best_ub.load(); // safe read
 
 			if (terminate_flag.load(std::memory_order_relaxed)) {
                 return;
@@ -423,8 +425,8 @@ void BalancedBranchNBoundPar::thread_1_solution_gatherer(int p, std::atomic<unsi
 			request_active = 0;
 
             // Update the best upper bound for other threads in shared memory
-			Log_par("[UPDATE] Gathered best_ub " + std::to_string(best_ub), 0);
-            best_ub.store(*std::min_element(all_best_ub.begin(), all_best_ub.end()));  // safe write
+			Log_par("[UPDATE] Gathered best_ub " + std::to_string(_best_ub), 0);
+            _best_ub.store(*std::min_element(all_best_ub.begin(), all_best_ub.end()));  // safe write
 
             // Reset the timer
             last_gather_time = current_time;
@@ -547,7 +549,7 @@ bool request_work(int my_rank, int p, BranchQueue& queue, std::mutex& queue_mute
     return false;
 }
 
-int BalancedBranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_seconds) {
+int BalancedBranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_seconds, unsigned short expected_chi) {
 	// Start the timeout timer.
 	auto global_start_time = MPI_Wtime();
 
@@ -561,7 +563,6 @@ int BalancedBranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_s
 	MPI_Comm_size(MPI_COMM_WORLD, &p);
 
 	// Initialize big enough best_ub for all processes.
-	std::atomic<unsigned short> best_ub = USHRT_MAX;
 
 	MPI_Status status_recv;
 	Branch branch_recv;
@@ -577,9 +578,6 @@ int BalancedBranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_s
 	while (a != b) {
 		depth++;
 		vertices = _branching_strat.ChooseVertices(*initial_branch.g);
-		if ( my_rank == 0 ) {
-			std::cout << vertices.first << " " << vertices.second << std::endl;
-		}
 		delta = (b+1 - a) / 2;	// half size of the interval [a, b]
 		if ( my_rank >= a + delta ) {
 			initial_branch.g->MergeVertices(vertices.first, vertices.second);
@@ -615,7 +613,7 @@ int BalancedBranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_s
 			//printMessage("Rank: " + std::to_string(my_rank) + " Exited thread_0_terminator func.");
 			//std::cout << "Rank: " << my_rank << " Exited thread_0_terminator func." << std::endl;
 		}else if (tid == 1) { // Updates (gathers) best_ub from time to time.
-			thread_1_solution_gatherer(p, best_ub);
+			thread_1_solution_gatherer(p);
 			//printMessage("Rank: " + std::to_string(my_rank) + " Exited thread_1_solution_gatherer func.");
 			//std::cout << "Rank: " << my_rank << " Exited thread_1_solution_gatherer func." << std::endl;
 		}else if (tid == 2) { // Employer thread employs workers by answering their work requests
@@ -700,6 +698,16 @@ int BalancedBranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_s
 					Log_par("[BRANCH] Processing node: lb = " + std::to_string(current_lb) +
 							", ub = " + std::to_string(current_ub), current.depth);
 
+						if ( current_ub == expected_chi ) {
+							_best_ub.store(current_ub);
+							MPI_Send(&current_ub, 1, MPI_UNSIGNED_SHORT, 0, TAG_SOLUTION_FOUND, MPI_COMM_WORLD);  // check if it is correct
+							Log_par(
+								"[FOUND] Chromatic number "
+								"found: " + std::to_string(current_ub),current.depth);
+							Log_par("========== END ==========", 0);
+							continue;
+						}
+
 					if (current_lb == current_ub) {
 						/*
 						MPI_Send(&current_ub, 1, MPI_UNSIGNED_SHORT, 0, TAG_SOLUTION_FOUND, MPI_COMM_WORLD);  // check if it is correct
@@ -717,7 +725,7 @@ int BalancedBranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_s
 						// 	break;
 						// }
 						// Prune (DO WE WANT TO PRUNE THIS?)
-						best_ub.store(std::min(current_ub, best_ub.load()));
+						_best_ub.store(std::min(current_ub, _best_ub.load()));
 						Log_par(
 							"[PRUNE] Branch pruned at "
 							"depth " + std::to_string(current.depth) +
@@ -728,12 +736,12 @@ int BalancedBranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_s
 					}
 
 					// Prune
-					if (current_lb >= best_ub.load()) {
+					if (current_lb >= _best_ub.load()) {
 						Log_par(
 							"[PRUNE] Branch pruned at "
 							"depth " + std::to_string(current.depth) +
 							": lb = " + std::to_string(current_lb) +
-							" >= best_ub = " + std::to_string(best_ub.load()),
+							" >= best_ub = " + std::to_string(_best_ub.load()),
 							current.depth);
 						continue;
 					}
@@ -747,7 +755,7 @@ int BalancedBranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_s
 							current.depth);
 
 					if (u == -1 || v == -1) {
-						best_ub.store(std::min<unsigned short>(current_G->GetNumVertices(), best_ub.load()));
+						_best_ub.store(std::min<unsigned short>(current_G->GetNumVertices(), _best_ub.load()));
 						/*
 						MPI_Send(&chromatic_number, 1, MPI_UNSIGNED_SHORT, 0, TAG_SOLUTION_FOUND, MPI_COMM_WORLD);  // check if it is correct
 						Log_par("Graph is complete. "
@@ -813,9 +821,9 @@ int BalancedBranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_s
 					// 	distributed_work = true;
 					// }
 					// Update local sbest_ub
-					unsigned short previous_best_ub = best_ub.load();
-					best_ub.store(std::min({previous_best_ub, ub1, ub2}));
-					Log_par("[UPDATE] Updated best_ub: " + std::to_string(best_ub.load()), current.depth);
+					unsigned short previous_best_ub = _best_ub.load();
+					_best_ub.store(std::min({previous_best_ub, ub1, ub2}));
+					Log_par("[UPDATE] Updated best_ub: " + std::to_string(_best_ub.load()), current.depth);
 				}
 			}
 		}
@@ -823,7 +831,7 @@ int BalancedBranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_s
 		Log_par("[TERMINATION] Finalizing... ", 0);
 		MPI_Barrier(MPI_COMM_WORLD);
 		// End execution
-		return best_ub;
+		return _best_ub;
 	}
 		
 
