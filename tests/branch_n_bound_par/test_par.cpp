@@ -96,7 +96,7 @@ int main(int argc, char** argv) {
             std::cout << "Succesfully read Graph." << std::endl;
 		}
 	
-		BranchNBoundPar solver(branching_strategy, clique_strategy, color_strategy, "log_par.txt");
+        BranchNBoundPar solver(branching_strategy, clique_strategy, color_strategy, "log" + std::to_string(my_rank) + ".txt");
 
 		if (my_rank == 0) {
 		std::cout << "Starting trial " << i << "..." << std::endl;
