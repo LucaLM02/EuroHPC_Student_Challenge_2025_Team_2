@@ -1,5 +1,6 @@
 
 #include <iostream>
+#include <fstream>
 
 #include "balanced_branch_n_bound_par.hpp"
 #include "branching_strategy.hpp"
@@ -125,6 +126,11 @@ int main(int argc, char** argv) {
 			else 
 				std::cout << "Finalized prematurely with self-measured " << optimum_time << " seconds. " << std::endl;
 			std::cout << "Chromatic number: " << chromatic_number << std::endl;
+
+            std::ofstream out("chromatic_number.txt");
+            out << chromatic_number << std::endl;
+            out.close();
+
 		}
 	}
 
