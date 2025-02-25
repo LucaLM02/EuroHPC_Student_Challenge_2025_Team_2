@@ -143,8 +143,7 @@ void BranchNBoundPar::thread_0_terminator(int my_rank, int p, int global_start_t
 	int solution_found = 0;
 	int timeout_signal = 0;
 
-	std::vector<int> idle_status(p, 1); // Array to keep track of idle status of workers
-	idle_status[0] = 0; // Root process is not idle
+	std::vector<int> idle_status(p, 0); // Array to keep track of idle status of workers
 	while (true) {
 		if (my_rank == 0) {
 			// Master listens for solution found (Non-blocking)
@@ -388,6 +387,36 @@ int BranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_seconds, 
 
 	MPI_Status status_recv;
 	Branch branch_recv;
+	Branch initial_branch;
+
+	// WORKLOAD BALANCEMENT
+	// binary searching the node assigned to this processor
+	int a=0, b=p-1;
+	int delta;
+	std::pair<int, int> vertices;
+	initial_branch.g = g.Clone();
+	int depth = 1;
+	while (a != b) {
+		depth++;
+		vertices = _branching_strat.ChooseVertices(*initial_branch.g);
+		if ( my_rank == 0 ) {
+			std::cout << vertices.first << " " << vertices.second << std::endl;
+		}
+		delta = (b+1 - a) / 2;	// half size of the interval [a, b]
+		if ( my_rank >= a + delta ) {
+			initial_branch.g->MergeVertices(vertices.first, vertices.second);
+			a += delta;
+		} else {
+			initial_branch.g->AddEdge(vertices.first, vertices.second);
+			b -= delta;
+		}
+	}
+
+	initial_branch.depth = depth;
+	initial_branch.lb = _clique_strat.FindClique(*initial_branch.g);
+	_color_strat.Color(*initial_branch.g, initial_branch.ub);
+
+	queue.push(std::move(initial_branch));
 
 	// OpenMP Parallel Region
 	/*
