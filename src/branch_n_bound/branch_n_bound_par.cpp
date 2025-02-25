@@ -452,6 +452,8 @@ int BranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_seconds) 
 
 	// Initialize big enough best_ub for all processes.
 	std::atomic<unsigned short> best_ub = USHRT_MAX;
+	unsigned short ub1 = USHRT_MAX;
+	unsigned short ub2 = USHRT_MAX;
 
 	MPI_Status status_recv;
 	Branch branch_recv;
@@ -501,9 +503,7 @@ int BranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_seconds) 
 			std::unique_lock<std::mutex> lock(queue_mutex, std::defer_lock);
 			queue.push(Branch(g.Clone(), lb, ub, 1));	// Initial branch with depth 1
 
-			// Init branching randomly so that every MPI worker starts with different branches on first iteration.
 			bool first_iteration = true;
-			RandomBranchingStrategy initial_random_branching_strat;
 
 			bool has_work = false;
 			while (!terminate_flag.load()) {
@@ -581,53 +581,73 @@ int BranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_seconds) 
 				}
 
 				// Start branching 
-				std::unique_lock<std::mutex> lock_branching(branching_mutex);
-				int u, v;
-				if (first_iteration)
-					std::tie(u, v) = initial_random_branching_strat.ChooseVertices(*current_G);
-				else
-					std::tie(u, v) = _branching_strat.ChooseVertices(*current_G);
-				lock_branching.unlock();
-				Log_par("[BRANCH] Branching on vertices: u = " + std::to_string(u) +
-						", v = " + std::to_string(v),
-						current.depth);
+                std::unique_lock<std::mutex> lock_branching(branching_mutex);
+                int u, v;
+                std::tie(u, v) = _branching_strat.ChooseVertices(*current_G);
+                lock_branching.unlock();
+                Log_par("[BRANCH] Branching on vertices: u = " + std::to_string(u) +
+                        ", v = " + std::to_string(v),
+                        current.depth);
 
-				if (u == -1 || v == -1) {
-					best_ub.store(std::min<unsigned short>(current_G->GetNumVertices(), best_ub.load()));
-					continue;
-				}
-				// generate tasks and update queue
-				std::unique_lock<std::mutex> lock_task(task_mutex);
-				auto G1 = current_G->Clone();
-				G1->MergeVertices(u, v);
-				int lb1 = _clique_strat.FindClique(*G1);
-				unsigned short ub1;
-				_color_strat.Color(*G1, ub1);
-				Log_par("[Branch 1] (Merge u, v) "
-						"lb = " + std::to_string(lb1) +
-						", ub = " + std::to_string(ub1),
-						current.depth);
-				{
-					std::lock_guard<std::mutex> lock(queue_mutex);
-					queue.push(Branch(std::move(G1), lb1, ub1, current.depth + 1));
-				}
+                if (u == -1 || v == -1) {
+                    best_ub.store(std::min<unsigned short>(current_G->GetNumVertices(), best_ub.load()));
+                    continue;
+                }
 
-				// AddEdge
-				auto G2 = current_G->Clone();
-				G2->AddEdge(u, v);
-				int lb2 = _clique_strat.FindClique(*G2);
-				unsigned short ub2;
-				_color_strat.Color(*G2, ub2);
-				Log_par("[Branch 2] (Add edge u-v) "
-						"lb = " + std::to_string(lb2) +
-						", ub = " + std::to_string(ub2),
-						current.depth);
-				{
-					std::lock_guard<std::mutex> lock(queue_mutex);
-					queue.push(Branch(std::move(G2), lb2, ub2, current.depth + 1));
-				}
+                std::unique_lock<std::mutex> lock_task(task_mutex);
+				
+                if (current.depth < my_rank+1) {
+					// Keep adding edges for the first `my_rank` levels
+					auto G_new = current_G->Clone();
+					G_new->AddEdge(u, v);
+					int lb2 = _clique_strat.FindClique(*G_new);
+					_color_strat.Color(*G_new, ub2);
+					
+					Log_par("[Add Edge] depth " + std::to_string(current.depth) + 
+							", lb = " + std::to_string(lb2) + 
+							", ub = " + std::to_string(ub2), current.depth);
+				
+					{
+						std::lock_guard<std::mutex> lock(queue_mutex);
+						queue.push(Branch(std::move(G_new), lb2, ub2, current.depth + 1));
+					}
+				} else if (current.depth == my_rank+1) {
+					// Merge vertices once when `current.depth == my_rank`
+					auto G_merge = current_G->Clone();
+					G_merge->MergeVertices(u, v);
+					int lb1 = _clique_strat.FindClique(*G_merge);
+					_color_strat.Color(*G_merge, ub1);
+				
+					Log_par("[Merge] depth " + std::to_string(current.depth) + 
+							", lb = " + std::to_string(lb1) + 
+							", ub = " + std::to_string(ub2), current.depth);
+				
+					{
+						std::lock_guard<std::mutex> lock(queue_mutex);
+						queue.push(Branch(std::move(G_merge), lb1, ub1, current.depth + 1));
+					}
+				} else {
+					// After merging, branch in both directions
+					auto G1 = current_G->Clone();
+					G1->MergeVertices(u, v);
+					int lb1 = _clique_strat.FindClique(*G1);
+					_color_strat.Color(*G1, ub1);
+					{
+						std::lock_guard<std::mutex> lock(queue_mutex);
+						queue.push(Branch(std::move(G1), lb1, ub1, current.depth + 1));
+					}
+				
+					auto G2 = current_G->Clone();
+					G2->AddEdge(u, v);
+					int lb2 = _clique_strat.FindClique(*G2);
+					_color_strat.Color(*G2, ub2);
+					{
+						std::lock_guard<std::mutex> lock(queue_mutex);
+						queue.push(Branch(std::move(G2), lb2, ub2, current.depth + 1));
+					}
+				}				
 
-				lock_task.unlock();
+                lock_task.unlock();
 				
 				// Update local sbest_ub
 				unsigned short previous_best_ub = best_ub.load();
