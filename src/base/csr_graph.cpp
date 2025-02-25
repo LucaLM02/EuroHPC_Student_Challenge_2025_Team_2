@@ -402,11 +402,11 @@ void CSRGraph::SortByExDegree(bool ascending)
 
 void CSRGraph::SortByColor(bool ascending)
 {
-    static auto ascendingCompare = 
+    auto ascendingCompare = 
     [&](int v, int w) -> bool {
         return _coloring[v] < _coloring[w];
     };
-    static auto descendingCompare = 
+    auto descendingCompare = 
     [&](int v, int w) -> bool {
         return _coloring[v] > _coloring[w];
     };
