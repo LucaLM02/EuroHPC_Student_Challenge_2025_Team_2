@@ -103,7 +103,7 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    std::cout << "Rank " << my_rank << ": Successfully read Graph." << std::endl;
+    std::cout << "Rank " << my_rank << ": Successfully read Graph " << file_name << std::endl;
 
     graph = CSRGraph::LoadFromDimacs(full_file_name);
 
