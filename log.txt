@@ -1,5 +1,0 @@
-Initial bounds: lb = 1, ub = 0
-Processing node: lb = 1, ub = 0
-Pruning branch: lb = 1 >= best_ub = 0
-Final chromatic number: 0
-Closing log file.

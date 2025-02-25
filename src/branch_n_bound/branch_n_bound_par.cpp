@@ -1,7 +1,7 @@
 #include "branch_n_bound_par.hpp"
 
-#define ALLGATHER_WAIT_TIME 6  // Sleep time for MPI_Allgather
-#define TIMEOUT_CHECK_WAIT_TIME 5  // Sleep time for timeout checker
+#define ALLGATHER_WAIT_TIME 15  // Sleep time for MPI_Allgather
+#define TIMEOUT_CHECK_WAIT_TIME 1  // Sleep time for timeout checker
 
 // tags for MPI communication
 #define TAG_WORK_REQUEST 1
