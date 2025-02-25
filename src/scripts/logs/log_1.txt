@@ -1,160 +1,160 @@
-[Rank 1 | Thread 3] [Time 0.0151921] [INITIALIZATION] Initial bounds: lb = 4, ub = 9
-  [Rank 1 | Thread 3] [Time 0.0155026] [BRANCH] Processing node: lb = 4, ub = 9
-  [Rank 1 | Thread 3] [Time 1.52467] [BRANCH] Branching on vertices: u = 40, v = 380
-  [Rank 1 | Thread 3] [Time 1.52997] [Add Edge] depth 1, lb = 4, ub = 9
-  [Rank 1 | Thread 3] [Time 1.5301] [UPDATE] Updated best_ub: 9
-    [Rank 1 | Thread 3] [Time 1.53017] [BRANCH] Processing node: lb = 4, ub = 9
-    [Rank 1 | Thread 3] [Time 2.9364] [BRANCH] Branching on vertices: u = 190, v = 370
-    [Rank 1 | Thread 3] [Time 2.93962] [Merge] depth 2, lb = 3, ub = 9
-    [Rank 1 | Thread 3] [Time 2.93966] [UPDATE] Updated best_ub: 9
-      [Rank 1 | Thread 3] [Time 2.9397] [BRANCH] Processing node: lb = 3, ub = 10
-      [Rank 1 | Thread 3] [Time 4.31864] [BRANCH] Branching on vertices: u = 100, v = 190
-      [Rank 1 | Thread 3] [Time 4.32877] [UPDATE] Updated best_ub: 9
-        [Rank 1 | Thread 3] [Time 4.32889] [BRANCH] Processing node: lb = 5, ub = 10
-        [Rank 1 | Thread 3] [Time 5.79327] [BRANCH] Branching on vertices: u = 100, v = 210
-        [Rank 1 | Thread 3] [Time 5.80055] [UPDATE] Updated best_ub: 9
-          [Rank 1 | Thread 3] [Time 5.80064] [BRANCH] Processing node: lb = 5, ub = 10
-[Rank 1 | Thread 1] [Time 6.0196] [UPDATE] Gathered best_ub 9
-          [Rank 1 | Thread 3] [Time 7.14762] [BRANCH] Branching on vertices: u = 100, v = 120
-          [Rank 1 | Thread 3] [Time 7.15375] [UPDATE] Updated best_ub: 9
-            [Rank 1 | Thread 3] [Time 7.15383] [BRANCH] Processing node: lb = 3, ub = 10
-            [Rank 1 | Thread 3] [Time 8.41569] [BRANCH] Branching on vertices: u = 100, v = 300
-            [Rank 1 | Thread 3] [Time 8.42348] [UPDATE] Updated best_ub: 9
-              [Rank 1 | Thread 3] [Time 8.42359] [BRANCH] Processing node: lb = 3, ub = 10
-              [Rank 1 | Thread 3] [Time 9.78873] [BRANCH] Branching on vertices: u = 100, v = 200
-              [Rank 1 | Thread 3] [Time 9.79821] [UPDATE] Updated best_ub: 9
-                [Rank 1 | Thread 3] [Time 9.79833] [BRANCH] Processing node: lb = 3, ub = 9
-                [Rank 1 | Thread 3] [Time 11.1695] [BRANCH] Branching on vertices: u = 100, v = 325
-                [Rank 1 | Thread 3] [Time 11.1784] [UPDATE] Updated best_ub: 9
-                  [Rank 1 | Thread 3] [Time 11.1785] [BRANCH] Processing node: lb = 5, ub = 9
-[Rank 1 | Thread 1] [Time 12.0286] [UPDATE] Gathered best_ub 9
-                  [Rank 1 | Thread 3] [Time 12.7273] [BRANCH] Branching on vertices: u = 100, v = 145
-                  [Rank 1 | Thread 3] [Time 12.7365] [UPDATE] Updated best_ub: 8
-                    [Rank 1 | Thread 3] [Time 12.7366] [BRANCH] Processing node: lb = 4, ub = 9
-                    [Rank 1 | Thread 3] [Time 13.9779] [BRANCH] Branching on vertices: u = 100, v = 110
-                    [Rank 1 | Thread 3] [Time 13.9838] [UPDATE] Updated best_ub: 8
-                      [Rank 1 | Thread 3] [Time 13.9839] [BRANCH] Processing node: lb = 4, ub = 9
-                      [Rank 1 | Thread 3] [Time 15.3771] [BRANCH] Branching on vertices: u = 100, v = 215
-                      [Rank 1 | Thread 3] [Time 15.386] [UPDATE] Updated best_ub: 8
-                        [Rank 1 | Thread 3] [Time 15.3862] [BRANCH] Processing node: lb = 5, ub = 10
-                        [Rank 1 | Thread 3] [Time 16.7116] [BRANCH] Branching on vertices: u = 100, v = 380
-                        [Rank 1 | Thread 3] [Time 16.7186] [UPDATE] Updated best_ub: 8
-                          [Rank 1 | Thread 3] [Time 16.7187] [BRANCH] Processing node: lb = 3, ub = 10
-                          [Rank 1 | Thread 3] [Time 18.0125] [BRANCH] Branching on vertices: u = 55, v = 100
-                          [Rank 1 | Thread 3] [Time 18.021] [UPDATE] Updated best_ub: 8
-                            [Rank 1 | Thread 3] [Time 18.0211] [BRANCH] Processing node: lb = 5, ub = 9
-[Rank 1 | Thread 1] [Time 18.0375] [UPDATE] Gathered best_ub 8
-                            [Rank 1 | Thread 3] [Time 19.4021] [BRANCH] Branching on vertices: u = 55, v = 115
-                            [Rank 1 | Thread 3] [Time 19.4087] [UPDATE] Updated best_ub: 8
-                              [Rank 1 | Thread 3] [Time 19.4088] [BRANCH] Processing node: lb = 4, ub = 9
-                              [Rank 1 | Thread 3] [Time 20.683] [BRANCH] Branching on vertices: u = 55, v = 235
-                              [Rank 1 | Thread 3] [Time 20.6921] [UPDATE] Updated best_ub: 8
-                                [Rank 1 | Thread 3] [Time 20.6923] [BRANCH] Processing node: lb = 4, ub = 9
-                                [Rank 1 | Thread 3] [Time 21.9817] [BRANCH] Branching on vertices: u = 55, v = 125
-                                [Rank 1 | Thread 3] [Time 21.9906] [UPDATE] Updated best_ub: 8
-                                  [Rank 1 | Thread 3] [Time 21.9908] [BRANCH] Processing node: lb = 3, ub = 9
-                                  [Rank 1 | Thread 3] [Time 23.2962] [BRANCH] Branching on vertices: u = 10, v = 55
-                                  [Rank 1 | Thread 3] [Time 23.3054] [UPDATE] Updated best_ub: 8
-                                    [Rank 1 | Thread 3] [Time 23.3055] [BRANCH] Processing node: lb = 4, ub = 9
-[Rank 1 | Thread 1] [Time 24.0441] [UPDATE] Gathered best_ub 8
-                                    [Rank 1 | Thread 3] [Time 24.6439] [BRANCH] Branching on vertices: u = 10, v = 184
-                                    [Rank 1 | Thread 3] [Time 24.6503] [UPDATE] Updated best_ub: 8
-                                      [Rank 1 | Thread 3] [Time 24.6504] [BRANCH] Processing node: lb = 4, ub = 9
-                                      [Rank 1 | Thread 3] [Time 25.8963] [BRANCH] Branching on vertices: u = 10, v = 270
-                                      [Rank 1 | Thread 3] [Time 25.9022] [UPDATE] Updated best_ub: 8
-                                        [Rank 1 | Thread 3] [Time 25.9023] [BRANCH] Processing node: lb = 4, ub = 8
-                                        [Rank 1 | Thread 3] [Time 27.1608] [BRANCH] Branching on vertices: u = 10, v = 90
-                                        [Rank 1 | Thread 3] [Time 27.1682] [UPDATE] Updated best_ub: 8
-                                          [Rank 1 | Thread 3] [Time 27.1683] [BRANCH] Processing node: lb = 4, ub = 9
-                                          [Rank 1 | Thread 3] [Time 28.5026] [BRANCH] Branching on vertices: u = 10, v = 450
-                                          [Rank 1 | Thread 3] [Time 28.5127] [UPDATE] Updated best_ub: 8
-                                            [Rank 1 | Thread 3] [Time 28.5128] [BRANCH] Processing node: lb = 4, ub = 9
-                                            [Rank 1 | Thread 3] [Time 29.7439] [BRANCH] Branching on vertices: u = 10, v = 360
-                                            [Rank 1 | Thread 3] [Time 29.7501] [UPDATE] Updated best_ub: 8
-                                              [Rank 1 | Thread 3] [Time 29.7502] [BRANCH] Processing node: lb = 3, ub = 8
-[Rank 1 | Thread 1] [Time 30.0512] [UPDATE] Gathered best_ub 8
-                                              [Rank 1 | Thread 3] [Time 30.9419] [BRANCH] Branching on vertices: u = 10, v = 440
-                                              [Rank 1 | Thread 3] [Time 30.9478] [UPDATE] Updated best_ub: 8
-                                                [Rank 1 | Thread 3] [Time 30.9479] [BRANCH] Processing node: lb = 4, ub = 8
-                                                [Rank 1 | Thread 3] [Time 32.1145] [BRANCH] Branching on vertices: u = 10, v = 85
-                                                [Rank 1 | Thread 3] [Time 32.1233] [UPDATE] Updated best_ub: 8
-                                                  [Rank 1 | Thread 3] [Time 32.1234] [BRANCH] Processing node: lb = 3, ub = 8
-                                                  [Rank 1 | Thread 3] [Time 33.2876] [BRANCH] Branching on vertices: u = 10, v = 195
-                                                  [Rank 1 | Thread 3] [Time 33.2956] [UPDATE] Updated best_ub: 8
-                                                    [Rank 1 | Thread 3] [Time 33.2958] [BRANCH] Processing node: lb = 5, ub = 8
-                                                    [Rank 1 | Thread 3] [Time 34.4738] [BRANCH] Branching on vertices: u = 10, v = 15
-                                                    [Rank 1 | Thread 3] [Time 34.4799] [UPDATE] Updated best_ub: 8
-                                                      [Rank 1 | Thread 3] [Time 34.48] [BRANCH] Processing node: lb = 4, ub = 9
-                                                      [Rank 1 | Thread 3] [Time 35.6084] [BRANCH] Branching on vertices: u = 10, v = 105
-                                                      [Rank 1 | Thread 3] [Time 35.615] [UPDATE] Updated best_ub: 7
-                                                        [Rank 1 | Thread 3] [Time 35.6151] [BRANCH] Processing node: lb = 4, ub = 8
-[Rank 1 | Thread 1] [Time 36.0602] [UPDATE] Gathered best_ub 7
-                                                        [Rank 1 | Thread 3] [Time 36.7598] [BRANCH] Branching on vertices: u = 10, v = 180
-                                                        [Rank 1 | Thread 3] [Time 36.7685] [UPDATE] Updated best_ub: 7
-                                                          [Rank 1 | Thread 3] [Time 36.7686] [BRANCH] Processing node: lb = 5, ub = 8
-                                                          [Rank 1 | Thread 3] [Time 37.9807] [BRANCH] Branching on vertices: u = 10, v = 414
-                                                          [Rank 1 | Thread 3] [Time 37.9876] [UPDATE] Updated best_ub: 7
-                                                            [Rank 1 | Thread 3] [Time 37.9877] [BRANCH] Processing node: lb = 4, ub = 8
-                                                            [Rank 1 | Thread 3] [Time 39.1627] [BRANCH] Branching on vertices: u = 10, v = 419
-                                                            [Rank 1 | Thread 3] [Time 39.1711] [UPDATE] Updated best_ub: 7
-                                                              [Rank 1 | Thread 3] [Time 39.1712] [BRANCH] Processing node: lb = 5, ub = 8
-                                                              [Rank 1 | Thread 3] [Time 40.2682] [BRANCH] Branching on vertices: u = 10, v = 60
-                                                              [Rank 1 | Thread 3] [Time 40.2765] [UPDATE] Updated best_ub: 7
-                                                                [Rank 1 | Thread 3] [Time 40.2766] [BRANCH] Processing node: lb = 5, ub = 8
-                                                                [Rank 1 | Thread 3] [Time 41.368] [BRANCH] Branching on vertices: u = 10, v = 240
-                                                                [Rank 1 | Thread 3] [Time 41.374] [UPDATE] Updated best_ub: 7
-                                                                  [Rank 1 | Thread 3] [Time 41.3741] [BRANCH] Processing node: lb = 3, ub = 9
-[Rank 1 | Thread 1] [Time 42.0693] [UPDATE] Gathered best_ub 7
-                                                                  [Rank 1 | Thread 3] [Time 42.5376] [BRANCH] Branching on vertices: u = 10, v = 175
-                                                                  [Rank 1 | Thread 3] [Time 42.5445] [UPDATE] Updated best_ub: 7
-                                                                    [Rank 1 | Thread 3] [Time 42.5447] [BRANCH] Processing node: lb = 5, ub = 8
-                                                                    [Rank 1 | Thread 3] [Time 43.6499] [BRANCH] Branching on vertices: u = 10, v = 355
-                                                                    [Rank 1 | Thread 3] [Time 43.6611] [UPDATE] Updated best_ub: 7
-                                                                      [Rank 1 | Thread 3] [Time 43.6612] [BRANCH] Processing node: lb = 5, ub = 8
-                                                                      [Rank 1 | Thread 3] [Time 44.7273] [BRANCH] Branching on vertices: u = 10, v = 424
-                                                                      [Rank 1 | Thread 3] [Time 44.7336] [UPDATE] Updated best_ub: 7
-                                                                        [Rank 1 | Thread 3] [Time 44.7337] [BRANCH] Processing node: lb = 4, ub = 8
-                                                                        [Rank 1 | Thread 3] [Time 45.7517] [BRANCH] Branching on vertices: u = 10, v = 39
-                                                                        [Rank 1 | Thread 3] [Time 45.7585] [UPDATE] Updated best_ub: 7
-                                                                          [Rank 1 | Thread 3] [Time 45.7587] [BRANCH] Processing node: lb = 4, ub = 9
-                                                                          [Rank 1 | Thread 3] [Time 46.7802] [BRANCH] Branching on vertices: u = 10, v = 264
-                                                                          [Rank 1 | Thread 3] [Time 46.7877] [UPDATE] Updated best_ub: 7
-                                                                            [Rank 1 | Thread 3] [Time 46.7878] [BRANCH] Processing node: lb = 5, ub = 9
-                                                                            [Rank 1 | Thread 3] [Time 47.7603] [BRANCH] Branching on vertices: u = 10, v = 34
-                                                                            [Rank 1 | Thread 3] [Time 47.766] [UPDATE] Updated best_ub: 7
-                                                                              [Rank 1 | Thread 3] [Time 47.7661] [BRANCH] Processing node: lb = 5, ub = 8
-[Rank 1 | Thread 1] [Time 48.0783] [UPDATE] Gathered best_ub 7
-                                                                              [Rank 1 | Thread 3] [Time 48.8041] [BRANCH] Branching on vertices: u = 10, v = 285
-                                                                              [Rank 1 | Thread 3] [Time 48.81] [UPDATE] Updated best_ub: 7
-                                                                                [Rank 1 | Thread 3] [Time 48.8102] [BRANCH] Processing node: lb = 5, ub = 9
-                                                                                [Rank 1 | Thread 3] [Time 49.9163] [BRANCH] Branching on vertices: u = 10, v = 140
-                                                                                [Rank 1 | Thread 3] [Time 49.9252] [UPDATE] Updated best_ub: 7
-                                                                                  [Rank 1 | Thread 3] [Time 49.9254] [BRANCH] Processing node: lb = 4, ub = 9
-                                                                                  [Rank 1 | Thread 3] [Time 51.091] [BRANCH] Branching on vertices: u = 10, v = 410
-                                                                                  [Rank 1 | Thread 3] [Time 51.0987] [UPDATE] Updated best_ub: 7
-                                                                                    [Rank 1 | Thread 3] [Time 51.0988] [BRANCH] Processing node: lb = 4, ub = 8
-                                                                                    [Rank 1 | Thread 3] [Time 52.1415] [BRANCH] Branching on vertices: u = 10, v = 265
-                                                                                    [Rank 1 | Thread 3] [Time 52.1502] [UPDATE] Updated best_ub: 7
-                                                                                      [Rank 1 | Thread 3] [Time 52.1504] [BRANCH] Processing node: lb = 5, ub = 8
-                                                                                      [Rank 1 | Thread 3] [Time 53.1779] [BRANCH] Branching on vertices: u = 10, v = 290
-                                                                                      [Rank 1 | Thread 3] [Time 53.184] [UPDATE] Updated best_ub: 7
-                                                                                        [Rank 1 | Thread 3] [Time 53.1841] [BRANCH] Processing node: lb = 5, ub = 9
-[Rank 1 | Thread 1] [Time 54.0861] [UPDATE] Gathered best_ub 7
-                                                                                        [Rank 1 | Thread 3] [Time 54.2489] [BRANCH] Branching on vertices: u = 10, v = 259
-                                                                                        [Rank 1 | Thread 3] [Time 54.2551] [UPDATE] Updated best_ub: 7
-                                                                                          [Rank 1 | Thread 3] [Time 54.2552] [BRANCH] Processing node: lb = 4, ub = 9
-                                                                                          [Rank 1 | Thread 3] [Time 55.2436] [BRANCH] Branching on vertices: u = 10, v = 170
-                                                                                          [Rank 1 | Thread 3] [Time 55.2497] [UPDATE] Updated best_ub: 7
-                                                                                            [Rank 1 | Thread 3] [Time 55.2499] [BRANCH] Processing node: lb = 5, ub = 9
-                                                                                            [Rank 1 | Thread 3] [Time 56.1943] [BRANCH] Branching on vertices: u = 10, v = 295
-                                                                                            [Rank 1 | Thread 3] [Time 56.202] [UPDATE] Updated best_ub: 7
-                                                                                              [Rank 1 | Thread 3] [Time 56.2021] [BRANCH] Processing node: lb = 5, ub = 8
-                                                                                              [Rank 1 | Thread 3] [Time 57.1703] [BRANCH] Branching on vertices: u = 10, v = 390
-                                                                                              [Rank 1 | Thread 3] [Time 57.1782] [UPDATE] Updated best_ub: 7
-                                                                                                [Rank 1 | Thread 3] [Time 57.1783] [BRANCH] Processing node: lb = 5, ub = 8
-                                                                                                [Rank 1 | Thread 3] [Time 58.1647] [BRANCH] Branching on vertices: u = 10, v = 35
-                                                                                                [Rank 1 | Thread 3] [Time 58.1761] [UPDATE] Updated best_ub: 7
-                                                                                                  [Rank 1 | Thread 3] [Time 58.1763] [BRANCH] Processing node: lb = 5, ub = 8
-                                                                                                  [Rank 1 | Thread 3] [Time 59.1552] [BRANCH] Branching on vertices: u = 10, v = 44
-                                                                                                  [Rank 1 | Thread 3] [Time 59.1614] [UPDATE] Updated best_ub: 7
-[Rank 1 | Thread 0] [Time 59.1616] [TERMINATION] Finalizing... 
+[Rank 1 | Thread 3] [Time 0.0483566] [INITIALIZATION] Initial bounds: lb = 5, ub = 9
+  [Rank 1 | Thread 3] [Time 0.0487981] [BRANCH] Processing node: lb = 5, ub = 9
+  [Rank 1 | Thread 3] [Time 1.4341] [BRANCH] Branching on vertices: u = 40, v = 380
+  [Rank 1 | Thread 3] [Time 1.43933] [Add Edge] depth 1, lb = 4, ub = 9
+  [Rank 1 | Thread 3] [Time 1.4394] [UPDATE] Updated best_ub: 9
+    [Rank 1 | Thread 3] [Time 1.43947] [BRANCH] Processing node: lb = 4, ub = 9
+    [Rank 1 | Thread 3] [Time 2.80268] [BRANCH] Branching on vertices: u = 190, v = 370
+    [Rank 1 | Thread 3] [Time 2.80588] [Merge] depth 2, lb = 5, ub = 9
+    [Rank 1 | Thread 3] [Time 2.80591] [UPDATE] Updated best_ub: 9
+      [Rank 1 | Thread 3] [Time 2.80595] [BRANCH] Processing node: lb = 5, ub = 10
+      [Rank 1 | Thread 3] [Time 4.17214] [BRANCH] Branching on vertices: u = 100, v = 190
+      [Rank 1 | Thread 3] [Time 4.17914] [UPDATE] Updated best_ub: 9
+        [Rank 1 | Thread 3] [Time 4.17924] [BRANCH] Processing node: lb = 5, ub = 10
+        [Rank 1 | Thread 3] [Time 5.53183] [BRANCH] Branching on vertices: u = 100, v = 210
+        [Rank 1 | Thread 3] [Time 5.54085] [UPDATE] Updated best_ub: 9
+          [Rank 1 | Thread 3] [Time 5.54094] [BRANCH] Processing node: lb = 3, ub = 10
+[Rank 1 | Thread 1] [Time 6.06533] [UPDATE] Gathered best_ub 9
+          [Rank 1 | Thread 3] [Time 6.91162] [BRANCH] Branching on vertices: u = 100, v = 120
+          [Rank 1 | Thread 3] [Time 6.91927] [UPDATE] Updated best_ub: 9
+            [Rank 1 | Thread 3] [Time 6.91935] [BRANCH] Processing node: lb = 5, ub = 10
+            [Rank 1 | Thread 3] [Time 8.29953] [BRANCH] Branching on vertices: u = 100, v = 300
+            [Rank 1 | Thread 3] [Time 8.30904] [UPDATE] Updated best_ub: 9
+              [Rank 1 | Thread 3] [Time 8.30915] [BRANCH] Processing node: lb = 5, ub = 10
+              [Rank 1 | Thread 3] [Time 9.70796] [BRANCH] Branching on vertices: u = 100, v = 200
+              [Rank 1 | Thread 3] [Time 9.71694] [UPDATE] Updated best_ub: 9
+                [Rank 1 | Thread 3] [Time 9.71705] [BRANCH] Processing node: lb = 5, ub = 9
+                [Rank 1 | Thread 3] [Time 11.2081] [BRANCH] Branching on vertices: u = 100, v = 325
+                [Rank 1 | Thread 3] [Time 11.2143] [UPDATE] Updated best_ub: 9
+                  [Rank 1 | Thread 3] [Time 11.2144] [BRANCH] Processing node: lb = 5, ub = 9
+[Rank 1 | Thread 1] [Time 12.0776] [UPDATE] Gathered best_ub 9
+                  [Rank 1 | Thread 3] [Time 12.5936] [BRANCH] Branching on vertices: u = 100, v = 145
+                  [Rank 1 | Thread 3] [Time 12.5995] [UPDATE] Updated best_ub: 8
+                    [Rank 1 | Thread 3] [Time 12.5996] [BRANCH] Processing node: lb = 3, ub = 9
+                    [Rank 1 | Thread 3] [Time 13.9556] [BRANCH] Branching on vertices: u = 100, v = 110
+                    [Rank 1 | Thread 3] [Time 13.9637] [UPDATE] Updated best_ub: 8
+                      [Rank 1 | Thread 3] [Time 13.9638] [BRANCH] Processing node: lb = 5, ub = 9
+                      [Rank 1 | Thread 3] [Time 15.2413] [BRANCH] Branching on vertices: u = 100, v = 215
+                      [Rank 1 | Thread 3] [Time 15.2479] [UPDATE] Updated best_ub: 8
+                        [Rank 1 | Thread 3] [Time 15.248] [BRANCH] Processing node: lb = 3, ub = 10
+                        [Rank 1 | Thread 3] [Time 16.6424] [BRANCH] Branching on vertices: u = 100, v = 380
+                        [Rank 1 | Thread 3] [Time 16.6509] [UPDATE] Updated best_ub: 8
+                          [Rank 1 | Thread 3] [Time 16.651] [BRANCH] Processing node: lb = 4, ub = 10
+                          [Rank 1 | Thread 3] [Time 17.9675] [BRANCH] Branching on vertices: u = 55, v = 100
+                          [Rank 1 | Thread 3] [Time 17.9791] [UPDATE] Updated best_ub: 8
+                            [Rank 1 | Thread 3] [Time 17.9793] [BRANCH] Processing node: lb = 4, ub = 9
+[Rank 1 | Thread 1] [Time 18.085] [UPDATE] Gathered best_ub 8
+                            [Rank 1 | Thread 3] [Time 19.3328] [BRANCH] Branching on vertices: u = 55, v = 115
+                            [Rank 1 | Thread 3] [Time 19.3415] [UPDATE] Updated best_ub: 8
+                              [Rank 1 | Thread 3] [Time 19.3416] [BRANCH] Processing node: lb = 4, ub = 9
+                              [Rank 1 | Thread 3] [Time 20.688] [BRANCH] Branching on vertices: u = 55, v = 235
+                              [Rank 1 | Thread 3] [Time 20.6968] [UPDATE] Updated best_ub: 8
+                                [Rank 1 | Thread 3] [Time 20.697] [BRANCH] Processing node: lb = 3, ub = 9
+                                [Rank 1 | Thread 3] [Time 22.0554] [BRANCH] Branching on vertices: u = 55, v = 125
+                                [Rank 1 | Thread 3] [Time 22.0643] [UPDATE] Updated best_ub: 8
+                                  [Rank 1 | Thread 3] [Time 22.0645] [BRANCH] Processing node: lb = 4, ub = 9
+                                  [Rank 1 | Thread 3] [Time 23.37] [BRANCH] Branching on vertices: u = 10, v = 55
+                                  [Rank 1 | Thread 3] [Time 23.379] [UPDATE] Updated best_ub: 8
+                                    [Rank 1 | Thread 3] [Time 23.3791] [BRANCH] Processing node: lb = 5, ub = 9
+[Rank 1 | Thread 1] [Time 24.096] [UPDATE] Gathered best_ub 8
+                                    [Rank 1 | Thread 3] [Time 24.6123] [BRANCH] Branching on vertices: u = 10, v = 184
+                                    [Rank 1 | Thread 3] [Time 24.6197] [UPDATE] Updated best_ub: 8
+                                      [Rank 1 | Thread 3] [Time 24.6198] [BRANCH] Processing node: lb = 5, ub = 9
+                                      [Rank 1 | Thread 3] [Time 25.8775] [BRANCH] Branching on vertices: u = 10, v = 270
+                                      [Rank 1 | Thread 3] [Time 25.8833] [UPDATE] Updated best_ub: 8
+                                        [Rank 1 | Thread 3] [Time 25.8834] [BRANCH] Processing node: lb = 4, ub = 8
+                                        [Rank 1 | Thread 3] [Time 27.1569] [BRANCH] Branching on vertices: u = 10, v = 90
+                                        [Rank 1 | Thread 3] [Time 27.1658] [UPDATE] Updated best_ub: 8
+                                          [Rank 1 | Thread 3] [Time 27.166] [BRANCH] Processing node: lb = 5, ub = 9
+                                          [Rank 1 | Thread 3] [Time 28.4396] [BRANCH] Branching on vertices: u = 10, v = 450
+                                          [Rank 1 | Thread 3] [Time 28.451] [UPDATE] Updated best_ub: 8
+                                            [Rank 1 | Thread 3] [Time 28.4511] [BRANCH] Processing node: lb = 4, ub = 9
+                                            [Rank 1 | Thread 3] [Time 29.676] [BRANCH] Branching on vertices: u = 10, v = 360
+                                            [Rank 1 | Thread 3] [Time 29.6852] [UPDATE] Updated best_ub: 8
+                                              [Rank 1 | Thread 3] [Time 29.6853] [BRANCH] Processing node: lb = 5, ub = 8
+[Rank 1 | Thread 1] [Time 30.1059] [UPDATE] Gathered best_ub 8
+                                              [Rank 1 | Thread 3] [Time 30.9756] [BRANCH] Branching on vertices: u = 10, v = 440
+                                              [Rank 1 | Thread 3] [Time 30.9843] [UPDATE] Updated best_ub: 8
+                                                [Rank 1 | Thread 3] [Time 30.9844] [BRANCH] Processing node: lb = 5, ub = 8
+                                                [Rank 1 | Thread 3] [Time 32.1554] [BRANCH] Branching on vertices: u = 10, v = 85
+                                                [Rank 1 | Thread 3] [Time 32.1631] [UPDATE] Updated best_ub: 8
+                                                  [Rank 1 | Thread 3] [Time 32.1632] [BRANCH] Processing node: lb = 5, ub = 8
+                                                  [Rank 1 | Thread 3] [Time 33.4448] [BRANCH] Branching on vertices: u = 10, v = 195
+                                                  [Rank 1 | Thread 3] [Time 33.4535] [UPDATE] Updated best_ub: 8
+                                                    [Rank 1 | Thread 3] [Time 33.4536] [BRANCH] Processing node: lb = 4, ub = 8
+                                                    [Rank 1 | Thread 3] [Time 34.619] [BRANCH] Branching on vertices: u = 10, v = 15
+                                                    [Rank 1 | Thread 3] [Time 34.6276] [UPDATE] Updated best_ub: 8
+                                                      [Rank 1 | Thread 3] [Time 34.6277] [BRANCH] Processing node: lb = 4, ub = 9
+                                                      [Rank 1 | Thread 3] [Time 35.8192] [BRANCH] Branching on vertices: u = 10, v = 105
+                                                      [Rank 1 | Thread 3] [Time 35.8286] [UPDATE] Updated best_ub: 7
+                                                        [Rank 1 | Thread 3] [Time 35.8287] [BRANCH] Processing node: lb = 3, ub = 8
+[Rank 1 | Thread 1] [Time 36.1126] [UPDATE] Gathered best_ub 7
+                                                        [Rank 1 | Thread 3] [Time 37.1046] [BRANCH] Branching on vertices: u = 10, v = 180
+                                                        [Rank 1 | Thread 3] [Time 37.1115] [UPDATE] Updated best_ub: 7
+                                                          [Rank 1 | Thread 3] [Time 37.1116] [BRANCH] Processing node: lb = 5, ub = 8
+                                                          [Rank 1 | Thread 3] [Time 38.3018] [BRANCH] Branching on vertices: u = 10, v = 414
+                                                          [Rank 1 | Thread 3] [Time 38.3105] [UPDATE] Updated best_ub: 7
+                                                            [Rank 1 | Thread 3] [Time 38.3106] [BRANCH] Processing node: lb = 4, ub = 8
+                                                            [Rank 1 | Thread 3] [Time 39.4804] [BRANCH] Branching on vertices: u = 10, v = 419
+                                                            [Rank 1 | Thread 3] [Time 39.487] [UPDATE] Updated best_ub: 7
+                                                              [Rank 1 | Thread 3] [Time 39.4871] [BRANCH] Processing node: lb = 5, ub = 8
+                                                              [Rank 1 | Thread 3] [Time 40.6062] [BRANCH] Branching on vertices: u = 10, v = 60
+                                                              [Rank 1 | Thread 3] [Time 40.6244] [UPDATE] Updated best_ub: 7
+                                                                [Rank 1 | Thread 3] [Time 40.6246] [BRANCH] Processing node: lb = 5, ub = 8
+                                                                [Rank 1 | Thread 3] [Time 41.8643] [BRANCH] Branching on vertices: u = 10, v = 240
+                                                                [Rank 1 | Thread 3] [Time 41.8726] [UPDATE] Updated best_ub: 7
+                                                                  [Rank 1 | Thread 3] [Time 41.8727] [BRANCH] Processing node: lb = 5, ub = 9
+[Rank 1 | Thread 1] [Time 42.1208] [UPDATE] Gathered best_ub 7
+                                                                  [Rank 1 | Thread 3] [Time 43.0462] [BRANCH] Branching on vertices: u = 10, v = 175
+                                                                  [Rank 1 | Thread 3] [Time 43.055] [UPDATE] Updated best_ub: 7
+                                                                    [Rank 1 | Thread 3] [Time 43.0552] [BRANCH] Processing node: lb = 5, ub = 8
+                                                                    [Rank 1 | Thread 3] [Time 44.2158] [BRANCH] Branching on vertices: u = 10, v = 355
+                                                                    [Rank 1 | Thread 3] [Time 44.2226] [UPDATE] Updated best_ub: 7
+                                                                      [Rank 1 | Thread 3] [Time 44.2227] [BRANCH] Processing node: lb = 5, ub = 8
+                                                                      [Rank 1 | Thread 3] [Time 45.324] [BRANCH] Branching on vertices: u = 10, v = 424
+                                                                      [Rank 1 | Thread 3] [Time 45.3323] [UPDATE] Updated best_ub: 7
+                                                                        [Rank 1 | Thread 3] [Time 45.3324] [BRANCH] Processing node: lb = 4, ub = 8
+                                                                        [Rank 1 | Thread 3] [Time 46.4044] [BRANCH] Branching on vertices: u = 10, v = 39
+                                                                        [Rank 1 | Thread 3] [Time 46.4115] [UPDATE] Updated best_ub: 7
+                                                                          [Rank 1 | Thread 3] [Time 46.4116] [BRANCH] Processing node: lb = 3, ub = 9
+                                                                          [Rank 1 | Thread 3] [Time 47.423] [BRANCH] Branching on vertices: u = 10, v = 264
+                                                                          [Rank 1 | Thread 3] [Time 47.4316] [UPDATE] Updated best_ub: 7
+                                                                            [Rank 1 | Thread 3] [Time 47.4318] [BRANCH] Processing node: lb = 5, ub = 9
+[Rank 1 | Thread 1] [Time 48.129] [UPDATE] Gathered best_ub 7
+                                                                            [Rank 1 | Thread 3] [Time 48.4565] [BRANCH] Branching on vertices: u = 10, v = 34
+                                                                            [Rank 1 | Thread 3] [Time 48.4622] [UPDATE] Updated best_ub: 7
+                                                                              [Rank 1 | Thread 3] [Time 48.4623] [BRANCH] Processing node: lb = 5, ub = 8
+                                                                              [Rank 1 | Thread 3] [Time 49.5038] [BRANCH] Branching on vertices: u = 10, v = 285
+                                                                              [Rank 1 | Thread 3] [Time 49.5137] [UPDATE] Updated best_ub: 7
+                                                                                [Rank 1 | Thread 3] [Time 49.5138] [BRANCH] Processing node: lb = 4, ub = 9
+                                                                                [Rank 1 | Thread 3] [Time 50.5155] [BRANCH] Branching on vertices: u = 10, v = 140
+                                                                                [Rank 1 | Thread 3] [Time 50.521] [UPDATE] Updated best_ub: 7
+                                                                                  [Rank 1 | Thread 3] [Time 50.5211] [BRANCH] Processing node: lb = 3, ub = 9
+                                                                                  [Rank 1 | Thread 3] [Time 51.5664] [BRANCH] Branching on vertices: u = 10, v = 410
+                                                                                  [Rank 1 | Thread 3] [Time 51.5736] [UPDATE] Updated best_ub: 7
+                                                                                    [Rank 1 | Thread 3] [Time 51.5737] [BRANCH] Processing node: lb = 4, ub = 8
+                                                                                    [Rank 1 | Thread 3] [Time 52.5428] [BRANCH] Branching on vertices: u = 10, v = 265
+                                                                                    [Rank 1 | Thread 3] [Time 52.5484] [UPDATE] Updated best_ub: 7
+                                                                                      [Rank 1 | Thread 3] [Time 52.5484] [BRANCH] Processing node: lb = 5, ub = 8
+                                                                                      [Rank 1 | Thread 3] [Time 53.5348] [BRANCH] Branching on vertices: u = 10, v = 290
+                                                                                      [Rank 1 | Thread 3] [Time 53.5405] [UPDATE] Updated best_ub: 7
+                                                                                        [Rank 1 | Thread 3] [Time 53.5406] [BRANCH] Processing node: lb = 4, ub = 9
+[Rank 1 | Thread 1] [Time 54.1358] [UPDATE] Gathered best_ub 7
+                                                                                        [Rank 1 | Thread 3] [Time 54.5086] [BRANCH] Branching on vertices: u = 10, v = 259
+                                                                                        [Rank 1 | Thread 3] [Time 54.5169] [UPDATE] Updated best_ub: 7
+                                                                                          [Rank 1 | Thread 3] [Time 54.517] [BRANCH] Processing node: lb = 5, ub = 9
+                                                                                          [Rank 1 | Thread 3] [Time 55.5244] [BRANCH] Branching on vertices: u = 10, v = 170
+                                                                                          [Rank 1 | Thread 3] [Time 55.5311] [UPDATE] Updated best_ub: 7
+                                                                                            [Rank 1 | Thread 3] [Time 55.5312] [BRANCH] Processing node: lb = 5, ub = 9
+                                                                                            [Rank 1 | Thread 3] [Time 56.5337] [BRANCH] Branching on vertices: u = 10, v = 295
+                                                                                            [Rank 1 | Thread 3] [Time 56.5393] [UPDATE] Updated best_ub: 7
+                                                                                              [Rank 1 | Thread 3] [Time 56.5393] [BRANCH] Processing node: lb = 4, ub = 8
+                                                                                              [Rank 1 | Thread 3] [Time 57.4827] [BRANCH] Branching on vertices: u = 10, v = 390
+                                                                                              [Rank 1 | Thread 3] [Time 57.4896] [UPDATE] Updated best_ub: 7
+                                                                                                [Rank 1 | Thread 3] [Time 57.4898] [BRANCH] Processing node: lb = 5, ub = 8
+                                                                                                [Rank 1 | Thread 3] [Time 58.4273] [BRANCH] Branching on vertices: u = 10, v = 35
+                                                                                                [Rank 1 | Thread 3] [Time 58.4347] [UPDATE] Updated best_ub: 7
+                                                                                                  [Rank 1 | Thread 3] [Time 58.4348] [BRANCH] Processing node: lb = 5, ub = 8
+                                                                                                  [Rank 1 | Thread 3] [Time 59.439] [BRANCH] Branching on vertices: u = 10, v = 44
+                                                                                                  [Rank 1 | Thread 3] [Time 59.4466] [UPDATE] Updated best_ub: 7
+[Rank 1 | Thread 0] [Time 59.4468] [TERMINATION] Finalizing... 

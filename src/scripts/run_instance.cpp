@@ -17,6 +17,7 @@
 int main(int argc, char** argv) {
     // Default values
     int timeout = 60;
+    int sol_gather_period = 10;
     std::string file_name;
 
     // Check for required arguments
@@ -27,7 +28,7 @@ int main(int argc, char** argv) {
 
     file_name = argv[1]; // Get filename from arguments
 
-    // Parse optional timeout argument
+    // Parse optional arguments
     if (argc > 2) {
         try {
             timeout = std::stoi(argv[2]); // Convert timeout to integer
@@ -39,10 +40,21 @@ int main(int argc, char** argv) {
             std::cerr << "Error: Invalid timeout argument.\n";
             return 1;
         }
+        try {
+            sol_gather_period = std::stoi(argv[3]); // Convert timeout to integer
+            if (sol_gather_period <= 0) {
+                std::cerr << "Error: Solution gathering period must be a positive integer.\n";
+                return 1;
+            }
+        } catch (const std::exception& e) {
+            std::cerr << "Error: Invalid sol_gather_period argument.\n";
+            return 1;
+        }
     }
 
     std::cout << "Reading file: " << file_name << "\n";
     std::cout << "Using timeout: " << timeout << " seconds\n";
+    std::cout << "Using sol_gather_period: " << sol_gather_period << " seconds\n";
 
     // Load expected results from text file
     std::ifstream txt_file("expected_chi.txt");
@@ -100,7 +112,7 @@ int main(int argc, char** argv) {
     // Start the timer.
     auto start_time = MPI_Wtime();
     double optimum_time;
-    int chromatic_number = solver.Solve(*graph, optimum_time, timeout-0.05);
+    int chromatic_number = solver.Solve(*graph, optimum_time, timeout-0.05, sol_gather_period);
     auto end_time = MPI_Wtime();
     auto time = end_time - start_time;
 

@@ -1,6 +1,5 @@
 #include "branch_n_bound_par.hpp"
 
-#define ALLGATHER_WAIT_TIME 15  // Sleep time for MPI_Allgather
 #define TIMEOUT_CHECK_WAIT_TIME 1  // Sleep time for timeout checker
 
 // tags for MPI communication
@@ -271,7 +270,7 @@ void BranchNBoundPar::thread_0_terminator(int my_rank, int p, int global_start_t
  *   p (int)           : The number of processes in the MPI communicator.
  *   best_ub (int*)    : Pointer to the variable holding the best upper bound.
  */
-void BranchNBoundPar::thread_1_solution_gatherer(int p, std::atomic<unsigned short>& best_ub) { 
+void BranchNBoundPar::thread_1_solution_gatherer(int p, std::atomic<unsigned short>& best_ub, int sol_gather_period) { 
     std::vector<unsigned short> all_best_ub(p);
     auto last_gather_time = MPI_Wtime();
     MPI_Request request;
@@ -281,7 +280,7 @@ void BranchNBoundPar::thread_1_solution_gatherer(int p, std::atomic<unsigned sho
         auto current_time = MPI_Wtime();
         auto elapsed_time = current_time - last_gather_time;
 
-        if (elapsed_time >= ALLGATHER_WAIT_TIME) {
+        if (elapsed_time >= sol_gather_period) {
             unsigned short local_best_ub = best_ub.load(); // safe read
 
 			if (terminate_flag.load(std::memory_order_relaxed)) {
@@ -437,7 +436,7 @@ bool request_work(int my_rank, int p, BranchQueue& queue, std::mutex& queue_mute
     return false;
 }
 
-int BranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_seconds) {
+int BranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_seconds, int sol_gather_period) {
 	// Start the timeout timer.
 	auto global_start_time = MPI_Wtime();
 
@@ -477,7 +476,7 @@ int BranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_seconds) 
 			//printMessage("Rank: " + std::to_string(my_rank) + " Exited thread_0_terminator func.");
 			//std::cout << "Rank: " << my_rank << " Exited thread_0_terminator func." << std::endl;
 		}else if (tid == 1) { // Updates (gathers) best_ub from time to time.
-			thread_1_solution_gatherer(p, best_ub);
+			thread_1_solution_gatherer(p, best_ub, sol_gather_period);
 			//printMessage("Rank: " + std::to_string(my_rank) + " Exited thread_1_solution_gatherer func.");
 			//std::cout << "Rank: " << my_rank << " Exited thread_1_solution_gatherer func." << std::endl;
 		}else if (tid == 2) { // Employer thread employs workers by answering their work requests

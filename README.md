@@ -19,25 +19,33 @@ This project is a solution to the student challenge for EuroHPC Summit 2025.
 
 2. Build the project:
     ```sh
-    mkdir build
-    cd build
-    cmake ..
+    cmake -B  build
+    ```
+
+3. Compile the main file (*run_instance.cpp*) with make:
+    ```sh
+    cd build/src/scripts
     make
     ```
 
 ## Usage
-To run the script, use the following command:
+To run the executable from the root directory, use the following command:
 ```sh
-mpirun -np <number_of_processes> ./src/scripts/run_instance <file_name> [timeout]
+mpirun -np <number_of_processes> ./build/src/scripts/run_instance <file_name> [timeout] [sol_gather_period]
 ```
 - `<number_of_processes>`: Number of MPI processes to use.
 - `<file_name>`: Name of the graph file located in the `graphs_instances` directory.
 - `[timeout]`: (Optional) Timeout in seconds. Default is 60 seconds.
+- `[sol_gather_period]`: (Optional) Solution gathering in seconds. Default is 10 seconds.
+
+**Note:** The sol_gather_period parameter controls the frequency of MPI communication. Lower values allow processes to share solutions and prune faster, but if set too low, they can overload MPI communication and cause errors. More MPI processes require a higher period value. It's a tradeoff between speed and stability.
 
 Example:
 ```sh
-mpirun -np 4 ./src/scripts/run_instance anna.col 120
+mpirun -np 4 ./build/src/scripts/run_instance anna.col 120
 ```
+
+The logs can then be found in the *./build/src/scripts/logs* directory.
 
 **Note:** It is recommended to use OpenMPI/4.1.4-GCC-11.3.0 and CMake/3.23.1-GCCcore-11.3.0.
 

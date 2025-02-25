@@ -74,7 +74,7 @@ class BranchNBoundPar {
 		 * @param best_ub The best upper bound found so far.
 		 * @param my_rank The rank of the current process.
 		 */
-		void thread_1_solution_gatherer(int p, std::atomic<unsigned short> &best_ub);
+		void thread_1_solution_gatherer(int p, std::atomic<unsigned short> &best_ub, int sol_gather_period);
 	
 		/**
 		 * @brief Employer thread employs workers by answering their work requests.
@@ -106,7 +106,7 @@ class BranchNBoundPar {
 				}
 			}
 	
-		int Solve(Graph& g, double &optimum_time, int timeout_seconds = 60);
+		int Solve(Graph& g, double &optimum_time, int timeout_seconds = 60, int sol_gather_period = 10);
 	};
 
 #endif	// BRANCH_N_BOUND_PAR_HPP

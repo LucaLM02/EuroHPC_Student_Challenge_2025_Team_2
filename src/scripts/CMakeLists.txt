@@ -16,3 +16,8 @@ target_link_libraries(run_instance PRIVATE chromatic_number test_common)
 # Include necessary headers
 target_include_directories(run_instance PRIVATE 
     ${CMAKE_SOURCE_DIR}/src)
+
+# Copy necessary files and directories to the build/src/scripts directory
+file(COPY ${CMAKE_SOURCE_DIR}/src/scripts/expected_chi.txt DESTINATION ${CMAKE_BINARY_DIR}/src/scripts)
+file(COPY ${CMAKE_SOURCE_DIR}/src/scripts/graphs_instances DESTINATION ${CMAKE_BINARY_DIR}/src/scripts)
+file(COPY ${CMAKE_SOURCE_DIR}/src/scripts/logs DESTINATION ${CMAKE_BINARY_DIR}/src/scripts)
