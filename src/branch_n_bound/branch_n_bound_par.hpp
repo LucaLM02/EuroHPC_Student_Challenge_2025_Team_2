@@ -60,7 +60,7 @@ class BranchNBoundPar {
          * @param timeout_seconds The timeout duration (in seconds) after which the timeout signal is sent.
          * @param optimum_time The time at which the optimum solution was found.
          */
-		void thread_0_terminator(int my_rank, int p, int global_start_time, int timeout_seconds, double &optimum_time);
+		void thread_0_terminator(int my_rank, int p, int global_start_time, int timeout_seconds, double &optimum_time, std::atomic<unsigned short>& best_ub);
 	
 		/**
          * @brief Updates (gathers) best_ub from time to time.
@@ -123,11 +123,6 @@ class BalancedBranchNBoundPar {
 		std::ofstream _log_file;
 		std::atomic<unsigned short> _best_ub = USHRT_MAX;
 	
-		// void create_task(
-		// 	std::unique_ptr<Graph> current_G, int u, int v,
-		// 	CliqueStrategy& _clique_strat, ColorStrategy& _color_strat,
-		// 	std::atomic<unsigned short> & best_ub, int const& depth, int my_rank);
-	
 		/**
 		 * @brief Logs a message to the log file in a openmp parallel section.
 		 *
@@ -154,6 +149,7 @@ class BalancedBranchNBoundPar {
 		 * @param global_start_time The global start time, used to check for timeouts.
 		 * @param timeout_seconds The timeout duration (in seconds) after which the timeout signal is sent.
 		 * @param optimum_time The time at which the optimum solution was found.
+		 * @param graph_to_color The graph to color.
 		 */
 		void thread_0_terminator(int my_rank, int p, int global_start_time, 
 									int timeout_seconds, double &optimum_time,
@@ -163,7 +159,7 @@ class BalancedBranchNBoundPar {
 		 * @brief Updates (gathers) best_ub from time to time.
 		 *
 		 * @param p The total number of processes in the MPI communicator.
-		 * @param my_rank The rank of the current process.
+		 * @param sol_gather_period The period in seconds when all processes gather solutions.
 		 */
 		void thread_1_solution_gatherer(int p, int sol_gather_period);
 	

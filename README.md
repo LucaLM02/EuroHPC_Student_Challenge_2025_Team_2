@@ -31,19 +31,20 @@ This project is a solution to the student challenge for EuroHPC Summit 2025.
 ## Usage
 To run the executable from the root directory, use the following command:
 ```sh
-mpirun -np <number_of_processes> ./build/src/scripts/run_instance <file_name> [timeout] [sol_gather_period]
+mpirun -np <number_of_processes> ./run_instance <file_name> --timeout=<timeout> --sol_gather_period=<period> --balanced=<0|1>
 ```
 - `<number_of_processes>`: Number of MPI processes to use.
 - `<file_name>`: Name of the graph file located in the `graphs_instances` directory.
-- `[timeout]`: (Optional) Timeout in seconds. Default is 60 seconds.
-- `[sol_gather_period]`: (Optional) Solution gathering in seconds. Default is 10 seconds.
-- `[balanced]`: (Optional) Whether to use balanced or non-balanced scaling strategy. Default is balanced.
+- `--timeout`: (Optional) Timeout in seconds. Default is 60 seconds.
+- `--sol_gather_period`: (Optional) Solution gathering in seconds. Default is 10 seconds.
+- `--balanced`: (Optional) Whether to use balanced or non-balanced scaling strategy. Default is balanced (1).
+- `--color_strategy`: (Optional) Whether to use lighter (faster but less accurate) coloring strategy, or more expensive but more accurate. Defaults to lighter (0).
 
 **Note:** The sol_gather_period parameter controls the frequency of MPI communication. Lower values allow processes to share solutions and prune faster, but if set too low, they can overload MPI communication and cause errors. More MPI processes require a higher period value. It's a tradeoff between speed and stability.
 
 Example:
 ```sh
-mpirun -np 4 ./build/src/scripts/run_instance anna.col 120
+mpirun -np 4 ./build/src/scripts/run_instance anna.col --timeout=120 --sol_gather_period=8 --balanced=0
 ```
 
 The logs can then be found in the *./build/src/scripts/logs* directory.
@@ -72,7 +73,7 @@ Create a file named `run_instance_job.slurm` with the following content:
 
 # Run the MPI program
 cd build/src/scripts/
-srun run_instance le450_15a.col 1800
+srun run_instance le450_15a.col --timeout=1800 --balanced=1
 ```
 
 Submit the job using:
