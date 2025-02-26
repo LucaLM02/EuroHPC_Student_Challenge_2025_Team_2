@@ -37,6 +37,7 @@ mpirun -np <number_of_processes> ./build/src/scripts/run_instance <file_name> [t
 - `<file_name>`: Name of the graph file located in the `graphs_instances` directory.
 - `[timeout]`: (Optional) Timeout in seconds. Default is 60 seconds.
 - `[sol_gather_period]`: (Optional) Solution gathering in seconds. Default is 10 seconds.
+- `[balanced]`: (Optional) Whether to use balanced or non-balanced scaling strategy. Default is balanced.
 
 **Note:** The sol_gather_period parameter controls the frequency of MPI communication. Lower values allow processes to share solutions and prune faster, but if set too low, they can overload MPI communication and cause errors. More MPI processes require a higher period value. It's a tradeoff between speed and stability.
 

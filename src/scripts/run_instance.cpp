@@ -26,6 +26,7 @@ int main(int argc, char** argv) {
     // Default values
     int timeout = 60;
     int sol_gather_period = 10;
+    int balanced = 1;
     std::string file_name;
 
     // Check for required arguments
@@ -39,7 +40,7 @@ int main(int argc, char** argv) {
     // Parse optional arguments
     if (argc > 2) {
         try {
-            timeout = std::stoi(argv[2]); // Convert timeout to integer
+            timeout = std::stoi(argv[2]); 
             if (timeout <= 0) {
                 std::cerr << "Error: Timeout must be a positive integer.\n";
                 return 1;
@@ -49,13 +50,19 @@ int main(int argc, char** argv) {
             return 1;
         }
         try {
-            sol_gather_period = std::stoi(argv[3]); // Convert timeout to integer
+            sol_gather_period = std::stoi(argv[3]); 
             if (sol_gather_period <= 0) {
                 std::cerr << "Error: Solution gathering period must be a positive integer.\n";
                 return 1;
             }
         } catch (const std::exception& e) {
             std::cerr << "Error: Invalid sol_gather_period argument.\n";
+            return 1;
+        }
+        try {
+            balanced = std::stoi(argv[4]); 
+        } catch (const std::exception& e) {
+            std::cerr << "Error: Invalid balanced argument.\n";
             return 1;
         }
     }
@@ -104,26 +111,35 @@ int main(int argc, char** argv) {
     int my_rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
 
+    // Read the Graph
     std::string full_file_name = "graphs_instances/" + file_name; 
     // All processes read the graph, since they all start with it.
     if (!dimacs.load(full_file_name.c_str())) {
         std::cout << dimacs.getError() << std::endl;
         return 1;
     }
-
+    graph = CSRGraph::LoadFromDimacs(full_file_name);
     std::cout << "Rank " << my_rank << ": Successfully read Graph " << file_name << std::endl;
 
-    graph = CSRGraph::LoadFromDimacs(full_file_name);
-
     BranchNBoundPar solver(branching_strategy, clique_strategy, color_strategy, "logs/log_" + std::to_string(my_rank) + ".txt");
+    BalancedBranchNBoundPar balanced_solver(branching_strategy, clique_strategy, color_strategy, "logs/log_" + std::to_string(my_rank) + ".txt");
+
 
     // Start the timer.
     auto start_time = MPI_Wtime();
-    double optimum_time;
-    int chromatic_number = solver.Solve(*graph, optimum_time, timeout-0.05, sol_gather_period);
+    // Run.
+    double optimum_time;    
+    int chromatic_number;
+    if (balanced) {
+        chromatic_number = balanced_solver.Solve(*graph, optimum_time, timeout-0.05, sol_gather_period,  expected_chromatic_number);
+    } else {
+        chromatic_number = solver.Solve(*graph, optimum_time, timeout-0.05, sol_gather_period, expected_chromatic_number);
+    }
+    // Stop the timer.
     auto end_time = MPI_Wtime();
     auto time = end_time - start_time;
 
+    // Output results
     if (my_rank == 0) {
         std::cout << "Execution took " << time << " seconds." << std::endl;
         if (optimum_time == -1)
@@ -131,13 +147,12 @@ int main(int argc, char** argv) {
         else
             std::cout << "Solve() finished prematurely measuring " << optimum_time << " seconds. " << std::endl;
         
-
         // Compare with expected chromatic number
-        if (chromatic_number != expected_chromatic_number) {
+        if (chromatic_number != expected_chromatic_number) 
             std::cout << "Failed: expected " << expected_chromatic_number << " but got " << chromatic_number << std::endl;
-        } else {
-            std::cout << "Chromatic number: " << chromatic_number << std::endl;
-        }
+        else 
+            std::cout << "Suceeded: Chromatic number: " << chromatic_number << std::endl;
+        
     }
 
     MPI_Finalize();
