@@ -31,45 +31,46 @@ int main(int argc, char** argv) {
 
     // Check for required arguments
     if (argc < 2) {
-        std::cerr << "Usage: " << argv[0] << " <file_name> [timeout]\n";
+        std::cerr << "Usage: " << argv[0] << " <file_name> [--timeout=<timeout>] [--sol_gather_period=<period>] [--balanced=<0|1>]\n";
         return 1;
     }
 
     file_name = argv[1]; // Get filename from arguments
 
     // Parse optional arguments
-    if (argc > 2) {
-        try {
-            timeout = std::stoi(argv[2]); 
-            if (timeout <= 0) {
-                std::cerr << "Error: Timeout must be a positive integer.\n";
+    for (int i = 2; i < argc; ++i) {
+        std::string arg = argv[i];
+        std::istringstream iss(arg);
+        std::string key, value;
+        if (std::getline(iss, key, '=') && std::getline(iss, value)) {
+            try {
+                if (key == "--timeout") {
+                    timeout = std::stoi(value);
+                    if (timeout <= 0) {
+                        std::cerr << "Error: Timeout must be a positive integer.\n";
+                        return 1;
+                    }
+                } else if (key == "--sol_gather_period") {
+                    sol_gather_period = std::stoi(value);
+                    if (sol_gather_period <= 0) {
+                        std::cerr << "Error: Solution gathering period must be a positive integer.\n";
+                        return 1;
+                    }
+                } else if (key == "--balanced") {
+                    balanced = std::stoi(value);
+                } else {
+                    std::cerr << "Error: Unknown argument " << arg << "\n";
+                    return 1;
+                }
+            } catch (const std::exception& e) {
+                std::cerr << "Error: Invalid value for argument " << key << ".\n";
                 return 1;
             }
-        } catch (const std::exception& e) {
-            std::cerr << "Error: Invalid timeout argument.\n";
-            return 1;
-        }
-        try {
-            sol_gather_period = std::stoi(argv[3]); 
-            if (sol_gather_period <= 0) {
-                std::cerr << "Error: Solution gathering period must be a positive integer.\n";
-                return 1;
-            }
-        } catch (const std::exception& e) {
-            std::cerr << "Error: Invalid sol_gather_period argument.\n";
-            return 1;
-        }
-        try {
-            balanced = std::stoi(argv[4]); 
-        } catch (const std::exception& e) {
-            std::cerr << "Error: Invalid balanced argument.\n";
+        } else {
+            std::cerr << "Error: Invalid argument format " << arg << ".\n";
             return 1;
         }
     }
-
-    std::cout << "Reading file: " << file_name << "\n";
-    std::cout << "Using timeout: " << timeout << " seconds\n";
-    std::cout << "Using sol_gather_period: " << sol_gather_period << " seconds\n";
 
     // Load expected results from text file
     std::ifstream txt_file("expected_chi.txt");
@@ -110,6 +111,14 @@ int main(int argc, char** argv) {
     }
     int my_rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+
+    // Output arguments
+    if (my_rank == 0) {
+        std::cout << "Reading file: " << file_name << "\n";
+        std::cout << "Using timeout: " << timeout << " seconds\n";
+        std::cout << "Using sol_gather_period: " << sol_gather_period << " seconds\n";
+        std::cout << "Using balanced approach: " << balanced << "\n";
+    }
 
     // Read the Graph
     std::string full_file_name = "graphs_instances/" + file_name; 

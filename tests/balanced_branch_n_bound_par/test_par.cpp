@@ -2,7 +2,7 @@
 #include <iostream>
 #include <fstream>
 
-#include "balanced_branch_n_bound_par.hpp"
+#include "branch_n_bound_par.hpp"
 #include "branching_strategy.hpp"
 
 #include "clique_strategy.hpp"
