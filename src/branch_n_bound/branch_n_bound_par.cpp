@@ -528,7 +528,7 @@ int BranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_seconds, 
 					"[FOUND] Chromatic number "
 					"found: " + std::to_string(current_ub),current.depth);
 					Log_par("========== END ==========", 0);
-					continue;
+					break;
 				}
 
 				if (current_lb == current_ub) {
