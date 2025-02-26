@@ -34,52 +34,55 @@ for filename in chromatic_numbers.keys():
 
     chromatic_number = chromatic_numbers[filename][0]
 
-    output_file = filename.split(".")[0] + "_output.txt"
+    for color_strategy in range(2):
+        for isBalanced in range(2):
 
-    # Generate the SLURM script
-    slurm_script = f"""#!/bin/bash
-#SBATCH --job-name=team2_mpi_branch_n_bound
-#SBATCH --nodes={chromatic_numbers[filename][1]}
-#SBATCH --ntasks-per-node=8
-#SBATCH --cpus-per-task=16
-#SBATCH --time=03:00:00
-#SBATCH --partition=cpu
-#SBATCH --output=output_mpi.txt
-#SBATCH --error=error_mpi.txt
+            output_file = filename.split(".")[0] + "_output_" + isBalanced + "_" + color_strategy + ".txt" 
 
-srun test_b_b_n_b_par {file_path} {chromatic_number} {EXECUTION_TIME} {output_file}
-"""
+            # Generate the SLURM script
+            slurm_script = f"""#!/bin/bash
+        #SBATCH --job-name=team2_mpi_branch_n_bound
+        #SBATCH --nodes={chromatic_numbers[filename][1]}
+        #SBATCH --ntasks-per-node=8
+        #SBATCH --cpus-per-task=16
+        #SBATCH --time=03:00:00
+        #SBATCH --partition=cpu
+        #SBATCH --output=output_mpi.txt
+        #SBATCH --error=error_mpi.txt
 
-    # Write the SLURM script
-    with open(SLURM_FILE, "w") as f:
-        f.write(slurm_script)
+        srun test_graph {file_path} {chromatic_number} {EXECUTION_TIME} {output_file} {color_strategy} {isBalanced}
+        """
 
-    print(f"Submitting job for {filename}...")
+            # Write the SLURM script
+            with open(SLURM_FILE, "w") as f:
+                f.write(slurm_script)
 
-    # Submit the SLURM job and capture job ID
-    submit_output = subprocess.run(["sbatch", SLURM_FILE], stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+            print(f"Submitting job for {filename}...")
 
-    
-    job_id = None
-    for word in submit_output.stdout.split():
-        if word.isdigit():
-            job_id = word
-            break
-    
-    if not job_id:
-        print(f"Failed to submit job for {filename}")
-        continue
+            # Submit the SLURM job and capture job ID
+            submit_output = subprocess.run(["sbatch", SLURM_FILE], stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
 
-    print(f"Job {job_id} submitted for {filename}, waiting for completion...")
+            
+            job_id = None
+            for word in submit_output.stdout.split():
+                if word.isdigit():
+                    job_id = word
+                    break
+            
+            if not job_id:
+                print(f"Failed to submit job for {filename}")
+                continue
 
-    # Efficiently wait for job completion
-    while True:
-        check_job = subprocess.run(["squeue", "-j", job_id], stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
-        if job_id not in check_job.stdout:
-            break  # Job is no longer in queue
-        time.sleep(10)  # Wait 10 seconds before checking again
+            print(f"Job {job_id} submitted for {filename}, waiting for completion...")
 
-    print(f"Job {job_id} completed. Reading output...")
+            # Efficiently wait for job completion
+            while True:
+                check_job = subprocess.run(["squeue", "-j", job_id], stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+                if job_id not in check_job.stdout:
+                    break  # Job is no longer in queue
+                time.sleep(10)  # Wait 10 seconds before checking again
+
+            print(f"Job {job_id} completed. Reading output...")
 
 
 
