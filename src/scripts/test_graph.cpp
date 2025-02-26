@@ -53,18 +53,16 @@ int main(int argc, char** argv) {
 
     int strategy_flag = std::stoi(argv[5]);
     ColorStrategy* color_strategy;
+    GreedyColorStrategy greedy_color_strategy;
+    DSaturColorStrategy base_color_strategy;
+    GreedySwapRecolorStrategy recolor_strategy;
+    ColorNRecolorStrategy advanced_color_strategy(base_color_strategy, recolor_strategy);
+    InterleavedColorStrategy heavy_color_strategy(greedy_color_strategy, advanced_color_strategy, 5, 2);
     if ( strategy_flag == 0) {
         // light color strategy
-        GreedyColorStrategy light_color_strategy;
-        color_strategy = &light_color_strategy;
+        color_strategy = &greedy_color_strategy;
     } else if ( strategy_flag == 1 ) {
         // heavy color strategy
-        GreedyColorStrategy greedy_color_strategy;
-        DSaturColorStrategy base_color_strategy;
-        GreedySwapRecolorStrategy recolor_strategy;
-        ColorNRecolorStrategy advanced_color_strategy(base_color_strategy, recolor_strategy);
-        InterleavedColorStrategy heavy_color_strategy(greedy_color_strategy, advanced_color_strategy, 5, 2);
-
         color_strategy = &heavy_color_strategy;
     }
 
@@ -130,7 +128,7 @@ int main(int argc, char** argv) {
             std::cout << "Finalized prematurely with self-measured " << optimum_time << " seconds. " << std::endl;
         std::cout << "Chromatic number: " << chromatic_number << std::endl;
 
-        std::ofstream out("requested_output.txt");
+        std::ofstream out(output_file_name);
         out << "problem_instance_file_name "    << file_name << std::endl;
         out << "cmd line "                      << std::endl;
         out << "solver version "                << std::endl;

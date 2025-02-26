@@ -37,7 +37,7 @@ for filename in chromatic_numbers.keys():
     for color_strategy in range(2):
         for isBalanced in range(2):
 
-            output_file = filename.split(".")[0] + "_output_" + isBalanced + "_" + color_strategy + ".txt" 
+            output_file = filename.split(".")[0] + "_output_" + str(isBalanced) + "_" + str(color_strategy) + ".txt" 
 
             # Generate the SLURM script
             slurm_script = f"""#!/bin/bash
