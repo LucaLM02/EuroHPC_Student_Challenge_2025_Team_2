@@ -38,13 +38,14 @@ mpirun -np <number_of_processes> ./run_instance <file_name> --timeout=<timeout> 
 - `--timeout`: (Optional) Timeout in seconds. Default is 60 seconds.
 - `--sol_gather_period`: (Optional) Solution gathering period in seconds. Default is 10 seconds.
 - `--balanced`: (Optional) Whether to use balanced or non-balanced scaling strategy. Default is balanced (1).
-- `--color_strategy`: (Optional) Whether to use lighter (faster but less accurate) coloring strategy *GreedyColorStrategy*, mixed (expensive but more accurate) *InterleavedColorStrategy* or heavy (uses just the most expensive) *DSaturColorStrategy*. Defaults to lighter (0).
-
+- `--color_strategy`: (Optional) Whether to use lighter (faster but less accurate) coloring strategy *GreedyColorStrategy*, mixed (expensive but more accurate) *InterleavedColorStrategy* (interleaving greedy with dsatur&recolor), *DSaturColorStrategy* and another *InterleavedColorStrategy*, which interleaves dsatur with dsatur&recolor. Defaults to lighter (0).
+- `--output`: (Optional) Output file where result is writtend. Defaults to _output.txt_
+  
 **Note:** The sol_gather_period parameter controls the frequency of MPI communication. Lower values allow processes to share solutions and prune faster, but if set too low, they can overload MPI communication and cause errors. More MPI processes require a higher period value. It's a tradeoff between speed and stability.
 
 Example:
 ```sh
-mpirun -np 4 ./build/src/scripts/run_instance anna.col --timeout=120 --sol_gather_period=8 --balanced=0 --color_strategy=1
+mpirun -np 4 ./build/src/scripts/run_instance anna.col --timeout=120 --sol_gather_period=8 --balanced=0 --color_strategy=1 --output=anna_output.col
 ```
 
 The logs can then be found in the *./build/src/scripts/logs* directory.
@@ -75,16 +76,6 @@ Create a file named `run_instance_job.slurm` with the following content:
 cd build/src/scripts/
 srun run_instance queen13_13.col --timeout=10000 --sol_gather_period=60 --balanced=1 --color_strategy=2 --output=queen13_13_output.txt
 ```
-Where:
-- `timeout` is the time (in seconds) after which execution is interrupted
-- `sol_gather_period` is the period (in seconds) of best upper bound/solution exchanges between processes
-- `balanced` (`[0/1]`) is a flag used to select the balanced (1) or unbalanced (0) branch and bound algorithm
-- `color_strategy` (`[0/1/2/3]`) which is used to choose among the following strategies:
-  - `greedy` color strategy (0)
-  - `greedy+dsatur&recolor` strategy, based on InteleavedColorStrategy and ColorNRecolorStrategy classes (1)
-  - `dsatur` strategy (2)
-  - `dsatur+dsatur&recolor` strategy, based on InteleavedColorStrategy and ColorNRecolorStrategy classes (3)
-- `output` file where to write
 
 Then submit the job using:
 ```sh
