@@ -68,7 +68,9 @@ class BalancedBranchNBoundPar {
 		 * @param timeout_seconds The timeout duration (in seconds) after which the timeout signal is sent.
 		 * @param optimum_time The time at which the optimum solution was found.
 		 */
-		void thread_0_terminator(int my_rank, int p, int global_start_time, int timeout_seconds, double &optimum_time);
+		void thread_0_terminator(int my_rank, int p, int global_start_time, 
+								 int timeout_seconds, double &optimum_time,
+							     Graph& graph_to_color);
 	
 		/**
 		 * @brief Updates (gathers) best_ub from time to time.
@@ -101,7 +103,7 @@ class BalancedBranchNBoundPar {
 			const std::string& log_file_path)
 			: _branching_strat(branching_strat),
 			_clique_strat(clique_strat),
-			_color_strat(color_strat) 
+			_color_strat(color_strat)
 			{
 				_log_file.open(log_file_path);
 				if (!_log_file.is_open()) {

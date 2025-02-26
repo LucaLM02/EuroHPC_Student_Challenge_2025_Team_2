@@ -280,7 +280,9 @@ Branch recvInitialBranch(int source, int tag, MPI_Comm comm, Graph* graph) {
  * for timeouts. timeout_seconds (int)   : The timeout duration (in seconds)
  * after which the timeout signal is sent.
  */
-void BalancedBranchNBoundPar::thread_0_terminator(int my_rank, int p, int global_start_time, int timeout_seconds, double &optimum_time) {
+void BalancedBranchNBoundPar::thread_0_terminator(int my_rank, int p, int global_start_time, 
+												  int timeout_seconds, double &optimum_time,
+												  Graph& graph_to_color) {
 	int solution_found = 0;
 	int timeout_signal = 0;
 
@@ -304,6 +306,7 @@ void BalancedBranchNBoundPar::thread_0_terminator(int my_rank, int p, int global
 			if (flag_solution) {
 				unsigned short solution = 0;
 				MPI_Request recv_request;
+				MPI_Status recv_status;
 				MPI_Irecv(&solution, 1, MPI_UNSIGNED_SHORT, status_solution.MPI_SOURCE, TAG_SOLUTION_FOUND, MPI_COMM_WORLD, &recv_request);
 				_best_ub.store(solution);
 
@@ -314,6 +317,28 @@ void BalancedBranchNBoundPar::thread_0_terminator(int my_rank, int p, int global
 					MPI_Test(&recv_request, &completed, &status_sol_completed);
 					usleep(1000);
 				}
+
+				//Branch optimal_branch = Branch::deserialize(buffer);
+				Branch optimal_branch = recvBranch(status_solution.MPI_SOURCE, TAG_SOLUTION_FOUND, MPI_COMM_WORLD);
+
+				std::vector<int> vertices 						  = optimal_branch.g->GetVertices();
+				std::vector<unsigned short> optimal_full_coloring = optimal_branch.g->GetFullColoring();
+				std::vector<unsigned short> full_coloring(graph_to_color.GetNumVertices()+1);
+				for ( int vertex : vertices ) {
+					// coloring the vertex...
+					full_coloring[vertex] = optimal_full_coloring[vertex];
+					// ...and all vertices merged into it
+					std::vector<int> merged_vertices = optimal_branch.g->GetMergedVertices(vertex);
+					for ( int merged : merged_vertices ) {
+						full_coloring[merged] = full_coloring[vertex];
+					}
+				}
+				
+				graph_to_color.SetFullColoring(full_coloring);
+
+				_best_ub.store(optimal_branch.ub);
+
+				std::cout << "Finally terminating" << std::endl;
 
 				solution_found = 1;
 				Log_par("[TERMINATION]: Solution found communicated.", 0);
@@ -549,7 +574,8 @@ bool request_work(int my_rank, int p, BranchQueue& queue, std::mutex& queue_mute
     return false;
 }
 
-int BalancedBranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_seconds, unsigned short expected_chi) {
+int BalancedBranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_seconds, 
+								   unsigned short expected_chi) {
 	// Start the timeout timer.
 	auto global_start_time = MPI_Wtime();
 
@@ -609,7 +635,7 @@ int BalancedBranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_s
 		int tid = omp_get_thread_num();
 
 		if (tid == 0) { // Checks if solution has been found or timeout. 
-			thread_0_terminator(my_rank, p, global_start_time, timeout_seconds, optimum_time);
+			thread_0_terminator(my_rank, p, global_start_time, timeout_seconds, optimum_time, g);
 			//printMessage("Rank: " + std::to_string(my_rank) + " Exited thread_0_terminator func.");
 			//std::cout << "Rank: " << my_rank << " Exited thread_0_terminator func." << std::endl;
 		}else if (tid == 1) { // Updates (gathers) best_ub from time to time.
@@ -701,6 +727,10 @@ int BalancedBranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_s
 						if ( current_ub == expected_chi ) {
 							_best_ub.store(current_ub);
 							MPI_Send(&current_ub, 1, MPI_UNSIGNED_SHORT, 0, TAG_SOLUTION_FOUND, MPI_COMM_WORLD);  // check if it is correct
+
+							current.g = std::move(current_G);
+							sendBranch(current, 0, TAG_SOLUTION_FOUND, MPI_COMM_WORLD);
+
 							Log_par(
 								"[FOUND] Chromatic number "
 								"found: " + std::to_string(current_ub),current.depth);

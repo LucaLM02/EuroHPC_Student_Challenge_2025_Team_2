@@ -70,12 +70,13 @@ int main(int argc, char** argv) {
     CSRGraph* graph;
     NeighboursBranchingStrategy branching_strategy;
     FastCliqueStrategy clique_strategy;
-    GreedyColorStrategy greedy_color_strategy;
-    DSaturColorStrategy base_color_strategy;
-    GreedySwapRecolorStrategy recolor_strategy;
-    ColorNRecolorStrategy advanced_color_strategy(base_color_strategy, recolor_strategy);
+    // GreedyColorStrategy greedy_color_strategy;
+    // DSaturColorStrategy base_color_strategy;
+    // GreedySwapRecolorStrategy recolor_strategy;
+    // ColorNRecolorStrategy advanced_color_strategy(base_color_strategy, recolor_strategy);
 
-    InterleavedColorStrategy color_strategy(greedy_color_strategy, advanced_color_strategy, 5, 2);
+    // InterleavedColorStrategy color_strategy(greedy_color_strategy, advanced_color_strategy, 5, 2);
+    GreedyColorStrategy color_strategy;
 
 	// Initialize MPI with multithreading enabled
 	int provided;
@@ -84,8 +85,9 @@ int main(int argc, char** argv) {
 		std::cerr << "MPI does not support full multithreading!" << std::endl;
 		MPI_Abort(MPI_COMM_WORLD, 1);
 	}
-	int my_rank;
+	int my_rank, n_proc;
 	MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &n_proc);
 
     if ( my_rank == 0 ) {
         std::cout << "Reading file: " << file_name << "\n";
@@ -127,9 +129,47 @@ int main(int argc, char** argv) {
 				std::cout << "Finalized prematurely with self-measured " << optimum_time << " seconds. " << std::endl;
 			std::cout << "Chromatic number: " << chromatic_number << std::endl;
 
-            std::ofstream out("chromatic_number.txt");
-            out << chromatic_number << std::endl;
-            out.close();
+            {
+                std::ofstream out("chromatic_number.txt");
+                out << chromatic_number << std::endl;
+                out.close();
+            }
+
+            std::ofstream out("requested_output.txt");
+            out << "problem_instance_file_name "    << file_name << std::endl;
+            out << "cmd line "                      << std::endl;
+            out << "solver version "                << std::endl;
+            out << "number_of_vertices "            << graph->GetNumVertices() << std::endl;
+            out << "number_of_edges: "              << graph->GetNumEdges() << std::endl;
+            out << "time_limit_sec "                << timeout << std::endl;
+            out << "number_of_worker_processes "    << n_proc << std::endl;
+            out << "number_of_cores_per_worker "    << 4 << std::endl;
+            if ( optimum_time == -1 ) {
+                out << "wall_time_sec "             << "> 10000" << std::endl;
+                out << "is_within_time_limit "      << false << std::endl;
+            } else {
+                out << "wall_time_sec "             << optimum_time << std::endl;
+                out << "is_within_time_limit "      << true << std::endl;
+            }
+
+            std::vector<unsigned short> colors = graph->GetFullColoring();
+            unsigned max_color = 0;
+            for ( int color : colors ) {
+                if ( color > max_color ) {
+                    max_color = color;
+                }
+            }
+
+            TestFunctions::CheckColoring(*graph);
+            std::cout << graph->HasEdge(6, 136) << std::endl;
+            std::cout << graph->GetColor(6) << std::endl;
+            std::cout << graph->GetColor(136) << std::endl;
+
+            out << "number_of_colors "              << max_color << std::endl;
+            std::vector<int> vertices = graph->GetVertices();
+            for ( int vertex : vertices ) {
+                out << vertex << " " << colors[vertex] << std::endl;
+            }
 
 		}
 	}

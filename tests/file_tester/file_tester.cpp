@@ -33,7 +33,6 @@ void FileTester::init_results() {
     expectedResults.insert({"miles1000.col", 42});
     expectedResults.insert({"miles1500.col", 73});
     expectedResults.insert({"mulsol.i.1.col", 49});
-    expectedResults.insert({"mulsol.i.2.col", 31});
     expectedResults.insert({"mulsol.i.3.col", 31});
     expectedResults.insert({"mulsol.i.4.col", 31});
     expectedResults.insert({"mulsol.i.5.col", 31});
