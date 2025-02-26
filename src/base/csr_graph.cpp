@@ -115,7 +115,6 @@ std::string CSRGraph::Serialize() const {
         for (int vertex : merged) {
             oss << vertex << " ";
         }
-        oss << "\n";
     }
 
 	return oss.str();
@@ -155,11 +154,12 @@ void CSRGraph::Deserialize(const std::string& data) {
 
     _merged_vertices.resize(mergedSize);
     for (size_t i = 0; i < mergedSize; ++i) {
-		int mergedCount=1;
-		if(!iss >> mergedCount){
+		int mergedCount=0;
+		if(!(iss >> mergedCount)){
 			std::cerr << "Error: failed to read mergedCount" << std::endl;
 		}
 	
+		if ( mergedCount == 0 ) continue;
 		std::vector<int> mergedVec;  
 		mergedVec.reserve(mergedCount);  // avoid reallocations
 	
@@ -328,7 +328,6 @@ void CSRGraph::MergeVertices(int v, int w) {
             }
         }
     }
-
 }
 
 void CSRGraph::SetColoring(const std::vector<unsigned short>& colors)

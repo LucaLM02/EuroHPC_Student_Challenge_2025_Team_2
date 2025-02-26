@@ -26,7 +26,7 @@ int main(int argc, char** argv) {
     int N_trials = 1;
     std::string folder_name = "graphs_instances/";
     std::string file_name;
-    int expected_chi;
+    unsigned short expected_chi;
 
     // Check for required arguments
     if (argc < 3) {
@@ -35,7 +35,7 @@ int main(int argc, char** argv) {
     }
 
     file_name = folder_name + argv[1]; // Prefix folder to filename
-    expected_chi = std::stoi(argv[2]);
+    expected_chi = static_cast<unsigned short>(std::stoi(argv[2]));
 
     // Parse optional timeout argument
     if (argc > 3) {
@@ -118,7 +118,7 @@ int main(int argc, char** argv) {
 		}
 		// Start the timer.
 		auto start_time = MPI_Wtime();
-		int chromatic_number = solver.Solve(*graph, optimum_time, timeout, expected_chi);
+		int chromatic_number = solver.Solve(*graph, optimum_time, timeout, 10 ,expected_chi);
 		auto end_time = MPI_Wtime();
 		auto time = end_time - start_time;
 		if (my_rank == 0) {
@@ -161,9 +161,6 @@ int main(int argc, char** argv) {
             }
 
             TestFunctions::CheckColoring(*graph);
-            std::cout << graph->HasEdge(6, 136) << std::endl;
-            std::cout << graph->GetColor(6) << std::endl;
-            std::cout << graph->GetColor(136) << std::endl;
 
             out << "number_of_colors "              << max_color << std::endl;
             std::vector<int> vertices = graph->GetVertices();
