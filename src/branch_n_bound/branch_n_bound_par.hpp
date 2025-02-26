@@ -32,6 +32,7 @@ class BranchNBoundPar {
 		CliqueStrategy& _clique_strat;
 		ColorStrategy& _color_strat;
 		std::ofstream _log_file;
+		std::atomic<unsigned short> _best_ub = USHRT_MAX;
 
 		/**
 		 * @brief Logs a message to the log file in a MPI environment and OpenMP parallel section.
@@ -60,7 +61,8 @@ class BranchNBoundPar {
          * @param timeout_seconds The timeout duration (in seconds) after which the timeout signal is sent.
          * @param optimum_time The time at which the optimum solution was found.
          */
-		void thread_0_terminator(int my_rank, int p, int global_start_time, int timeout_seconds, double &optimum_time, std::atomic<unsigned short>& best_ub);
+		void thread_0_terminator(int my_rank, int p, int global_start_time, int timeout_seconds, 
+								 double &optimum_time, Graph& graph_to_color);
 	
 		/**
          * @brief Updates (gathers) best_ub from time to time.

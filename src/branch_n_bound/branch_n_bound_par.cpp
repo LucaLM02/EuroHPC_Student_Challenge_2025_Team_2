@@ -164,12 +164,13 @@ Branch recvBranch(int source, int tag, MPI_Comm comm) {
 }
 
 
-void BranchNBoundPar::thread_0_terminator(int my_rank, int p, int global_start_time, int timeout_seconds, double &optimum_time, std::atomic<unsigned short>& best_ub) {
+void BranchNBoundPar::thread_0_terminator(int my_rank, int p, int global_start_time, 
+	int timeout_seconds, double &optimum_time,
+	Graph& graph_to_color) {
 	int solution_found = 0;
 	int timeout_signal = 0;
 
-	std::vector<int> idle_status(p, 1); // Array to keep track of idle status of workers
-	idle_status[0] = 0; // Root process is not idle
+	std::vector<int> idle_status(p, 0); // Array to keep track of idle status of workers
 	while (true) {
 		if (my_rank == 0) {
 			// Master listens for solution found (Non-blocking)
@@ -189,7 +190,9 @@ void BranchNBoundPar::thread_0_terminator(int my_rank, int p, int global_start_t
 			if (flag_solution) {
 				unsigned short solution = 0;
 				MPI_Request recv_request;
+				MPI_Status recv_status;
 				MPI_Irecv(&solution, 1, MPI_UNSIGNED_SHORT, status_solution.MPI_SOURCE, TAG_SOLUTION_FOUND, MPI_COMM_WORLD, &recv_request);
+				_best_ub.store(solution);
 
 				int completed = 0;
 				MPI_Status status_sol_completed;
@@ -198,53 +201,77 @@ void BranchNBoundPar::thread_0_terminator(int my_rank, int p, int global_start_t
 					MPI_Test(&recv_request, &completed, &status_sol_completed);
 					usleep(1000);
 				}
-				
+
+				std::cout << "here" << std::endl;
+
+				//Branch optimal_branch = Branch::deserialize(buffer);
+				Branch optimal_branch = recvBranch(status_solution.MPI_SOURCE, TAG_SOLUTION_FOUND, MPI_COMM_WORLD);
+
+				std::vector<int> vertices 						  = optimal_branch.g->GetVertices();
+				std::vector<unsigned short> optimal_full_coloring = optimal_branch.g->GetFullColoring();
+				std::vector<unsigned short> full_coloring(graph_to_color.GetNumVertices()+1);
+				for ( int vertex : vertices ) {
+					// coloring the vertex...
+					full_coloring[vertex] = optimal_full_coloring[vertex];
+					// ...and all vertices merged into it
+					std::vector<int> merged_vertices = optimal_branch.g->GetMergedVertices(vertex);
+					for ( int merged : merged_vertices ) {
+						full_coloring[merged] = full_coloring[vertex];
+					}
+				}
+
+				graph_to_color.SetFullColoring(full_coloring);
+
+				_best_ub.store(optimal_branch.ub);
+
 				solution_found = 1;
-				best_ub.store(solution);
 				Log_par("[TERMINATION]: Solution found communicated.", 0);
 				optimum_time = MPI_Wtime() - global_start_time;
+
 			}
 
 			// Listen for idle status updates from workers
 			while (true) {
-				int flag_idle = 0;
-				MPI_Iprobe(MPI_ANY_SOURCE, TAG_IDLE, MPI_COMM_WORLD, &flag_idle, &status_idle);
-			
-				if (!flag_idle) break;
+			int flag_idle = 0;
+			MPI_Iprobe(MPI_ANY_SOURCE, TAG_IDLE, MPI_COMM_WORLD, &flag_idle, &status_idle);
 
-				int worker_idle_status = 0;
+			if (!flag_idle) break;
+
+			//std::cout << "Master received idle status" << std::endl;
+			//printMessage("Master received idle status from " + std::to_string(status_idle.MPI_SOURCE));
+			int worker_idle_status = 0;
 
 
-				MPI_Request recv_request;
-				MPI_Irecv(&worker_idle_status, 1, MPI_INT, status_idle.MPI_SOURCE, TAG_IDLE, MPI_COMM_WORLD, &recv_request);
+			MPI_Request recv_request;
+			MPI_Irecv(&worker_idle_status, 1, MPI_INT, status_idle.MPI_SOURCE, TAG_IDLE, MPI_COMM_WORLD, &recv_request);
 
-				int completed = 0;
-				MPI_Status status_sol_completed;
-				while (!completed) {
-					if(terminate_flag.load()) break;
-					MPI_Test(&recv_request, &completed, &status_sol_completed);
-					usleep(1000);
-				}
-				
-				if(completed) idle_status[status_idle.MPI_SOURCE] = worker_idle_status;
+			int completed = 0;
+			MPI_Status status_sol_completed;
+			while (!completed) {
+			if(terminate_flag.load()) break;
+			MPI_Test(&recv_request, &completed, &status_sol_completed);
+			usleep(1000);
 			}
 
-            // Check if all workers are idle
-            if (std::all_of(idle_status.begin(), idle_status.end(), [](int status) { return status == 1; })) {
-                solution_found = 1;
-				optimum_time = MPI_Wtime() - global_start_time;
-				Log_par("[TERMINATION]: All processes idle.", 0);
-            }
+			if(completed) idle_status[status_idle.MPI_SOURCE] = worker_idle_status;
+			}
+
+			// Check if all workers are idle
+			if (std::all_of(idle_status.begin(), idle_status.end(), [](int status) { return status == 1; })) {
+			solution_found = 1;
+			optimum_time = MPI_Wtime() - global_start_time;
+			Log_par("[TERMINATION]: All processes idle.", 0);
+			}
 
 		}
 		// Worker nodes listen for termination signals (solution or timeout)
 		MPI_Bcast(&solution_found, 1, MPI_INT, 0, MPI_COMM_WORLD);
-        MPI_Bcast(&timeout_signal, 1, MPI_INT, 0, MPI_COMM_WORLD);
+		MPI_Bcast(&timeout_signal, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
 		// Exit if solution or timeout is detected
 		if (solution_found || timeout_signal) {
-			terminate_flag.store(true, std::memory_order_relaxed);
-			break;
+		terminate_flag.store(true, std::memory_order_relaxed);
+		break;
 		}
 		usleep(10000);	// Prevent CPU overload (10 ms)
 	}
@@ -428,9 +455,9 @@ int BranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_seconds, 
 		int tid = omp_get_thread_num();
 
 		if (tid == 0) { // Checks if solution has been found or timeout. 
-			thread_0_terminator(my_rank, p, global_start_time, timeout_seconds, optimum_time, best_ub);
+			thread_0_terminator(my_rank, p, global_start_time, timeout_seconds, optimum_time, g);
 		}else if (tid == 1) { // Updates (gathers) best_ub from time to time.
-			thread_1_solution_gatherer(p, best_ub, sol_gather_period);
+			thread_1_solution_gatherer(p, _best_ub, sol_gather_period);
 		}else if (tid == 2) { // Employer thread employs workers by answering their work requests
 			thread_2_employer(queue_mutex, queue);
 		}else if (tid == 3) { // TODO: Let more threads do these computations in parallel
@@ -441,7 +468,7 @@ int BranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_seconds, 
 			int lb = _clique_strat.FindClique(g);
 			unsigned short ub;
 			_color_strat.Color(g, ub);
-			best_ub.store(ub);
+			_best_ub.store(ub);
 	
 			// Log initial bounds
 			Log_par("[INITIALIZATION] Initial bounds: lb = " + std::to_string(lb) +
@@ -491,11 +518,15 @@ int BranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_seconds, 
 						", ub = " + std::to_string(current_ub), current.depth);
 
 				if ( current_ub == expected_chi ) {
-					best_ub.store(current_ub);
-					MPI_Send(&expected_chi, 1, MPI_UNSIGNED_SHORT, 0, TAG_SOLUTION_FOUND, MPI_COMM_WORLD);  
+					_best_ub.store(current_ub);
+					MPI_Send(&current_ub, 1, MPI_UNSIGNED_SHORT, 0, TAG_SOLUTION_FOUND, MPI_COMM_WORLD);  // check if it is correct
+
+					current.g = std::move(current_G);
+					sendBranch(current, 0, TAG_SOLUTION_FOUND, MPI_COMM_WORLD);
+
 					Log_par(
-						"[FOUND] Chromatic number "
-						"found: " + std::to_string(current_ub), current.depth);
+					"[FOUND] Chromatic number "
+					"found: " + std::to_string(current_ub),current.depth);
 					Log_par("========== END ==========", 0);
 					continue;
 				}
@@ -506,12 +537,12 @@ int BranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_seconds, 
 						Log_par(
 							"[FOUND] Chromatic number "
 							"found (very first computation at root): " + std::to_string(current_lb), current.depth);
-						best_ub.store(current_ub);
+						_best_ub.store(current_ub);
 						MPI_Send(&current_ub, 1, MPI_UNSIGNED_SHORT, 0, TAG_SOLUTION_FOUND, MPI_COMM_WORLD);
 						break;
 					}
 					// If not at root (original graph, first iteration), prune .
-					best_ub.store(std::min(current_ub, best_ub.load()));
+					_best_ub.store(std::min(current_ub, _best_ub.load()));
 					Log_par(
 						"[PRUNE] Branch pruned at "
 						"depth " + std::to_string(current.depth) +
@@ -522,12 +553,12 @@ int BranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_seconds, 
 				}
 
 				// Prune
-				if (current_lb >= best_ub.load()) {
+				if (current_lb >= _best_ub.load()) {
 					Log_par(
 						"[PRUNE] Branch pruned at "
 						"depth " + std::to_string(current.depth) +
 						": lb = " + std::to_string(current_lb) +
-						" >= best_ub = " + std::to_string(best_ub.load()),
+						" >= best_ub = " + std::to_string(_best_ub.load()),
 						current.depth);
 					continue;
 				}
@@ -542,7 +573,7 @@ int BranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_seconds, 
                         current.depth);
 
                 if (u == -1 || v == -1) {
-                    best_ub.store(std::min<unsigned short>(current_G->GetNumVertices(), best_ub.load()));
+                    _best_ub.store(std::min<unsigned short>(current_G->GetNumVertices(), _best_ub.load()));
                     continue;
                 }
 
@@ -602,9 +633,9 @@ int BranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_seconds, 
                 //lock_task.unlock();
 				
 				// Update local sbest_ub
-				unsigned short previous_best_ub = best_ub.load();
-				best_ub.store(std::min({previous_best_ub, ub1, ub2}));
-				Log_par("[UPDATE] Updated best_ub: " + std::to_string(best_ub.load()), current.depth);
+				unsigned short previous_best_ub = _best_ub.load();
+				_best_ub.store(std::min({previous_best_ub, ub1, ub2}));
+				Log_par("[UPDATE] Updated best_ub: " + std::to_string(_best_ub.load()), current.depth);
 
 				first_iteration = false;
 			}
@@ -613,7 +644,7 @@ int BranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_seconds, 
 		Log_par("[TERMINATION] Finalizing... ", 0);
 		MPI_Barrier(MPI_COMM_WORLD);
 		// End execution
-		return best_ub;
+		return _best_ub;
 	}
 		
 
