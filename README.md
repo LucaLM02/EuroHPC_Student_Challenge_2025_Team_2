@@ -36,9 +36,9 @@ mpirun -np <number_of_processes> ./run_instance <file_name> --timeout=<timeout> 
 - `<number_of_processes>`: Number of MPI processes to use.
 - `<file_name>`: Name of the graph file located in the `graphs_instances` directory.
 - `--timeout`: (Optional) Timeout in seconds. Default is 60 seconds.
-- `--sol_gather_period`: (Optional) Solution gathering in seconds. Default is 10 seconds.
+- `--sol_gather_period`: (Optional) Solution gathering period in seconds. Default is 10 seconds.
 - `--balanced`: (Optional) Whether to use balanced or non-balanced scaling strategy. Default is balanced (1).
-- `--color_strategy`: (Optional) Whether to use lighter (faster but less accurate) coloring strategy, mixed (expensive but more accurate) or heavy (uses just the most expensive). Defaults to lighter (0).
+- `--color_strategy`: (Optional) Whether to use lighter (faster but less accurate) coloring strategy *GreedyColorStrategy*, mixed (expensive but more accurate) *InterleavedColorStrategy* or heavy (uses just the most expensive) *DSaturColorStrategy*. Defaults to lighter (0).
 
 **Note:** The sol_gather_period parameter controls the frequency of MPI communication. Lower values allow processes to share solutions and prune faster, but if set too low, they can overload MPI communication and cause errors. More MPI processes require a higher period value. It's a tradeoff between speed and stability.
 
@@ -65,7 +65,7 @@ Create a file named `run_instance_job.slurm` with the following content:
 #SBATCH --job-name=team2_mpi_branch_n_bound    # Job name
 #SBATCH --nodes=64                             # Number of nodes
 #SBATCH --ntasks-per-node=8                    # MPI tasks per node
-#SBATCH --cpus-per-task=16                     # Cores per MPI task
+#SBATCH --cpus-per-task=4                     # Cores per MPI task
 #SBATCH --time=01:00:00                        # Time limit (HH:MM:SS)
 #SBATCH --partition=cpu                        
 #SBATCH --output=output_mpi.txt                # Standard output file
@@ -91,8 +91,10 @@ Then submit the job using:
 sbatch run_job.slurm
 ```
 
+**Note:** The results of the runs (coloring and other information) are printed to a file *output.txt* in the working directory. 
+
 ## Expected Results
-The script compares the computed chromatic number with the expected results stored in `expected_chi.txt`. If the computed result does not match the expected result, an error message is displayed.
+The script compares the computed chromatic number with the expected results stored in `expected_chi.txt`. If the computed result does not match the expected result, an error message is displayed. 
 
 ## Logs
 Logs are generated for each MPI process and stored in the `logs` directory. The log files are named `log_<rank>.txt`, where `<rank>` is the MPI process rank. It contains detailed information on each branch's intermediate results (lower and upper bounds). 
