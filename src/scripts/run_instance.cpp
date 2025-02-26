@@ -115,9 +115,11 @@ int main(int argc, char** argv) {
     GreedyColorStrategy greedy_color_strategy;
     // Mixed color strategy
     DSaturColorStrategy base_color_strategy;
+    DSaturColorStrategy another_dsatur_strategy;
     GreedySwapRecolorStrategy recolor_strategy;
     ColorNRecolorStrategy advanced_color_strategy(base_color_strategy, recolor_strategy);
     InterleavedColorStrategy mixed_color_strategy(greedy_color_strategy, advanced_color_strategy, 5, 2);
+    InterleavedColorStrategy another_mixed_color_strategy(another_dsatur_strategy, advanced_color_strategy, 5, 2);
     // Heavy color strategy
 
 
@@ -127,8 +129,10 @@ int main(int argc, char** argv) {
     } else if (color_strategy == 1) {
         color_strategy_obj = &mixed_color_strategy;
     }
-    else {
+    else if (color_strategy == 2) {
         color_strategy_obj = &base_color_strategy;
+    } else {
+        color_strategy_obj = &another_mixed_color_strategy;
     }
 
     // Initialize MPI with multithreading enabled

@@ -73,10 +73,20 @@ Create a file named `run_instance_job.slurm` with the following content:
 
 # Run the MPI program
 cd build/src/scripts/
-srun run_instance le450_15a.col --timeout=1800 --balanced=1
+srun run_instance queen13_13.col --timeout=10000 --sol_gather_period=60 --balanced=1 --color_strategy=2 --output=queen13_13_output.txt
 ```
+Where:
+- `timeout` is the time (in seconds) after which execution is interrupted
+- `sol_gather_period` is the period (in seconds) of best upper bound/solution exchanges between processes
+- `balanced` (`[0/1]`) is a flag used to select the balanced (1) or unbalanced (0) branch and bound algorithm
+- `color_strategy` (`[0/1/2/3]`) which is used to choose among the following strategies:
+  - `greedy` color strategy (0)
+  - `greedy+dsatur&recolor` strategy, based on InteleavedColorStrategy and ColorNRecolorStrategy classes (1)
+  - `dsatur` strategy (2)
+  - `dsatur+dsatur&recolor` strategy, based on InteleavedColorStrategy and ColorNRecolorStrategy classes (3)
+- `output` file where to write
 
-Submit the job using:
+Then submit the job using:
 ```sh
 sbatch run_job.slurm
 ```
