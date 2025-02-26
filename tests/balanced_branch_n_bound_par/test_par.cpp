@@ -70,13 +70,13 @@ int main(int argc, char** argv) {
     CSRGraph* graph;
     NeighboursBranchingStrategy branching_strategy;
     FastCliqueStrategy clique_strategy;
-    // GreedyColorStrategy greedy_color_strategy;
-    // DSaturColorStrategy base_color_strategy;
-    // GreedySwapRecolorStrategy recolor_strategy;
-    // ColorNRecolorStrategy advanced_color_strategy(base_color_strategy, recolor_strategy);
+    GreedyColorStrategy greedy_color_strategy;
+    DSaturColorStrategy base_color_strategy;
+    GreedySwapRecolorStrategy recolor_strategy;
+    ColorNRecolorStrategy advanced_color_strategy(base_color_strategy, recolor_strategy);
 
-    // InterleavedColorStrategy color_strategy(greedy_color_strategy, advanced_color_strategy, 5, 2);
-    GreedyColorStrategy color_strategy;
+    InterleavedColorStrategy color_strategy(greedy_color_strategy, advanced_color_strategy, 5, 2);
+    //GreedyColorStrategy color_strategy;
 
 	// Initialize MPI with multithreading enabled
 	int provided;
