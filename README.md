@@ -81,8 +81,10 @@ Submit the job using:
 sbatch run_job.slurm
 ```
 
+**Note:** The results of the runs (coloring and other information) are printed to a file *output.txt* in the working directory. 
+
 ## Expected Results
-The script compares the computed chromatic number with the expected results stored in `expected_chi.txt`. If the computed result does not match the expected result, an error message is displayed. The results of the runs (coloring and other information) are printed to the console or to the *output_mpi.txt* if running using slurm. 
+The script compares the computed chromatic number with the expected results stored in `expected_chi.txt`. If the computed result does not match the expected result, an error message is displayed. 
 
 ## Logs
 Logs are generated for each MPI process and stored in the `logs` directory. The log files are named `log_<rank>.txt`, where `<rank>` is the MPI process rank. It contains detailed information on each branch's intermediate results (lower and upper bounds). 
