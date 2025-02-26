@@ -23,3 +23,13 @@ target_include_directories(run_instance PRIVATE
 file(COPY ${CMAKE_SOURCE_DIR}/src/scripts/expected_chi.txt DESTINATION ${CMAKE_BINARY_DIR}/src/scripts)
 file(COPY ${CMAKE_SOURCE_DIR}/src/scripts/graphs_instances DESTINATION ${CMAKE_BINARY_DIR}/src/scripts)
 file(COPY ${CMAKE_SOURCE_DIR}/src/scripts/logs DESTINATION ${CMAKE_BINARY_DIR}/src/scripts)
+
+
+add_executable(test_graph test_graph.cpp)
+
+# Link test_color executable with the main library and common test utilities
+target_link_libraries(test_graph PRIVATE chromatic_number test_common)
+
+# Include necessary headers
+target_include_directories(test_graph PRIVATE 
+    ${CMAKE_SOURCE_DIR}/src)
