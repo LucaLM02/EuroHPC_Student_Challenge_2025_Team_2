@@ -10,6 +10,8 @@
 #include "clique_strategy.hpp"
 #include "fastwclq.hpp"
 #include "color.hpp"
+#include "recolor.hpp"
+#include "advanced_color.hpp"
 #include "dsatur_color.hpp"
 #include "csr_graph.hpp"
 #include "dimacs.hpp"
@@ -27,6 +29,7 @@ int main(int argc, char** argv) {
     int timeout = 60;
     int sol_gather_period = 10;
     int balanced = 1;
+    int color_strategy = 0;
     std::string file_name;
 
     // Check for required arguments
@@ -58,6 +61,8 @@ int main(int argc, char** argv) {
                     }
                 } else if (key == "--balanced") {
                     balanced = std::stoi(value);
+                } else if (key == "--color_strategy") {
+                    color_strategy = std::stoi(value);
                 } else {
                     std::cerr << "Error: Unknown argument " << arg << "\n";
                     return 1;
@@ -100,7 +105,21 @@ int main(int argc, char** argv) {
     CSRGraph* graph;
     NeighboursBranchingStrategy branching_strategy;
     FastCliqueStrategy clique_strategy;
-    DSaturColorStrategy color_strategy;
+
+    // Light color strategy
+    GreedyColorStrategy greedy_color_strategy;
+    // Advanced color strategy
+    DSaturColorStrategy base_color_strategy;
+    GreedySwapRecolorStrategy recolor_strategy;
+    ColorNRecolorStrategy advanced_color_strategy(base_color_strategy, recolor_strategy);
+    InterleavedColorStrategy heavy_color_strategy(greedy_color_strategy, advanced_color_strategy, 5, 2);
+
+    ColorStrategy* color_strategy_obj;
+    if (color_strategy == 0) {
+        color_strategy_obj = &greedy_color_strategy;
+    } else {
+        color_strategy_obj = &heavy_color_strategy;
+    }
 
     // Initialize MPI with multithreading enabled
     int provided;
@@ -130,8 +149,8 @@ int main(int argc, char** argv) {
     graph = CSRGraph::LoadFromDimacs(full_file_name);
     std::cout << "Rank " << my_rank << ": Successfully read Graph " << file_name << std::endl;
 
-    BranchNBoundPar solver(branching_strategy, clique_strategy, color_strategy, "logs/log_" + std::to_string(my_rank) + ".txt");
-    BalancedBranchNBoundPar balanced_solver(branching_strategy, clique_strategy, color_strategy, "logs/log_" + std::to_string(my_rank) + ".txt");
+    BranchNBoundPar solver(branching_strategy, clique_strategy, *color_strategy_obj, "logs/log_" + std::to_string(my_rank) + ".txt");
+    BalancedBranchNBoundPar balanced_solver(branching_strategy, clique_strategy, *color_strategy_obj, "logs/log_" + std::to_string(my_rank) + ".txt");
 
 
     // Start the timer.
