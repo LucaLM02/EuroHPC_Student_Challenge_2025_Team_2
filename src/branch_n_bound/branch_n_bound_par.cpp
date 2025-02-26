@@ -931,66 +931,6 @@ int BalancedBranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_s
 	{
 		int tid = omp_get_thread_num();
 
-<<<<<<< HEAD
-		if (tid == 0) { // Checks if solution has been found or timeout. 
-			thread_0_terminator(my_rank, p, global_start_time, timeout_seconds, optimum_time, g);
-			//printMessage("Rank: " + std::to_string(my_rank) + " Exited thread_0_terminator func.");
-			//std::cout << "Rank: " << my_rank << " Exited thread_0_terminator func." << std::endl;
-		}else if (tid == 1) { // Updates (gathers) best_ub from time to time.
-			thread_1_solution_gatherer(p, sol_gather_period);
-			//printMessage("Rank: " + std::to_string(my_rank) + " Exited thread_1_solution_gatherer func.");
-			//std::cout << "Rank: " << my_rank << " Exited thread_1_solution_gatherer func." << std::endl;
-		}else if (tid == 2) { // Employer thread employs workers by answering their work requests
-			thread_2_employer(queue_mutex, queue);
-			//printMessage("Rank: " + std::to_string(my_rank) + " Exited thread_2_employer func.");
-			//std::cout << "Rank: " << my_rank << " Exited thread_2_employer func." << std::endl;
-		}else if (tid == 3) { // TODO: Let more threads do these computations in parallel
-			Branch current;
-
-			// // Receive work from previous worker if not rank 0 (starting rank), to start working.
-			// if (my_rank>0) {
-			// 	branch_recv = recvInitialBranch(my_rank-1, TAG_INITIAL_WORK, MPI_COMM_WORLD, &g);
-			// 	int idle_status = 0;
-			// 	MPI_Send(&idle_status, 1, MPI_INT, 0, TAG_IDLE, MPI_COMM_WORLD);
-			// 	Log_par("[INITIALIZATION] First branch received from previous worker.", 1);
-
-			// 	std::atomic<unsigned short> best_ub = branch_recv.ub;
-
-			// 	queue.push(std::move(branch_recv));
-
-			// }
-
-			// 	// If rank 0, initialize first branch.
-			// 	if (my_rank == 0) {
-			// 		// Initialize bounds
-			// 		int lb = _clique_strat.FindClique(g);
-			// 		unsigned short ub;
-			// 		_color_strat.Color(g, ub);
-			// 		best_ub.store(ub);
-
-			// 		// Log initial bounds
-			// 		Log_par("[INITIALIZATION] Initial bounds: lb = " + std::to_string(lb) +
-			// 			", ub = " + std::to_string(ub), 0);
-
-			// 		std::lock_guard<std::mutex> lock(queue_mutex);
-			// 		queue.push(Branch(g.Clone(), lb, ub, 1));	// Initial branch with depth 1
-			// 	}
-
-			// 	bool distributed_work = false;
-			// 	if(my_rank == (p-1)) distributed_work = true; // Signals when work distribution phase ends.
-
-			while (!terminate_flag.load()) {
-				bool has_work = false;
-				{
-					std::lock_guard<std::mutex> lock(queue_mutex);
-					if (!queue.empty()) { 
-						current = std::move(const_cast<Branch&>(queue.top()));
-						queue.pop();
-						has_work = true;
-					}
-					std::this_thread::sleep_for(std::chrono::milliseconds(10));
-				}
-=======
 if (tid == 0) { // Checks if solution has been found or timeout. 
 thread_0_terminator(my_rank, p, global_start_time, timeout_seconds, optimum_time, g);
 }else if (tid == 1) { // Updates (gathers) best_ub from time to time.
@@ -1011,7 +951,6 @@ has_work = true;
 }
 std::this_thread::sleep_for(std::chrono::milliseconds(10));
 }
->>>>>>> 3f93116 (Production script run_instances now supports changing color strategy)
 
 				// If no work and already passed the initial distributing phase, request work.
 				//if (!has_work && distributed_work) {
@@ -1058,34 +997,6 @@ std::this_thread::sleep_for(std::chrono::milliseconds(10));
 					continue;
 				}
 
-<<<<<<< HEAD
-				if (current_lb == current_ub) {
-					/*
-					MPI_Send(&current_ub, 1, MPI_UNSIGNED_SHORT, 0, TAG_SOLUTION_FOUND, MPI_COMM_WORLD);  // check if it is correct
-					Log_par(
-					"[FOUND] Chromatic number "
-					"found: " + std::to_string(current_lb),current.depth);
-					Log_par("========== END ==========", 0);
-					*/
-					// if(!distributed_work && my_rank == 0){
-					// 	Log_par(
-					// 		"[FOUND] Chromatic number "
-					// 		"found (root process very first computation): " + std::to_string(current_lb), current.depth);
-					// 	best_ub.store(current_ub);
-					// 	MPI_Send(&current_ub, 1, MPI_UNSIGNED_SHORT, 0, TAG_SOLUTION_FOUND, MPI_COMM_WORLD);
-					// 	break;
-					// }
-					// Prune (DO WE WANT TO PRUNE THIS?)
-					_best_ub.store(std::min(current_ub, _best_ub.load()));
-					Log_par(
-					"[PRUNE] Branch pruned at "
-					"depth " + std::to_string(current.depth) +
-					": lb = " + std::to_string(current_lb) +
-					" == ub = " + std::to_string(current_ub),
-					current.depth);
-					continue;
-				}
-=======
 if (current_lb == current_ub) {
 
 _best_ub.store(std::min(current_ub, _best_ub.load()));
@@ -1097,7 +1008,6 @@ Log_par(
 current.depth);
 continue;
 }
->>>>>>> 3f93116 (Production script run_instances now supports changing color strategy)
 
 				// Prune
 				if (current_lb >= _best_ub.load()) {
@@ -1118,35 +1028,6 @@ continue;
 				", v = " + std::to_string(v),
 				current.depth);
 
-<<<<<<< HEAD
-				if (u == -1 || v == -1) {
-					_best_ub.store(std::min<unsigned short>(current_G->GetNumVertices(), _best_ub.load()));
-					/*
-					MPI_Send(&chromatic_number, 1, MPI_UNSIGNED_SHORT, 0, TAG_SOLUTION_FOUND, MPI_COMM_WORLD);  // check if it is correct
-					Log_par("Graph is complete. "
-					"Chromatic number = " + std::to_string(chromatic_number),
-					current.depth);
-					Log_par("========== END ==========", 0);
-					*/
-					continue;
-				}
-				// generate tasks and update queue
-				std::unique_lock<std::mutex> lock_task(task_mutex);
-				auto G1 = current_G->Clone();
-				G1->MergeVertices(u, v);
-				int lb1 = _clique_strat.FindClique(*G1);
-				unsigned short ub1;
-				_color_strat.Color(*G1, ub1);
-				CheckColoring(*G1);
-				Log_par("[Branch 1] (Merge u, v) "
-				"lb = " + std::to_string(lb1) +
-				", ub = " + std::to_string(ub1),
-				current.depth);
-				{
-					std::lock_guard<std::mutex> lock(queue_mutex);
-					queue.push(Branch(std::move(G1), lb1, ub1, current.depth + 1));
-				}
-=======
 if (u == -1 || v == -1) {
 _best_ub.store(std::min<unsigned short>(current_G->GetNumVertices(), _best_ub.load()));
 
@@ -1167,7 +1048,6 @@ current.depth);
 std::lock_guard<std::mutex> lock(queue_mutex);
 queue.push(Branch(std::move(G1), lb1, ub1, current.depth + 1));
 }
->>>>>>> 3f93116 (Production script run_instances now supports changing color strategy)
 
 				// AddEdge
 				auto G2 = current_G->Clone();
@@ -1187,42 +1067,6 @@ queue.push(Branch(std::move(G1), lb1, ub1, current.depth + 1));
 
 				lock_task.unlock();
 
-<<<<<<< HEAD
-				// if (!distributed_work && my_rank < (p - 1)) {
-				// 	Log_par("Distributing work...", current.depth);
-				// 	std::lock_guard<std::mutex> lock(queue_mutex);
-				// 	if (!queue.empty()) {
-				// 		current = std::move(const_cast<Branch&>(queue.top()));
-				// 		queue.pop();
-				// 	}
-				// 	// If node to be distributed is optimal solution, dont distribute and stop.
-				// 	if (my_rank==0 && current.lb==current.ub)
-				// 	{
-				// 		best_ub.store(current.ub);
-				// 		Log_par(
-				// 			"[FOUND] Chromatic number "
-				// 			"found (root process very first computation): " + std::to_string(current.ub), current.depth);
-				// 		MPI_Send(&current.ub, 1, MPI_UNSIGNED_SHORT, 0, TAG_SOLUTION_FOUND, MPI_COMM_WORLD);
-				// 		break;
-				// 	}
-				// 	else {
-				// 		sendInitialBranch(current, my_rank + 1, TAG_INITIAL_WORK, MPI_COMM_WORLD);
-				// 	}
-				// 	distributed_work = true;
-				// }
-				// Update local sbest_ub
-				unsigned short previous_best_ub = _best_ub.load();
-				_best_ub.store(std::min({previous_best_ub, ub1, ub2}));
-				Log_par("[UPDATE] Updated best_ub: " + std::to_string(_best_ub.load()), current.depth);
-			}
-		}
-	}
-	//printMessage("Rank: " + std::to_string(my_rank) + " Finalizing.");
-	Log_par("[TERMINATION] Finalizing... ", 0);
-	MPI_Barrier(MPI_COMM_WORLD);
-	// End execution
-	return _best_ub;
-=======
 // Update local sbest_ub
 unsigned short previous_best_ub = _best_ub.load();
 _best_ub.store(std::min({previous_best_ub, ub1, ub2}));
@@ -1235,5 +1079,4 @@ Log_par("[TERMINATION] Finalizing... ", 0);
 MPI_Barrier(MPI_COMM_WORLD);
 // End execution
 return _best_ub;
->>>>>>> 3f93116 (Production script run_instances now supports changing color strategy)
 }
