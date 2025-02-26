@@ -31,10 +31,12 @@ int main(int argc, char** argv) {
     int balanced = 1;
     int color_strategy = 0;
     std::string file_name;
+    std::string output_file = "output.txt";
 
     // Check for required arguments
     if (argc < 2) {
-        std::cerr << "Usage: " << argv[0] << " <file_name> [--timeout=<timeout>] [--sol_gather_period=<period>] [--balanced=<0|1>]\n";
+        std::cerr << "Usage: " << argv[0] << " <file_name> [--timeout=<timeout>] [--sol_gather_period=<period>] "
+                  << "[--balanced=<0|1>] [--output=<output_file>]\n";
         return 1;
     }
 
@@ -63,6 +65,8 @@ int main(int argc, char** argv) {
                     balanced = std::stoi(value);
                 } else if (key == "--color_strategy") {
                     color_strategy = std::stoi(value);
+                } else if (key == "--output") {
+                    output_file = value;
                 } else {
                     std::cerr << "Error: Unknown argument " << arg << "\n";
                     return 1;
@@ -76,6 +80,7 @@ int main(int argc, char** argv) {
             return 1;
         }
     }
+
 
     // Load expected results from text file
     std::ifstream txt_file("expected_chi.txt");
@@ -186,7 +191,41 @@ int main(int argc, char** argv) {
         else 
             std::cout << "Suceeded: Chromatic number: " << chromatic_number << std::endl;
         
+            std::ofstream out(output_file);
+            out << "problem_instance_file_name "    << file_name << std::endl;
+            out << "cmd line "                      << std::endl;
+            out << "solver version "                << std::endl;
+            out << "number_of_vertices "            << graph->GetNumVertices() << std::endl;
+            out << "number_of_edges: "              << graph->GetNumEdges() << std::endl;
+            out << "time_limit_sec "                << timeout << std::endl;
+            int n_proc;
+            MPI_Comm_size(MPI_COMM_WORLD, &n_proc);
+            out << "number_of_worker_processes "    << n_proc << std::endl;
+            out << "number_of_cores_per_worker "    << 4 << std::endl;
+            if ( optimum_time == -1 ) {
+                out << "wall_time_sec "             << "> 10000" << std::endl;
+                out << "is_within_time_limit "      << false << std::endl;
+            } else {
+                out << "wall_time_sec "             << optimum_time << std::endl;
+                out << "is_within_time_limit "      << true << std::endl;
+            }
+
+            std::vector<unsigned short> colors = graph->GetFullColoring();
+            unsigned max_color = 0;
+            for ( int color : colors ) {
+                if ( color > max_color ) {
+                    max_color = color;
+                }
+            }
+
+            out << "number_of_colors "              << max_color << std::endl;
+            std::vector<int> vertices = graph->GetVertices();
+            for ( int vertex : vertices ) {
+                out << vertex << " " << colors[vertex] << std::endl;
+            }
+
     }
+
 
     MPI_Finalize();
     return 0;
