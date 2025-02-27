@@ -111,7 +111,7 @@ int main(int argc, char* argv[]) {
             
             std::string output = file_chi_pair.first;
             output = output.substr(0, output.size() - 3) + "_output.txt";
-            ofs << "./run_instance " << file_chi_pair.first << "--timeout=10000 --sol_gather_period=20 --balanced=1 --output=" 
+            ofs << "srun run_instance " << file_chi_pair.first << "--timeout=10000 --sol_gather_period=20 --balanced=1 --output=" 
                 << output << std::endl;
 
             command = "sbatch " + output_file;
@@ -137,7 +137,7 @@ int main(int argc, char* argv[]) {
             
             std::string output = file_chi_pair.first;
             output = output.substr(0, output.size() - 3) + "_output.txt";
-            ofs << "./run_instance " << file_chi_pair.first << "--timeout=10000 --sol_gather_period=20 --balanced=1 --output=" 
+            ofs << "srun run_instance " << file_chi_pair.first << "--timeout=10000 --sol_gather_period=20 --balanced=1 --output=" 
                 << output << std::endl;
 
 
@@ -164,7 +164,7 @@ int main(int argc, char* argv[]) {
             
             std::string output = file_chi_pair.first;
             output = output.substr(0, output.size() - 3) + "_output.txt";
-            ofs << "./run_instance " << file_chi_pair.first << "--timeout=10000 --sol_gather_period=20 --balanced=1 --output=" 
+            ofs << "srun run_instance " << file_chi_pair.first << "--timeout=10000 --sol_gather_period=20 --balanced=1 --output=" 
                 << output << std::endl;
 
             command = "sbatch " + output_file;
