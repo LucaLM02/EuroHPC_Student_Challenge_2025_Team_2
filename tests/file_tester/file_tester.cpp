@@ -87,7 +87,7 @@ void FileTester::runTests() {
         }
         for(int i=0;i<10;i++){
             CSRGraph* graph = CSRGraph::LoadFromDimacs(file);
-            BranchNBoundPar* solver = new BranchNBoundPar(branching_strategy, clique_strategy, color_strategy, "log_" + std::to_string(my_rank) + "_" + std::to_string(i) + ".txt");
+            BranchNBoundPar* solver = new BranchNBoundPar(branching_strategy, clique_strategy, color_strategy, "log_" + std::to_string(my_rank) + "_" + std::to_string(i) + ".txt", false);
             chromatic_number = solver->Solve(*graph, optimum_time, 10);
 
             if (my_rank == 0){
