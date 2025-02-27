@@ -103,15 +103,15 @@ int main(int argc, char* argv[]) {
                 << "#SBATCH --job-name=team2_mpi_branch_n_bound    # Job name" << std::endl 
                 << "#SBATCH --nodes=1                        # Number of nodes" << std::endl
                 << "#SBATCH --ntasks-per-node=8              # MPI tasks per node" << std::endl
-                << "#SBATCH --cpus-per-task=16               # Cores per MPI task (increase if CPU-BOUND)" << std::endl
-                << "#SBATCH --time=03:00:00                  # Time limit (HH:MM:SS)" << std::endl
+                << "#SBATCH --cpus-per-task=4               # Cores per MPI task (increase if CPU-BOUND)" << std::endl
+                << "#SBATCH --time=00:15:00                  # Time limit (HH:MM:SS)" << std::endl
                 << "#SBATCH --partition=cpu                  # Replace with actual partition" << std::endl
                 << "#SBATCH --output=output_mpi.txt           # Standard output file" << std::endl
                 << "#SBATCH --error=error_mpi.txt             # Standard error file" << std::endl << std::endl;
             
             std::string output = file_chi_pair.first;
             output = output.substr(0, output.size() - 3) + "_output.txt";
-            ofs << "srun run_instance " << file_chi_pair.first << " --timeout=10000 --sol_gather_period=20 --balanced=1 --output=" 
+            ofs << "srun run_instance " << file_chi_pair.first << " --timeout=600 --sol_gather_period=20 --balanced=1 --output=" 
                 << output << std::endl;
 
             command = "sbatch " + output_file;
@@ -127,10 +127,10 @@ int main(int argc, char* argv[]) {
             
             ofs << "#!/bin/bash " << std::endl
                 << "#SBATCH --job-name=team2_mpi_branch_n_bound    # Job name" << std::endl 
-                << "#SBATCH --nodes=4                        # Number of nodes" << std::endl
+                << "#SBATCH --nodes=8                        # Number of nodes" << std::endl
                 << "#SBATCH --ntasks-per-node=8              # MPI tasks per node" << std::endl
-                << "#SBATCH --cpus-per-task=16               # Cores per MPI task (increase if CPU-BOUND)" << std::endl
-                << "#SBATCH --time=03:00:00                  # Time limit (HH:MM:SS)" << std::endl
+                << "#SBATCH --cpus-per-task=4               # Cores per MPI task (increase if CPU-BOUND)" << std::endl
+                << "#SBATCH --time=04:00:00                  # Time limit (HH:MM:SS)" << std::endl
                 << "#SBATCH --partition=cpu                  # Replace with actual partition" << std::endl
                 << "#SBATCH --output=output_mpi.txt           # Standard output file" << std::endl
                 << "#SBATCH --error=error_mpi.txt             # Standard error file" << std::endl << std::endl;
@@ -156,8 +156,8 @@ int main(int argc, char* argv[]) {
                 << "#SBATCH --job-name=team2_mpi_branch_n_bound    # Job name" << std::endl 
                 << "#SBATCH --nodes=64                        # Number of nodes" << std::endl
                 << "#SBATCH --ntasks-per-node=8              # MPI tasks per node" << std::endl
-                << "#SBATCH --cpus-per-task=16               # Cores per MPI task (increase if CPU-BOUND)" << std::endl
-                << "#SBATCH --time=03:00:00                  # Time limit (HH:MM:SS)" << std::endl
+                << "#SBATCH --cpus-per-task=4               # Cores per MPI task (increase if CPU-BOUND)" << std::endl
+                << "#SBATCH --time=04:00:00                  # Time limit (HH:MM:SS)" << std::endl
                 << "#SBATCH --partition=cpu                  # Replace with actual partition" << std::endl
                 << "#SBATCH --output=output_mpi.txt           # Standard output file" << std::endl
                 << "#SBATCH --error=error_mpi.txt             # Standard error file" << std::endl << std::endl;
