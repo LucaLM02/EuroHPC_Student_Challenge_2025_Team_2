@@ -36,6 +36,7 @@ class BranchNBoundPar {
 		std::atomic<unsigned short> _best_ub = USHRT_MAX;
 		std::mutex _best_branch_mutex;
 		Branch _current_best;
+		bool _logging_flag;
 
 		void ColorInitialGraph(Graph& initial_graph, const Branch& optimal_branch);
 
@@ -109,10 +110,12 @@ class BranchNBoundPar {
 		 BranchNBoundPar(BranchingStrategy& branching_strat,
 			CliqueStrategy& clique_strat,
 			ColorStrategy& color_strat,
-			const std::string& log_file_path)
+			const std::string& log_file_path,
+			bool logging_flag)
 			: _branching_strat(branching_strat),
 			_clique_strat(clique_strat),
-			_color_strat(color_strat){
+			_color_strat(color_strat),
+			_logging_flag{logging_flag}{
 				_log_file.open(log_file_path);
 				if (!_log_file.is_open()) {
 					throw std::runtime_error("Failed to open log file: " + log_file_path);
@@ -128,8 +131,12 @@ class BranchNBoundPar {
          * @param sol_gather_period The period (in seconds) at which the best upper bound is gathered.
          * @return int The number of colors used in the optimal solution.
          */
-		int Solve(Graph& g, double &optimum_time, int timeout_seconds = 60, int sol_gather_period = 10, unsigned short expected_chi = -1);
-	};
+		int Solve(Graph& g, double &optimum_time, int timeout_seconds = 60, 
+					int sol_gather_period = 10, 
+					unsigned short expected_chi = -1);
+				  
+};
+				  
 
 
 class BalancedBranchNBoundPar {
@@ -142,6 +149,7 @@ class BalancedBranchNBoundPar {
 		std::atomic<unsigned short> _best_ub = USHRT_MAX;
 		std::mutex _best_branch_mutex;
 		Branch _current_best;
+		bool _logging_flag;
 
 		void ColorInitialGraph(Graph& initial_graph, const Branch& optimal_branch);
 
@@ -215,10 +223,12 @@ class BalancedBranchNBoundPar {
 			BalancedBranchNBoundPar(BranchingStrategy& branching_strat,
 			CliqueStrategy& clique_strat,
 			ColorStrategy& color_strat,
-			const std::string& log_file_path)
+			const std::string& log_file_path,
+			bool logging_flag)
 			: _branching_strat(branching_strat),
 			_clique_strat(clique_strat),
-			_color_strat(color_strat)
+			_color_strat(color_strat),
+			_logging_flag{logging_flag}
 			{
 				_log_file.open(log_file_path);
 				if (!_log_file.is_open()) {

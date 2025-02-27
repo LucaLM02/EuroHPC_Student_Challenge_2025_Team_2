@@ -107,12 +107,12 @@ int main(int argc, char** argv) {
     int chromatic_number;
     double start_time, end_time;
     if ( b_n_b_flag == 0) {
-        BalancedBranchNBoundPar solver(branching_strategy, clique_strategy, *color_strategy, "log" + std::to_string(my_rank) + ".txt");
+        BalancedBranchNBoundPar solver(branching_strategy, clique_strategy, *color_strategy, "log" + std::to_string(my_rank) + ".txt", false);
         start_time = MPI_Wtime();
         chromatic_number = solver.Solve(*graph, optimum_time, timeout, 10 ,expected_chi);
         end_time = MPI_Wtime();
     } else if ( b_n_b_flag == 1 ) {
-        BranchNBoundPar solver(branching_strategy, clique_strategy, *color_strategy, "log" + std::to_string(my_rank) + ".txt");
+        BranchNBoundPar solver(branching_strategy, clique_strategy, *color_strategy, "log" + std::to_string(my_rank) + ".txt", false);
         start_time = MPI_Wtime();
         chromatic_number = solver.Solve(*graph, optimum_time, timeout, 10 ,expected_chi);
         end_time = MPI_Wtime();

@@ -59,13 +59,14 @@ int main(int argc, char** argv) {
     int sol_gather_period = 10;
     int balanced = 1;
     int color_strategy = 0;
+    int logging_flag;
     std::string file_name;
     std::string output_file = "output.txt";
 
     // Check for required arguments
     if (argc < 2) {
         std::cerr << "Usage: " << argv[0] << " <file_name> [--timeout=<timeout>] [--sol_gather_period=<period>] "
-                  << "[--balanced=<0|1>] [--output=<output_file>]\n";
+                  << "[--balanced=<0|1>] [--output=<output_file>] [--logging=<0|1>]\n";
         return 1;
     }
 
@@ -96,6 +97,8 @@ int main(int argc, char** argv) {
                     color_strategy = std::stoi(value);
                 } else if (key == "--output") {
                     output_file = value;
+                } else if (key == "--logging") {
+                    logging_flag = std::stoi(value);
                 } else {
                     std::cerr << "Error: Unknown argument " << arg << "\n";
                     return 1;
@@ -192,8 +195,8 @@ int main(int argc, char** argv) {
     graph = CSRGraph::LoadFromDimacs(full_file_name);
     std::cout << "Rank " << my_rank << ": Successfully read Graph " << file_name << std::endl;
 
-    BranchNBoundPar solver(branching_strategy, clique_strategy, *color_strategy_obj, "logs/log_" + std::to_string(my_rank) + ".txt");
-    BalancedBranchNBoundPar balanced_solver(branching_strategy, clique_strategy, *color_strategy_obj, "logs/log_" + std::to_string(my_rank) + ".txt");
+    BranchNBoundPar solver(branching_strategy, clique_strategy, *color_strategy_obj, "logs/log_" + std::to_string(my_rank) + ".txt", logging_flag==1);
+    BalancedBranchNBoundPar balanced_solver(branching_strategy, clique_strategy, *color_strategy_obj, "logs/log_" + std::to_string(my_rank) + ".txt", logging_flag==1);
 
 
     // Start the timer.
