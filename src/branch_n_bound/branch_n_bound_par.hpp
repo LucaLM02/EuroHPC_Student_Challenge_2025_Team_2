@@ -32,7 +32,22 @@ class BranchNBoundPar {
 		CliqueStrategy& _clique_strat;
 		ColorStrategy& _color_strat;
 		std::ofstream _log_file;
+
 		std::atomic<unsigned short> _best_ub = USHRT_MAX;
+		std::mutex _best_branch_mutex;
+		Branch _current_best;
+
+		void ColorInitialGraph(Graph& initial_graph, const Branch& optimal_branch);
+
+		/**
+		 * @brief updates the _current_best branch to store the best graph with the best coloring
+		 * 
+		 * @param depth depth at which the graph was colored
+		 * @param lb lower bound of the best colored graph
+		 * @param ub upper bound of the best colored graph
+		 * @param graph the best colored graph
+		 */
+		void UpdateCurrentBest(int depth, int lb, unsigned short ub, GraphPtr graph);
 
 		/**
 		 * @brief Logs a message to the log file in a MPI environment and OpenMP parallel section.
@@ -123,7 +138,22 @@ class BalancedBranchNBoundPar {
 		CliqueStrategy& _clique_strat;
 		ColorStrategy& _color_strat;
 		std::ofstream _log_file;
+
 		std::atomic<unsigned short> _best_ub = USHRT_MAX;
+		std::mutex _best_branch_mutex;
+		Branch _current_best;
+
+		void ColorInitialGraph(Graph& initial_graph, const Branch& optimal_branch);
+
+		/**
+		 * @brief updates the _current_best branch to store the best graph with the best coloring
+		 * 
+		 * @param depth depth at which the graph was colored
+		 * @param lb lower bound of the best colored graph
+		 * @param ub upper bound of the best colored graph
+		 * @param graph the best colored graph
+		 */
+		void UpdateCurrentBest(int depth, int lb, unsigned short ub, GraphPtr graph);
 	
 		/**
 		 * @brief Logs a message to the log file in a openmp parallel section.

@@ -16,6 +16,35 @@
 #include "csr_graph.hpp"
 #include "dimacs.hpp"
 
+
+/**
+ * @brief checks if the coloring is valid (i.e. a vertex is not colored or two neighours have the same color)
+ * 
+ * @param graph graph to check if the coloring is valid
+ * @return true if coloring is valid
+ * @return false if coloring is not valid
+ */
+bool CheckColoring(const Graph& graph) {
+    unsigned short current_color;
+    std::vector<int> neighbours;
+    for ( int vertex : graph.GetVertices() ) {
+        current_color = graph.GetColor(vertex);
+        graph.GetNeighbours(vertex, neighbours);
+
+        if ( current_color == 0 ) {
+            return false;
+        }
+
+        for ( int neighbour : neighbours ) {
+            if ( graph.GetColor(neighbour) == current_color ) {
+                return false;
+            } 
+        }
+        
+    }
+    return true;
+}
+
 /**
  * @brief Main function to run the graph coloring solver using the branch and bound method.
  *
@@ -189,6 +218,10 @@ int main(int argc, char** argv) {
         else
             std::cout << "Solve() finished prematurely measuring " << optimum_time << " seconds. " << std::endl;
         
+        if ( !CheckColoring(*graph) ) {
+            std::cout << "Coloring is not valid!" << std::endl;
+        }
+
         // Compare with expected chromatic number
         if (chromatic_number != expected_chromatic_number) 
             std::cout << "Failed: expected " << expected_chromatic_number << " but got " << chromatic_number << std::endl;

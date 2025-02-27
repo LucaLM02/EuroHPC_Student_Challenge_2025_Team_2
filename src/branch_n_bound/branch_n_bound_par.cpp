@@ -2,37 +2,13 @@
 
 #define TIMEOUT_CHECK_WAIT_TIME 1  // Sleep time for timeout checker
 
-    bool CheckColoring(const Graph& graph) {
-        unsigned short current_color;
-        std::vector<int> neighbours;
-        for ( int vertex : graph.GetVertices() ) {
-            current_color = graph.GetColor(vertex);
-            graph.GetNeighbours(vertex, neighbours);
-
-            if ( current_color == 0 ) {
-                std::cout << "Vertex: " << vertex << " has no color" << std::endl;
-                return false;
-            }
-
-            for ( int neighbour : neighbours ) {
-                if ( graph.GetColor(neighbour) == current_color ) {
-                    std::cout << "Vertex: " << vertex << " Color: " << current_color 
-                              << " Neighbour: " << neighbour << " Color: " << graph.GetColor(neighbour) << std::endl;
-                    return false;
-                } 
-            }
-            
-        }
-        return true;
-    }
-
-
 // tags for MPI communication
 #define TAG_WORK_REQUEST 1
 #define TAG_WORK_RESPONSE 2
 #define TAG_SOLUTION_FOUND 4
 #define TAG_IDLE 5
 #define TAG_WORK_STEALING 6
+#define TAG_TIMEOUT_SOLUTION 7
 
 std::atomic<bool> terminate_flag = false;
 std::mutex queue_mutex;	 // avoid concurrent access to the queue
@@ -54,8 +30,37 @@ bool BranchNBoundPar::CheckTimeout(
 	return elapsed_seconds >= timeout_seconds;
 }
 
+void BranchNBoundPar::ColorInitialGraph(Graph &graph_to_color, const Branch &optimal_branch)
+{
+	std::vector<int> vertices 						  = optimal_branch.g->GetVertices();
+	std::vector<unsigned short> optimal_full_coloring = optimal_branch.g->GetFullColoring();
+	std::vector<unsigned short> full_coloring(graph_to_color.GetNumVertices()+1);
+	for ( int vertex : vertices ) {
+		// coloring the vertex...
+		full_coloring[vertex] = optimal_full_coloring[vertex];
+		// ...and all vertices merged into it
+		std::vector<int> merged_vertices = optimal_branch.g->GetMergedVertices(vertex);
+		for ( int merged : merged_vertices ) {
+			full_coloring[merged] = full_coloring[vertex];
+		}
+	}
 
-void BranchNBoundPar::Log_par(const std::string& message, int depth) {
+	graph_to_color.SetFullColoring(full_coloring);
+}
+
+void BranchNBoundPar::UpdateCurrentBest(int depth, int lb, unsigned short ub, GraphPtr graph)
+{
+    std::lock_guard<std::mutex> lock(_best_branch_mutex);
+	Branch best;
+	best.depth = depth;
+	best.lb = lb;
+	best.ub = ub;
+	best.g = std::move(graph);
+	_current_best = std::move(best);
+}
+
+void BranchNBoundPar::Log_par(const std::string &message, int depth)
+{
     std::lock_guard<std::mutex> lock(log_mutex);
     if (_log_file.is_open()) {
         // Get the current MPI walltime
@@ -207,20 +212,22 @@ void BranchNBoundPar::thread_0_terminator(int my_rank, int p, int global_start_t
 				//Branch optimal_branch = Branch::deserialize(buffer);
 				Branch optimal_branch = recvBranch(status_solution.MPI_SOURCE, TAG_SOLUTION_FOUND, MPI_COMM_WORLD);
 
-				std::vector<int> vertices 						  = optimal_branch.g->GetVertices();
-				std::vector<unsigned short> optimal_full_coloring = optimal_branch.g->GetFullColoring();
-				std::vector<unsigned short> full_coloring(graph_to_color.GetNumVertices()+1);
-				for ( int vertex : vertices ) {
-					// coloring the vertex...
-					full_coloring[vertex] = optimal_full_coloring[vertex];
-					// ...and all vertices merged into it
-					std::vector<int> merged_vertices = optimal_branch.g->GetMergedVertices(vertex);
-					for ( int merged : merged_vertices ) {
-						full_coloring[merged] = full_coloring[vertex];
-					}
-				}
+				ColorInitialGraph(graph_to_color, optimal_branch);
 
-				graph_to_color.SetFullColoring(full_coloring);
+				// std::vector<int> vertices 						  = optimal_branch.g->GetVertices();
+				// std::vector<unsigned short> optimal_full_coloring = optimal_branch.g->GetFullColoring();
+				// std::vector<unsigned short> full_coloring(graph_to_color.GetNumVertices()+1);
+				// for ( int vertex : vertices ) {
+				// 	// coloring the vertex...
+				// 	full_coloring[vertex] = optimal_full_coloring[vertex];
+				// 	// ...and all vertices merged into it
+				// 	std::vector<int> merged_vertices = optimal_branch.g->GetMergedVertices(vertex);
+				// 	for ( int merged : merged_vertices ) {
+				// 		full_coloring[merged] = full_coloring[vertex];
+				// 	}
+				// }
+
+				// graph_to_color.SetFullColoring(full_coloring);
 
 				_best_ub.store(optimal_branch.ub);
 
@@ -232,35 +239,35 @@ void BranchNBoundPar::thread_0_terminator(int my_rank, int p, int global_start_t
 
 			// Listen for idle status updates from workers
 			while (true) {
-			int flag_idle = 0;
-			MPI_Iprobe(MPI_ANY_SOURCE, TAG_IDLE, MPI_COMM_WORLD, &flag_idle, &status_idle);
+				int flag_idle = 0;
+				MPI_Iprobe(MPI_ANY_SOURCE, TAG_IDLE, MPI_COMM_WORLD, &flag_idle, &status_idle);
 
-			if (!flag_idle) break;
+				if (!flag_idle) break;
 
-			//std::cout << "Master received idle status" << std::endl;
-			//printMessage("Master received idle status from " + std::to_string(status_idle.MPI_SOURCE));
-			int worker_idle_status = 0;
+				//std::cout << "Master received idle status" << std::endl;
+				//printMessage("Master received idle status from " + std::to_string(status_idle.MPI_SOURCE));
+				int worker_idle_status = 0;
 
 
-			MPI_Request recv_request;
-			MPI_Irecv(&worker_idle_status, 1, MPI_INT, status_idle.MPI_SOURCE, TAG_IDLE, MPI_COMM_WORLD, &recv_request);
+				MPI_Request recv_request;
+				MPI_Irecv(&worker_idle_status, 1, MPI_INT, status_idle.MPI_SOURCE, TAG_IDLE, MPI_COMM_WORLD, &recv_request);
 
-			int completed = 0;
-			MPI_Status status_sol_completed;
-			while (!completed) {
-			if(terminate_flag.load()) break;
-			MPI_Test(&recv_request, &completed, &status_sol_completed);
-			usleep(1000);
-			}
+				int completed = 0;
+				MPI_Status status_sol_completed;
+				while (!completed) {
+					if(terminate_flag.load()) break;
+					MPI_Test(&recv_request, &completed, &status_sol_completed);
+					usleep(1000);
+				}
 
-			if(completed) idle_status[status_idle.MPI_SOURCE] = worker_idle_status;
+				if(completed) idle_status[status_idle.MPI_SOURCE] = worker_idle_status;
 			}
 
 			// Check if all workers are idle
 			if (std::all_of(idle_status.begin(), idle_status.end(), [](int status) { return status == 1; })) {
-			solution_found = 1;
-			optimum_time = MPI_Wtime() - global_start_time;
-			Log_par("[TERMINATION]: All processes idle.", 0);
+				solution_found = 1;
+				optimum_time = MPI_Wtime() - global_start_time;
+				Log_par("[TERMINATION]: All processes idle.", 0);
 			}
 
 		}
@@ -269,9 +276,28 @@ void BranchNBoundPar::thread_0_terminator(int my_rank, int p, int global_start_t
 		MPI_Bcast(&timeout_signal, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
 		// Exit if solution or timeout is detected
+		if ( timeout_signal ) {
+			if ( my_rank == 0 ) {
+				bool found = false;
+				Branch best_branch;
+				for ( int i = 1; i < p; i++ ) {
+					Branch b = recvBranch(i, TAG_TIMEOUT_SOLUTION, MPI_COMM_WORLD);
+
+					if ( (!found || b.ub < best_branch.ub ) && b.ub <= _best_ub.load() ) {
+						_best_ub.store(b.ub);
+						best_branch = b;
+					}
+				}
+
+				ColorInitialGraph(graph_to_color, best_branch);
+			} else {
+    			std::lock_guard<std::mutex> lock(_best_branch_mutex);
+				sendBranch(_current_best, 0, TAG_TIMEOUT_SOLUTION, MPI_COMM_WORLD);
+			}
+		}
 		if (solution_found || timeout_signal) {
-		terminate_flag.store(true, std::memory_order_relaxed);
-		break;
+			terminate_flag.store(true, std::memory_order_relaxed);
+			break;
 		}
 		usleep(10000);	// Prevent CPU overload (10 ms)
 	}
@@ -438,6 +464,8 @@ int BranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_seconds, 
 	std::atomic<unsigned short> best_ub = USHRT_MAX;
 	unsigned short ub1 = USHRT_MAX;
 	unsigned short ub2 = USHRT_MAX;
+	unsigned short lb1 = 0;
+	unsigned short lb2 = 0;
 
 	MPI_Status status_recv;
 	Branch branch_recv;
@@ -469,6 +497,7 @@ int BranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_seconds, 
 			unsigned short ub;
 			_color_strat.Color(g, ub);
 			_best_ub.store(ub);
+			UpdateCurrentBest(0, lb, ub, std::move(g.Clone()));
 	
 			// Log initial bounds
 			Log_par("[INITIALIZATION] Initial bounds: lb = " + std::to_string(lb) +
@@ -538,11 +567,19 @@ int BranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_seconds, 
 							"[FOUND] Chromatic number "
 							"found (very first computation at root): " + std::to_string(current_lb), current.depth);
 						_best_ub.store(current_ub);
+
+						UpdateCurrentBest(current.depth, current.lb, current.ub, std::move(current_G->Clone()));
+
 						MPI_Send(&current_ub, 1, MPI_UNSIGNED_SHORT, 0, TAG_SOLUTION_FOUND, MPI_COMM_WORLD);
 						break;
 					}
 					// If not at root (original graph, first iteration), prune .
-					_best_ub.store(std::min(current_ub, _best_ub.load()));
+					if ( current_ub < _best_ub.load() ) {
+						_best_ub.store(current_ub);
+
+						UpdateCurrentBest(current.depth, current.lb, current.ub, std::move(current_G->Clone()));
+					}
+
 					Log_par(
 						"[PRUNE] Branch pruned at "
 						"depth " + std::to_string(current.depth) +
@@ -573,7 +610,11 @@ int BranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_seconds, 
                         current.depth);
 
                 if (u == -1 || v == -1) {
-                    _best_ub.store(std::min<unsigned short>(current_G->GetNumVertices(), _best_ub.load()));
+					if ( current_G->GetNumVertices() < _best_ub.load() ) {
+                    	_best_ub.store(current_G->GetNumVertices());
+
+						UpdateCurrentBest(current.depth, current.lb, current.ub, std::move(current_G->Clone()));
+					}
                     continue;
                 }
 
@@ -598,7 +639,7 @@ int BranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_seconds, 
 					// Merge vertices once when `current.depth == my_rank`
 					auto G_merge = current_G->Clone();
 					G_merge->MergeVertices(u, v);
-					int lb1 = _clique_strat.FindClique(*G_merge);
+					lb1 = _clique_strat.FindClique(*G_merge);
 					_color_strat.Color(*G_merge, ub1);
 				
 					Log_par("[Merge] depth " + std::to_string(current.depth) + 
@@ -613,17 +654,33 @@ int BranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_seconds, 
 					// After merging, branch in both directions
 					auto G1 = current_G->Clone();
 					G1->MergeVertices(u, v);
-					int lb1 = _clique_strat.FindClique(*G1);
+					lb1 = _clique_strat.FindClique(*G1);
 					_color_strat.Color(*G1, ub1);
-					{
-						std::lock_guard<std::mutex> lock(queue_mutex);
-						queue.push(Branch(std::move(G1), lb1, ub1, current.depth + 1));
-					}
 				
 					auto G2 = current_G->Clone();
 					G2->AddEdge(u, v);
 					int lb2 = _clique_strat.FindClique(*G2);
 					_color_strat.Color(*G2, ub2);
+
+					// Update local sbest_ub
+					unsigned short previous_best_ub = _best_ub.load();
+					if ( ub1 < previous_best_ub && ub1 <= ub2 ) {
+						_best_ub.store(ub1);
+
+						UpdateCurrentBest(current.depth, lb1, ub1, std::move(G1->Clone()));
+						Log_par("[UPDATE] Updated best_ub: " + std::to_string(_best_ub.load()), current.depth);
+					} else if ( ub2 < previous_best_ub ) {
+						_best_ub.store(ub2);
+
+						UpdateCurrentBest(current.depth, lb2, ub2, std::move(G2->Clone()));
+						Log_par("[UPDATE] Updated best_ub: " + std::to_string(_best_ub.load()), current.depth);
+					}
+
+					// pushing new branches in the queue
+					{
+						std::lock_guard<std::mutex> lock(queue_mutex);
+						queue.push(Branch(std::move(G1), lb1, ub1, current.depth + 1));
+					}
 					{
 						std::lock_guard<std::mutex> lock(queue_mutex);
 						queue.push(Branch(std::move(G2), lb2, ub2, current.depth + 1));
@@ -632,10 +689,6 @@ int BranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_seconds, 
 
                 //lock_task.unlock();
 				
-				// Update local sbest_ub
-				unsigned short previous_best_ub = _best_ub.load();
-				_best_ub.store(std::min({previous_best_ub, ub1, ub2}));
-				Log_par("[UPDATE] Updated best_ub: " + std::to_string(_best_ub.load()), current.depth);
 
 				first_iteration = false;
 			}
@@ -651,6 +704,35 @@ int BranchNBoundPar::Solve(Graph& g, double &optimum_time, int timeout_seconds, 
 
 
 // BALANCED BRANCH AND BOUND METHODS //
+
+void BalancedBranchNBoundPar::ColorInitialGraph(Graph &graph_to_color, const Branch &optimal_branch)
+{
+	std::vector<int> vertices 						  = optimal_branch.g->GetVertices();
+	std::vector<unsigned short> optimal_full_coloring = optimal_branch.g->GetFullColoring();
+	std::vector<unsigned short> full_coloring(graph_to_color.GetNumVertices()+1);
+	for ( int vertex : vertices ) {
+		// coloring the vertex...
+		full_coloring[vertex] = optimal_full_coloring[vertex];
+		// ...and all vertices merged into it
+		std::vector<int> merged_vertices = optimal_branch.g->GetMergedVertices(vertex);
+		for ( int merged : merged_vertices ) {
+			full_coloring[merged] = full_coloring[vertex];
+		}
+	}
+
+	graph_to_color.SetFullColoring(full_coloring);
+}
+
+void BalancedBranchNBoundPar::UpdateCurrentBest(int depth, int lb, unsigned short ub, GraphPtr graph)
+{
+    std::lock_guard<std::mutex> lock(_best_branch_mutex);
+	Branch best;
+	best.depth = depth;
+	best.lb = lb;
+	best.ub = ub;
+	best.g = std::move(graph);
+	_current_best = std::move(best);
+}
 
 
 bool BalancedBranchNBoundPar::CheckTimeout(
@@ -1086,7 +1168,6 @@ queue.push(Branch(std::move(G1), lb1, ub1, current.depth + 1));
 				int lb2 = _clique_strat.FindClique(*G2);
 				unsigned short ub2;
 				_color_strat.Color(*G2, ub2);
-				CheckColoring(*G2);
 				Log_par("[Branch 2] (Add edge u-v) "
 				"lb = " + std::to_string(lb2) +
 				", ub = " + std::to_string(ub2),
