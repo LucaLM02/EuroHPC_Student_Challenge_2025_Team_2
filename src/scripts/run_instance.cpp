@@ -59,7 +59,7 @@ int main(int argc, char** argv) {
     int sol_gather_period = 10;
     int balanced = 1;
     int color_strategy = 0;
-    int logging_flag;
+    int logging_flag = 0;
     std::string file_name;
     std::string output_file = "output.txt";
 
