@@ -849,15 +849,18 @@ void BalancedBranchNBoundPar::thread_0_terminator(int my_rank, int p, int global
 			if ( my_rank == 0 ) {
 				bool found = false;
 				Branch best_branch;
+				{
+					std::lock_guard<std::mutex> lock(_best_branch_mutex);
+					best_branch =  _current_best;
+				}
 				for ( int i = 1; i < p; i++ ) {
 					Branch b = recvBranch(i, TAG_TIMEOUT_SOLUTION, MPI_COMM_WORLD);
-
 					if ( (!found || b.ub < best_branch.ub ) && b.ub <= _best_ub.load() ) {
 						_best_ub.store(b.ub);
 						best_branch = b;
 					}
 				}
-
+				
 				ColorInitialGraph(graph_to_color, best_branch);
 			} else {
     			std::lock_guard<std::mutex> lock(_best_branch_mutex);
