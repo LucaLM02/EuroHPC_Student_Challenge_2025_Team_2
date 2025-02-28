@@ -4,6 +4,7 @@
 #include <vector>
 #include <set>
 #include <memory>
+#include <sstream>
 
 /**
  *  @brief Abstract class that represents an undirected (possibly loop-)graph, composed by a set of vertices and edges. 
@@ -21,6 +22,22 @@
  */
 class Graph {
     public:
+
+        class GraphHistory {
+            public:
+                static constexpr bool MERGE = 0;
+                static constexpr bool ADD_EDGE = 1;
+
+                void AddAction(int v, int u, bool action);
+                const std::vector<std::pair<int, int>>& GetVertices() { return _vertices; }
+                const std::vector<bool>& GetActions()                 { return _actions; }
+                virtual std::string Serialize() const;
+                virtual void Deserialize(const std::string& data);
+            private:
+                std::vector<std::pair<int, int>> _vertices;
+                std::vector<bool> _actions;
+        };
+
         /**
          * @brief Destroys the Graph object
          */
@@ -29,6 +46,12 @@ class Graph {
         virtual bool isEqual(const Graph &ot) const = 0;
 
         // ================================== MODIFIERS ==================================
+        /** TODO
+         * @brief 
+         * 
+         * @param graph_history 
+         */
+        virtual void AddHistory(GraphHistory graph_history) = 0;
         /**
          *  @brief adds the edge <v,w>=<w,v> to the graph
          * 
@@ -147,6 +170,7 @@ class Graph {
 
 
         // ================================== GETTERS ====================================
+        GraphHistory GetHistory() { return _history; };
         /**
          *  @brief gets the neighbours of `vertex` as a vector
          *  @details
@@ -309,6 +333,10 @@ class Graph {
         // ================================= SERIALIZATION ==============================
         virtual std::string Serialize() const = 0;
         virtual void Deserialize(const std::string& data) = 0;
+
+    protected:
+        GraphHistory _history;
 };
+
 
 #endif // GRAPH_HPP

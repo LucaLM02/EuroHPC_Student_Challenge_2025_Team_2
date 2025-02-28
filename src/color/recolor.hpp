@@ -2,7 +2,9 @@
 #define RECOLOR_HPP
 
 #include "graph.hpp"
+#include "color.hpp"
 #include <random>
+
 
 /**
  *  @brief abstract functional class that wraps Recolor method; (partially) recolors a graph 
@@ -205,6 +207,24 @@ class SwapRecolorStructure {
         bool _dont_color;
 
         bool RecolorBody(std::vector<int>& vertices);
+};
+
+class ColorNRecolorStrategy : public ColorStrategy {
+    public:
+        ColorNRecolorStrategy(ColorStrategy& color_strategy, 
+                              RecolorStrategy& recolor_strategy)
+        : _color_strategy{color_strategy}, _recolor_strategy{recolor_strategy}
+        {}
+
+        void Color(Graph &graph,
+                   unsigned short& k_max) const {
+            _color_strategy.Color(graph, k_max);
+            _recolor_strategy.Recolor(graph);
+        }
+
+    private:
+        ColorStrategy&   _color_strategy;
+        RecolorStrategy& _recolor_strategy;
 };
 
 #endif // RECOLOR_HPP

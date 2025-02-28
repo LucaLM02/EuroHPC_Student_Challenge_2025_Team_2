@@ -115,7 +115,6 @@ std::string CSRGraph::Serialize() const {
         for (int vertex : merged) {
             oss << vertex << " ";
         }
-        oss << "\n";
     }
 
 	return oss.str();
@@ -155,11 +154,12 @@ void CSRGraph::Deserialize(const std::string& data) {
 
     _merged_vertices.resize(mergedSize);
     for (size_t i = 0; i < mergedSize; ++i) {
-		int mergedCount=1;
-		if(!iss >> mergedCount){
+		int mergedCount=0;
+		if(!(iss >> mergedCount)){
 			std::cerr << "Error: failed to read mergedCount" << std::endl;
 		}
 	
+		if ( mergedCount == 0 ) continue;
 		std::vector<int> mergedVec;  
 		mergedVec.reserve(mergedCount);  // avoid reallocations
 	
@@ -184,8 +184,26 @@ void CSRGraph::Deserialize(const std::string& data) {
 	_nEdges = numEdges;
 }
 
-void CSRGraph::AddEdge(int v, int w) {
-	_edges[v].push_back(w);
+void CSRGraph::AddHistory(GraphHistory graph_history)
+{
+	const std::vector<std::pair<int, int>>& vertices = graph_history.GetVertices();
+	const std::vector<bool>& actions 				 = graph_history.GetActions();
+	for ( int i = 0; i < vertices.size(); i++ ) {
+		if ( actions[i] == GraphHistory::MERGE ) {
+			this->MergeVertices(vertices[i].first, vertices[i].second);
+		} else {
+			this->AddEdge(vertices[i].first, vertices[i].second);
+		}
+	}
+
+	
+}
+
+void CSRGraph::AddEdge(int v, int w)
+{
+	_history.AddAction(v,w, Graph::GraphHistory::ADD_EDGE);
+	
+    _edges[v].push_back(w);
 	_edges[w].push_back(v);
 	_nEdges++;
 
@@ -246,6 +264,8 @@ void CSRGraph::RemoveVertex(int v) {
 }
 
 void CSRGraph::MergeVertices(int v, int w) {
+	_history.AddAction(v,w, Graph::GraphHistory::MERGE);
+
     // O(2*#neighbours*log(#neighbours))
     std::sort(_edges[v].begin(), _edges[v].end());
     std::sort(_edges[w].begin(), _edges[w].end());
@@ -308,7 +328,6 @@ void CSRGraph::MergeVertices(int v, int w) {
             }
         }
     }
-
 }
 
 void CSRGraph::SetColoring(const std::vector<unsigned short>& colors)
@@ -382,11 +401,11 @@ void CSRGraph::SortByExDegree(bool ascending)
 
 void CSRGraph::SortByColor(bool ascending)
 {
-    static auto ascendingCompare = 
+    auto ascendingCompare = 
     [&](int v, int w) -> bool {
         return _coloring[v] < _coloring[w];
     };
-    static auto descendingCompare = 
+    auto descendingCompare = 
     [&](int v, int w) -> bool {
         return _coloring[v] > _coloring[w];
     };

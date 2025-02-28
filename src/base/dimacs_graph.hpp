@@ -16,6 +16,8 @@ class DimacsGraph : public Graph {
             return false;
         }
         // -------------------- MODIFIERS --------------------
+        
+        virtual void AddHistory(GraphHistory graph_history) {};
         virtual void AddEdge(int v, int w) override;
         virtual void RemoveEdge(int v, int w) override;
 

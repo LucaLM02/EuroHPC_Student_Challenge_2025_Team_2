@@ -93,7 +93,7 @@ int main(int argc, char** argv) {
 
         graph = CSRGraph::LoadFromDimacs(file_name);
 	
-		BranchNBoundPar solver(branching_strategy, clique_strategy, color_strategy, "log_" + std::to_string(my_rank) + "_" + ".txt");
+		BranchNBoundPar solver(branching_strategy, clique_strategy, color_strategy, "log_" + std::to_string(my_rank) + "_" + ".txt", false);
 
 		if (my_rank == 0) {
 		    std::cout << "Starting trial " << i << "..." << std::endl;

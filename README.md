@@ -31,18 +31,22 @@ This project is a solution to the student challenge for EuroHPC Summit 2025.
 ## Usage
 To run the executable from the root directory, use the following command:
 ```sh
-mpirun -np <number_of_processes> ./build/src/scripts/run_instance <file_name> [timeout] [sol_gather_period]
+mpirun -np <number_of_processes> ./run_instance <file_name> --timeout=<timeout> --sol_gather_period=<period> --balanced=<0|1>
 ```
 - `<number_of_processes>`: Number of MPI processes to use.
 - `<file_name>`: Name of the graph file located in the `graphs_instances` directory.
-- `[timeout]`: (Optional) Timeout in seconds. Default is 60 seconds.
-- `[sol_gather_period]`: (Optional) Solution gathering in seconds. Default is 10 seconds.
-
+- `--timeout`: (Optional) Timeout in seconds. Default is 60 seconds.
+- `--sol_gather_period`: (Optional) Solution gathering period in seconds. Default is 10 seconds.
+- `--balanced`: (Optional) Whether to use balanced or non-balanced scaling strategy. Default is balanced (1).
+- `--color_strategy`: (Optional) Whether to use lighter (faster but less accurate) coloring strategy *GreedyColorStrategy*, mixed (expensive but more accurate) *InterleavedColorStrategy* (interleaving greedy with dsatur&recolor), *DSaturColorStrategy* and another *InterleavedColorStrategy*, which interleaves dsatur with dsatur&recolor. Defaults to lighter (0).
+- `--output`: (Optional) Output file where result is writtend. Defaults to _output.txt_
+- `--logging`: (Optional) Flag (0 or 1) whether to log intermediate outputs. Defaults to 0. 
+  
 **Note:** The sol_gather_period parameter controls the frequency of MPI communication. Lower values allow processes to share solutions and prune faster, but if set too low, they can overload MPI communication and cause errors. More MPI processes require a higher period value. It's a tradeoff between speed and stability.
 
 Example:
 ```sh
-mpirun -np 4 ./build/src/scripts/run_instance anna.col 120
+mpirun -np 4 ./build/src/scripts/run_instance anna.col --timeout=120 --sol_gather_period=8 --balanced=0 --color_strategy=1 --output=anna_output.col
 ```
 
 The logs can then be found in the *./build/src/scripts/logs* directory.
@@ -61,29 +65,32 @@ Create a file named `run_instance_job.slurm` with the following content:
 ```bash
 #!/bin/bash
 #SBATCH --job-name=team2_mpi_branch_n_bound    # Job name
-#SBATCH --nodes=64                             # Number of nodes
+#SBATCH --nodes=32                            # Number of nodes
 #SBATCH --ntasks-per-node=8                    # MPI tasks per node
-#SBATCH --cpus-per-task=16                     # Cores per MPI task
-#SBATCH --time=01:00:00                        # Time limit (HH:MM:SS)
-#SBATCH --partition=cpu                        
-#SBATCH --output=output_mpi.txt                # Standard output file
-#SBATCH --error=error_mpi.txt                  # Standard error file
+#SBATCH --cpus-per-task=4                      # Cores per MPI task (increase if CPU-BOUND)
+#SBATCH --time=00:10:00                        # Time limit (HH:MM:SS)
+#SBATCH --partition=cpu                        # Replace with actual partition
+#SBATCH --output=output_mpi.txt
+#SBATCH --error=error_mpi.txt
+
+# Graph name to process
+GRAPH_FILE="le450_15a.col"
 
 # Run the MPI program
 cd build/src/scripts/
-srun run_instance le450_15a.col 1800
+srun run_instance "$GRAPH_FILE" --timeout=500 --sol_gather_period=40 --balanced=1 --color_strategy=2 --output="${GRAPH_FILE}_output.txt" --logging=0
 ```
 
-Submit the job using:
+Then submit the job using:
 ```sh
 sbatch run_job.slurm
 ```
 
 ## Expected Results
-The script compares the computed chromatic number with the expected results stored in `expected_chi.txt`. If the computed result does not match the expected result, an error message is displayed.
+The script compares the computed chromatic number with the expected results stored in `expected_chi.txt`. If the computed result does not match the expected result, an error message is displayed. 
 
 ## Logs
-Logs are generated for each MPI process and stored in the `logs` directory. The log files are named `log_<rank>.txt`, where `<rank>` is the MPI process rank. It contains detailed information on each branch's intermediate results (lower and upper bounds). 
+Logs are generated for each MPI process and stored in the `logs` directory if --logging=1. The log files are named `log_<rank>.txt`, where `<rank>` is the MPI process rank. It contains detailed information on each branch's intermediate results (lower and upper bounds). 
 
 ## run_instance.cpp Script Details
 - The script reads a graph file and initializes the MPI environment.
